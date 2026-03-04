@@ -11,6 +11,8 @@ import { LoadingSpinner } from '../LoadingSpinner';
 import { PaginationControlsCompat } from '../../../components/shared/ui/pagination/PaginationControlsCompat';
 import { UpdateTableMemo as UpdateTable } from './UpdateTable';
 import { NormalUpdateForm } from './forms/NormalUpdateForm';
+import { UsuarioCanalFormFields } from '../../../components/shared/forms/table-specific/UsuarioCanalFormFields';
+import { UserSelector } from '../../../components/shared/forms/UserSelector';
 import CarpetaForm from '../../../components/shared/forms/table-specific/CarpetaForm';
 import GrupoForm from '../../../components/shared/forms/table-specific/GrupoForm';
 import { MessageDisplay } from '../MessageDisplay';
@@ -497,7 +499,33 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
             </select>
           </div>
         </div>
-      ) : showForm && selectedRow ? (
+      ) : tableName === 'usuario_canal' && !showForm ? (
+        // Para USUARIO_CANAL: mostrar UserSelector para buscar usuario
+        <div className="space-y-4">
+          <label className={`block text-lg font-bold font-mono tracking-wider text-orange-500`}>
+            USUARIO *
+          </label>
+          <div className="max-w-sm">
+            <UserSelector
+              value={formData.usuarioid || null}
+              onChange={(usuarioid: number | null) => {
+                if (usuarioid) {
+                  updateFormField('usuarioid', usuarioid);
+                  setShowForm(true);
+                  // Buscar el primer registro de usuario_canal para este usuario
+                  const usuarioCanalRows = tableData.filter((r: any) => r.usuarioid === usuarioid);
+                  if (usuarioCanalRows.length > 0) {
+                    setSelectedRow(usuarioCanalRows[0]);
+                  }
+                }
+              }}
+              placeholder="BUSQUEDA"
+              isRequired={true}
+              themeColor="orange"
+            />
+          </div>
+        </div>
+      ) : (showForm && selectedRow) || (tableName === 'usuario_canal' && showForm && formData.usuarioid) ? (
         // Mostrar formulario inline (no modal)
         <div className="space-y-4">
           {/* Mensaje de warning/error (amarillo) */}
@@ -607,6 +635,72 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
                 />
               </div>
             )
+          ) : tableName === 'usuario_canal' && showForm ? (
+            // Para USUARIO_CANAL: mostrar formulario con botones de guardar/cancelar
+            <div className="space-y-4">
+              <UsuarioCanalFormFields
+                visibleColumns={visibleColumns}
+                formData={formData}
+                setFormData={(data) => {
+                  if (typeof data === 'function') {
+                    const next = data(formData);
+                    Object.keys(next).forEach(key => {
+                      updateFormField(key, next[key]);
+                    });
+                  } else {
+                    Object.keys(data).forEach(key => {
+                      updateFormField(key, data[key]);
+                    });
+                  }
+                }}
+                updateField={updateFormField}
+                getThemeColor={(type) => {
+                  const colors: Record<string, string> = {
+                    text: 'text-orange-500',
+                    bg: 'bg-orange-500',
+                    hover: 'hover:bg-orange-600',
+                    focus: 'focus:ring-orange-500',
+                    border: 'border-orange-500'
+                  };
+                  return colors[type] || '';
+                }}
+                getUniqueOptionsForField={getUniqueOptionsForField || (() => [])}
+                contactosData={(relatedData as any)?.contactosData || []}
+                correosData={(relatedData as any)?.correosData || []}
+                canalesData={(relatedData as any)?.canalesData || []}
+                codigotelefonosData={(relatedData as any)?.codigotelefonosData || []}
+                isUpdateMode={true}
+              />
+              {/* Label del usuario seleccionado */}
+              {tableName === 'usuario_canal' && formData.usuarioid && (
+                <div className="mb-4 p-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg">
+                  <span className="text-orange-800 dark:text-orange-300 font-mono font-bold">
+                    Editando canales de: {relatedData.userData?.find((u: any) => u.usuarioid === formData.usuarioid)?.login || `Usuario ${formData.usuarioid}`}
+                  </span>
+                </div>
+              )}
+              {/* Botones de guardar y cancelar */}
+              <div className="flex gap-3 pt-4 justify-center">
+                <button
+                  onClick={handleUpdate}
+                  disabled={isSubmitting}
+                  className="px-6 py-2 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-400 text-white rounded-lg font-mono font-bold tracking-wider transition-colors"
+                >
+                  {isSubmitting ? 'GUARDANDO...' : 'ACTUALIZAR'}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowForm(false);
+                    setSelectedRow(null);
+                    updateFormField('usuarioid', null);
+                  }}
+                  disabled={isSubmitting}
+                  className="px-6 py-2 bg-gray-500 hover:bg-gray-600 disabled:bg-gray-400 text-white rounded-lg font-mono font-bold tracking-wider transition-colors"
+                >
+                  CANCELAR
+                </button>
+              </div>
+            </div>
           ) : (
             /* Formulario normal para otras tablas */
             <NormalUpdateForm

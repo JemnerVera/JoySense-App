@@ -327,8 +327,8 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Campo Usuario */}
-      {usuarioidField && (
+      {/* Campo Usuario - Solo mostrar en modo creación o si no hay usuario seleccionado */}
+      {usuarioidField && !isUpdateMode && (
         <div className="space-y-2">
           <label className={`block text-base font-bold font-mono tracking-wider ${getThemeColor('text')}`}>
             {getColumnDisplayNameTranslated('usuarioid', t)?.toUpperCase()} *
