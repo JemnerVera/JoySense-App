@@ -1435,4 +1435,36 @@ export class JoySenseService {
       throw error;
     }
   }
+
+  /**
+   * Crea un código de verificación para enlazar Telegram
+   * Llama a fn_crear_codigo_telegram(p_usuarioid, p_minutos_validez)
+   */
+  static async crearCodigoTelegram(usuarioid: number, minutosValidez: number = 30): Promise<string> {
+    try {
+      const { supabaseAuth } = await import('./supabase-auth');
+      
+      // Llamar a la función RPC
+      const { data, error } = await supabaseAuth
+        .schema('joysense')
+        .rpc('fn_crear_codigo_telegram', {
+          p_usuarioid: usuarioid,
+          p_minutos_validez: minutosValidez
+        });
+
+      if (error) {
+        logger.error('JoySenseService', 'Error calling fn_crear_codigo_telegram', { error: error.message });
+        throw new Error(`Error al generar código Telegram: ${error.message}`);
+      }
+
+      if (!data) {
+        throw new Error('No se generó código Telegram');
+      }
+
+      return data;
+    } catch (error: any) {
+      logger.error('JoySenseService', 'Error in crearCodigoTelegram', { error: error?.message });
+      throw error;
+    }
+  }
 }
