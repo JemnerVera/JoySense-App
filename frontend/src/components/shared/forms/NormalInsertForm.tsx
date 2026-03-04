@@ -795,6 +795,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
                 correosData={correosData || []}
                 canalesData={canalesData || []}
                 codigotelefonosData={codigotelefonosData || []}
+                isUpdateMode={false}
               />
             ) : selectedTable === 'perfil' ? (
               <PerfilFormFields

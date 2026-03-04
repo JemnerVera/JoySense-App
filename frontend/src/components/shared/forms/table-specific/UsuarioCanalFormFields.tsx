@@ -21,6 +21,7 @@ interface UsuarioCanalFormFieldsProps {
   correosData?: any[];
   canalesData?: any[];
   codigotelefonosData?: any[];
+  isUpdateMode?: boolean;
 }
 
 interface CanalRow {
@@ -30,6 +31,7 @@ interface CanalRow {
   identificador: string;
   telegramCodigo?: string;
   generandoCodigo?: boolean;
+  existente?: boolean;
 }
 
 export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
@@ -42,7 +44,8 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
   contactosData = [],
   correosData = [],
   canalesData = [],
-  codigotelefonosData = []
+  codigotelefonosData = [],
+  isUpdateMode = false
 }) => {
   const { t } = useLanguage();
   
@@ -64,6 +67,8 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
         console.log('[UsuarioCanalFormFields] No hay usuarioid, limpiando datos');
         setUsuarioSeleccionado(null);
         setCanalesGrid([]);
+        setTelegramCodigoPorCanal({});
+        setMessagesTelegram({});
         return;
       }
 
@@ -71,7 +76,8 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
         usuarioid: formData.usuarioid,
         canalesDataLength: canalesData.length,
         contactosDataLength: contactosData.length,
-        correosDataLength: correosData.length
+        correosDataLength: correosData.length,
+        isUpdateMode
       });
 
       try {
@@ -86,6 +92,23 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
         
         if (usuario) {
           setUsuarioSeleccionado(usuario);
+          
+          // Cargar canales existentes del usuario
+          let canalesExistentes: any[] = [];
+          try {
+            const usuarioCanalData = await JoySenseService.getTableData('usuario_canal', 1000);
+            canalesExistentes = Array.isArray(usuarioCanalData) ? usuarioCanalData : (usuarioCanalData as any)?.data || [];
+            canalesExistentes = canalesExistentes.filter((uc: any) => 
+              Number(uc.usuarioid) === Number(formData.usuarioid)
+            );
+            console.log('[UsuarioCanalFormFields] Canales existentes del usuario:', {
+              total: canalesExistentes.length,
+              canales: canalesExistentes.map((c: any) => ({ canalid: c.canalid, statusid: c.statusid, identificador: c.identificador }))
+            });
+          } catch (error) {
+            console.error('[UsuarioCanalFormFields] Error cargando canales existentes:', error);
+            canalesExistentes = [];
+          }
           
           // Inicializar el grid con todos los canales disponibles
           const canalesActivos = canalesData.filter((c: any) => c.statusid === 1);
@@ -118,6 +141,26 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
             const nombreCanalOriginal = canal.canal || '';
             const nombreCanal = nombreCanalOriginal.toLowerCase();
             
+            // Verificar si este canal ya existe para el usuario (solo si está ACTIVO)
+            const canalExistente = canalesExistentes.find((uc: any) => 
+              Number(uc.canalid) === Number(canal.canalid)
+            );
+            
+            // Función helper para convertir status a booleano
+            const parseStatusToBoolean = (value: any): boolean => {
+              if (value === null || value === undefined) return false;
+              if (typeof value === 'boolean') return value;
+              if (typeof value === 'number') return value === 1;
+              if (typeof value === 'string') {
+                const lower = value.toLowerCase();
+                return lower === '1' || lower === 'true' || lower === 'active';
+              }
+              return false;
+            };
+            
+            const esExistente = canalExistente && parseStatusToBoolean(canalExistente.statusid);
+            const estadoExistente = esExistente && parseStatusToBoolean(canalExistente.statusid);
+            
             console.log('[UsuarioCanalFormFields] Procesando canal:', {
               canalid: canal.canalid,
               nombreCanalOriginal,
@@ -125,12 +168,19 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
               esWhatsapp: nombreCanal === 'whatsapp',
               esCorreo: nombreCanal === 'correo',
               esEmail: nombreCanal === 'email',
-              esTelegram: nombreCanal === 'telegram'
+              esTelegram: nombreCanal === 'telegram',
+              esExistente,
+              estadoExistente
             });
             
             // Calcular identificador según el canal
             let identificador = '';
-            if (nombreCanal === 'whatsapp' && contactoUsuario?.celular) {
+            if (esExistente && canalExistente?.identificador) {
+              // Usar el identificador existente solo si el canal está activo
+              identificador = canalExistente.identificador;
+              console.log('[UsuarioCanalFormFields] Usando identificador existente:', identificador);
+            } else if (nombreCanal === 'whatsapp' && contactoUsuario?.celular && esExistente) {
+              // Solo usar el celular del contacto si el canal existe como activo
               identificador = contactoUsuario.celular;
               console.log('[UsuarioCanalFormFields] WhatsApp identificador calculado:', identificador);
             } else if (nombreCanal === 'correo' || nombreCanal === 'email') {
@@ -141,7 +191,7 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
                 tieneCorreo: !!correoUsuario?.correo,
                 correoValue: correoUsuario?.correo
               });
-              if (correoUsuario?.correo) {
+              if (esExistente && correoUsuario?.correo) {
                 identificador = correoUsuario.correo;
                 console.log('[UsuarioCanalFormFields] CORREO identificador calculado:', identificador);
               } else {
@@ -157,17 +207,50 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
             return {
               canalid: canal.canalid,
               canal: canal.canal,
-              status: false, // Por defecto no seleccionado
-              identificador: identificador
+              status: esExistente ? estadoExistente : false,
+              identificador: identificador,
+              existente: esExistente
             };
           });
           
           console.log('[UsuarioCanalFormFields] Grid final:', {
             totalCanales: grid.length,
-            grid: grid.map((g: CanalRow) => ({ canalid: g.canalid, canal: g.canal, identificador: g.identificador }))
+            grid: grid.map((g: CanalRow) => ({ canalid: g.canalid, canal: g.canal, identificador: g.identificador, existente: g.existente, status: g.status }))
           });
           
           setCanalesGrid(grid);
+          
+          // Cargar códigos de Telegram existentes
+          const codigosTelegramInicial: Record<number, string> = {};
+          canalesExistentes.forEach((uc: any) => {
+            const canal = canalesActivos.find((c: any) => Number(c.canalid) === Number(uc.canalid));
+            if (canal && (canal.canal || '').toLowerCase() === 'telegram') {
+              if (uc.identificador) {
+                codigosTelegramInicial[uc.canalid] = uc.identificador;
+              }
+            }
+          });
+          
+          // Cargar desde codigotelefonosData si hay datos
+          if (codigotelefonosData && codigotelefonosData.length > 0) {
+            canalesExistentes.forEach((uc: any) => {
+              const canal = canalesActivos.find((c: any) => Number(c.canalid) === Number(uc.canalid));
+              if (canal && (canal.canal || '').toLowerCase() === 'telegram') {
+                const codigoTelegram = codigotelefonosData.find((ct: any) => 
+                  Number(ct.usuarioid) === Number(formData.usuarioid) && 
+                  Number(ct.canalid) === Number(uc.canalid)
+                );
+                if (codigoTelegram?.codigo) {
+                  codigosTelegramInicial[uc.canalid] = codigoTelegram.codigo;
+                }
+              }
+            });
+          }
+          
+          if (Object.keys(codigosTelegramInicial).length > 0) {
+            console.log('[UsuarioCanalFormFields] Códigos Telegram existentes:', codigosTelegramInicial);
+            setTelegramCodigoPorCanal(codigosTelegramInicial);
+          }
         } else {
           console.log('[UsuarioCanalFormFields] Usuario no encontrado');
           setUsuarioSeleccionado(null);
@@ -181,7 +264,7 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
     };
 
     loadUsuarioData();
-  }, [formData.usuarioid, canalesData, contactosData, correosData]);
+  }, [formData.usuarioid, canalesData, contactosData, correosData, isUpdateMode]);
 
   // Manejar cambio de status en el grid
   const handleStatusChange = useCallback((canalid: number, checked: boolean) => {
@@ -291,6 +374,8 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
                   const telegramCodigo = telegramCodigoPorCanal[row.canalid];
                   const generando = generandoCodigoPorCanal[row.canalid];
                   const mensaje = messagesTelegram[row.canalid];
+                  const isDisabled = row.existente && !isUpdateMode;
+                  const isCheckedAndExisting = row.existente && row.status && !isUpdateMode;
                   
                   return (
                     <tr key={row.canalid} className="hover:bg-gray-50 dark:hover:bg-neutral-800/50">
@@ -299,7 +384,13 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
                           type="checkbox"
                           checked={row.status}
                           onChange={(e) => handleStatusChange(row.canalid, e.target.checked)}
-                          className="w-5 h-5 text-orange-600 bg-gray-200 dark:bg-neutral-800 border-gray-300 dark:border-neutral-600 rounded focus:ring-2 focus:ring-orange-500"
+                          disabled={isDisabled}
+                          className={`w-5 h-5 rounded focus:ring-2 focus:ring-orange-500 appearance-none border-2 ${
+                            isCheckedAndExisting 
+                              ? 'bg-orange-600 border-orange-600 checked:bg-orange-600 checked:border-orange-600' 
+                              : 'bg-gray-200 dark:bg-neutral-800 border-gray-300 dark:border-neutral-600 checked:bg-orange-600 checked:border-orange-600'
+                          } ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          style={row.status && !isDisabled ? { backgroundColor: '#ea580c', borderColor: '#ea580c' } : isDisabled ? { opacity: 0.5 } : {}}
                         />
                       </td>
                       <td className="border border-gray-300 dark:border-neutral-600 px-4 py-2 font-mono text-sm text-gray-900 dark:text-white">
@@ -311,6 +402,20 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
                             {!row.status ? (
                               <div className="text-xs text-gray-500 dark:text-gray-400 italic">
                                 Habilita el canal
+                              </div>
+                            ) : isDisabled ? (
+                              <div className="relative">
+                                <input
+                                  type="text"
+                                  value={telegramCodigo || row.identificador || 'Código generado'}
+                                  readOnly
+                                  className="w-full px-3 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg font-mono text-sm text-gray-600 dark:text-gray-300 opacity-75"
+                                />
+                                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400" title="Canal existente - solo lectura">
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                                  </svg>
+                                </span>
                               </div>
                             ) : (
                               <>
@@ -355,22 +460,31 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
                             )}
                           </div>
                         ) : (
-                          <input
-                            type="text"
-                            value={row.identificador}
-                            onChange={(e) => handleIdentificadorChange(row.canalid, e.target.value)}
-                            disabled={!row.status}
-                            className={`w-full px-3 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg font-mono text-sm text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
-                              !row.status ? 'opacity-50 cursor-not-allowed' : ''
-                            }`}
-                            placeholder={
-                              row.canal.toLowerCase() === 'whatsapp' 
-                                ? 'Ej: +51960599778' 
-                                : row.canal.toLowerCase() === 'correo'
-                                ? 'Ej: usuario@demo.com'
-                                : 'Identificador del canal'
-                            }
-                          />
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={row.identificador}
+                              onChange={(e) => handleIdentificadorChange(row.canalid, e.target.value)}
+                              disabled={!row.status || isDisabled}
+                              className={`w-full px-3 py-2 bg-gray-200 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg font-mono text-sm text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${
+                                (!row.status || isDisabled) ? 'opacity-50 cursor-not-allowed' : ''
+                              }`}
+                              placeholder={
+                                row.canal.toLowerCase() === 'whatsapp' 
+                                  ? 'Ej: +51987654321' 
+                                  : row.canal.toLowerCase() === 'correo'
+                                  ? 'Ej: usuario@demo.com'
+                                  : 'Identificador del canal'
+                              }
+                            />
+                            {isDisabled && (
+                              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400" title="Canal existente - solo lectura">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                                </svg>
+                              </span>
+                            )}
+                          </div>
                         )}
                       </td>
                     </tr>

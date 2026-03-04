@@ -437,6 +437,7 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
         correosData={(relatedData as any)?.correosData || []}
         canalesData={(relatedData as any)?.canalesData || []}
         codigotelefonosData={(relatedData as any)?.codigotelefonosData || []}
+        isUpdateMode={true}
       />
     );
   }
