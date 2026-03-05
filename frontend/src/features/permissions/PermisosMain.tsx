@@ -398,6 +398,19 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
     // Excluir permisoid (se genera automáticamente)
     delete dataToInsert.permisoid;
 
+    // Mapear campos de geografía dinámicos a objetoid
+    // Los campos paisid, empresaid, fundoid, ubicacionid, nodoid, localizacionid
+    // deben convertirse a objetoid que es el campo que espera la tabla permiso
+    const geografiaFields = ['paisid', 'empresaid', 'fundoid', 'ubicacionid', 'nodoid', 'localizacionid'];
+    for (const field of geografiaFields) {
+      if (dataToInsert[field] !== undefined && dataToInsert[field] !== null) {
+        dataToInsert.objetoid = dataToInsert[field];
+        delete dataToInsert[field]; // Remover el campo específico
+      } else {
+        delete dataToInsert[field]; // Remover campos geografía no usados
+      }
+    }
+
     const result = await insertRow(dataToInsert);
     
     if (result.success) {
@@ -427,11 +440,22 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
     }
 
     const primaryKeyValue = getPrimaryKeyValue(selectedRow);
-    const dataToUpdate = {
+    const dataToUpdate: Record<string, any> = {
       ...formState.data,
       usermodifiedid: user?.user_metadata?.usuarioid || 1,
       datemodified: new Date().toISOString()
     };
+
+    // Mapear campos de geografía dinámicos a objetoid
+    const geografiaFields = ['paisid', 'empresaid', 'fundoid', 'ubicacionid', 'nodoid', 'localizacionid'];
+    for (const field of geografiaFields) {
+      if (dataToUpdate[field] !== undefined && dataToUpdate[field] !== null) {
+        dataToUpdate.objetoid = dataToUpdate[field];
+        delete dataToUpdate[field];
+      } else {
+        delete dataToUpdate[field];
+      }
+    }
 
     const result = await updateRow(primaryKeyValue, dataToUpdate);
     
