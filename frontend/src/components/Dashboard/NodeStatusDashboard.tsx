@@ -69,6 +69,8 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
   const [selectedUbicacion, setSelectedUbicacion] = useState<any>(null);
   const [ubicaciones, setUbicaciones] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isLoadingInitialData, setIsLoadingInitialData] = useState(true);
+  const [isLoadingNodes, setIsLoadingNodes] = useState(true);
   const [mediciones, setMediciones] = useState<any[]>([]);
   const [alertas, setAlertas] = useState<AlertData[]>([]);
   const [umbrales, setUmbrales] = useState<UmbralData[]>([]);
@@ -146,9 +148,15 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
   const [fundosInfo, setFundosInfo] = useState<Map<number, any>>(new Map());
   const { syncDashboardSelectionToGlobal } = useFilterSync(fundosInfo);
 
+  // Determinar si aún está cargando datos iniciales (ubicaciones, tipos, sensores, fundos, empresas Y nodos)
+  const isStillLoading = useMemo(() => {
+    return isLoadingInitialData || isLoadingNodes;
+  }, [isLoadingInitialData, isLoadingNodes]);
+
   // Cargar ubicaciones disponibles y fundos con su información
   useEffect(() => {
     const loadInitialData = async () => {
+      setIsLoadingInitialData(true);
       try {
         const [ubicacionesData, tiposData, sensoresData, fundosData, empresasData] = await Promise.all([
           JoySenseService.getUbicaciones(),
@@ -180,6 +188,8 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
         setFundosInfo(fundosMap);
       } catch (err: any) {
         console.error('[NodeStatusDashboard] Error cargando datos iniciales:', err);
+      } finally {
+        setIsLoadingInitialData(false);
       }
     };
     loadInitialData();
@@ -189,6 +199,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
   useEffect(() => {
     const loadNodes = async () => {
       try {
+        setIsLoadingNodes(true);
         setLoading(true);
         const filters = fundoSeleccionado
           ? { fundoId: fundoSeleccionado }
@@ -204,6 +215,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
         showError('Error', 'Error al cargar nodos');
       } finally {
         setLoading(false);
+        setIsLoadingNodes(false);
       }
     };
     loadNodes();
@@ -1256,7 +1268,11 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                       />
                     </div>
                     <div className="max-h-48 overflow-y-auto dashboard-scrollbar-blue">
-                      {filteredUbicaciones.length > 0 ? (
+                      {isStillLoading ? (
+                        <div className="flex items-center justify-center py-4">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                        </div>
+                      ) : filteredUbicaciones.length > 0 ? (
                         filteredUbicaciones.map((ubicacion: any) => (
                           <button
                             key={ubicacion.ubicacionid}
@@ -1328,7 +1344,11 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                       />
                     </div>
                     <div className="max-h-48 overflow-y-auto dashboard-scrollbar-blue">
-                      {filteredLocalizacionesBySearch.length > 0 ? (
+                      {isStillLoading ? (
+                        <div className="flex items-center justify-center py-4">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                        </div>
+                      ) : filteredLocalizacionesBySearch.length > 0 ? (
                         filteredLocalizacionesBySearch.map((localizacion: string) => {
                           // Obtener el primer nodo que tiene esta localización para poder seleccionarlo
                           const nodoConLocalizacion = filteredNodes.find((n: any) => n.localizacion === localizacion);
