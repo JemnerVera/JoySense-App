@@ -33,7 +33,6 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   const [isLoadingInitialData, setIsLoadingInitialData] = useState(true);
   const [availableMetrics, setAvailableMetrics] = useState<{ id: number; name: string }[]>([]);
   const [allMetricsFromInitialLoad, setAllMetricsFromInitialLoad] = useState<{ id: number; name: string }[]>([]);  // ← NUEVO: Almacenar todas las métricas de la carga inicial
-  const [selectedMetricUnit, setSelectedMetricUnit] = useState<string>('');
 
   // Estados de filtro
   // Función auxiliar para formatear fechas en zona horaria local (YYYY-MM-DD)
@@ -73,6 +72,10 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
 
   // Evitar ejecución ganda (React StrictMode en desarrollo)
   const initialDataLoaded = useRef(false);
+
+  // Memoizar sensores y tipos para evitar que getSeriesLabel se recree innecesariamente
+  const memoizedSensores = useMemo(() => sensores, [sensores]);
+  const memoizedTipos = useMemo(() => tipos, [tipos]);
 
   // Cargar localizaciones, sensores, tipos y fundos con su información de empresa/país.
   // CRÍTICO: Usar el mismo endpoint que MAPEO DE NODOS (nodos-con-localizacion) con filtros,
@@ -137,14 +140,16 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   }, [showError, paisSeleccionado, empresaSeleccionada, fundoSeleccionado]);
 
   // Función auxiliar para verificar si una localización cumple con los filtros globales (centralizada en filterSync)
+  // Memoizar correctamente para evitar recreación innecesaria
+  const memoizedFundosInfo = useMemo(() => fundosInfo, [fundosInfo]);
   const localizacionMatchesGlobalFilters = useCallback(
     (loc: any): boolean =>
       localizacionMatchesGlobalFiltersUtil(
         loc,
         { paisSeleccionado, empresaSeleccionada, fundoSeleccionado, ubicacionSeleccionada },
-        fundosInfo
+        memoizedFundosInfo
       ),
-    [paisSeleccionado, empresaSeleccionada, fundoSeleccionado, ubicacionSeleccionada, fundosInfo]
+    [paisSeleccionado, empresaSeleccionada, fundoSeleccionado, ubicacionSeleccionada, memoizedFundosInfo]
   );
 
   // Agrupar localizaciones por nombre único (sin repetir)
@@ -171,21 +176,15 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   }, [localizaciones]);
 
   // Validar y limpiar la localización seleccionada cuando cambian los filtros globales
+  // OPTIMIZACIÓN: Solo ejecutar cuando cambien los filtros reales, no cuando cambie selectedLocalizacion
   useEffect(() => {
     if (selectedLocalizacion && !localizacionMatchesGlobalFilters(selectedLocalizacion)) {
-
       setSelectedLocalizacion(null);
       setMediciones([]);
       setAvailableMetrics([]);
       setSelectedMetricId(null);
     }
-  }, [paisSeleccionado, empresaSeleccionada, fundoSeleccionado, ubicacionSeleccionada, selectedLocalizacion, localizacionMatchesGlobalFilters]);
-
-  // Sincronizar pendingDateRange con dateRange cuando cambia localización seleccionada
-  useEffect(() => {
-    setPendingDateRange(dateRange);
-    // El eje Y se ajustará automáticamente cuando cambien las mediciones
-  }, [selectedLocalizacion]);
+  }, [paisSeleccionado, empresaSeleccionada, fundoSeleccionado, ubicacionSeleccionada]);
 
   // Validar rango máximo de 90 días
   const validateDateRange = useCallback((start: string, end: string): { start: string; end: string } | null => {
@@ -209,12 +208,14 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     return null;
   }, [showError]);
 
-  // Cargar métricas disponibles cuando cambia localización o rango de fechas
+  // Cargar métricas y mediciones cuando cambia localización o rango de fechas
+  // CONSOLIDADO: Una sola llamada para ambos datos, evitando renders duplicados
   useEffect(() => {
     if (!selectedLocalizacion?.nodoid) {
       setAvailableMetrics([]);
       setSelectedMetricId(null);
       setMediciones([]);
+      setAllMetricsFromInitialLoad([]);
       return;
     }
 
@@ -225,81 +226,21 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
       return;
     }
 
-    const loadMetricas = async () => {
+    const loadData = async () => {
       try {
         setLoading(true);
-        const metrics = await SupabaseRPCService.getMetricasDisponiblesPorNodo({
-          nodoid: selectedLocalizacion.nodoid,
-          startDate: dateRange.start,
-          endDate: dateRange.end
-        });
-
-        // Transformar { id, nombre } a { id, name } para que coincida con el estado
-        const transformedMetrics = (metrics || []).map(m => ({
-          id: m.id,
-          name: m.nombre
-        }));
         
-        setAvailableMetrics(transformedMetrics);
-        
-        // Seleccionar primera métrica por defecto si hay métricas disponibles
-        if (transformedMetrics && transformedMetrics.length > 0) {
-          if (!selectedMetricId || !transformedMetrics.find(m => m.id === selectedMetricId)) {
-            setSelectedMetricId(transformedMetrics[0].id);
-          }
-        } else {
-          setSelectedMetricId(null);
-          setMediciones([]);
-        }
-      } catch (err: any) {
-        console.error('Error cargando métricas:', err);
-        if (err.message && err.message.includes('90 días')) {
-          showError('Error', err.message);
-        } else {
-          showError('Error', 'Error al cargar métricas disponibles');
-        }
-        setAvailableMetrics([]);
-        setSelectedMetricId(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadMetricas();
-  }, [selectedLocalizacion, dateRange.start, dateRange.end, showError, validateDateRange]);
-
-  // Cargar mediciones cuando cambia localización o rango de fechas (TODAS las métricas para el selector)
-  useEffect(() => {
-    if (!selectedLocalizacion?.nodoid) {
-      setMediciones([]);
-      setAllMetricsFromInitialLoad([]);  // ← Limpiar métricas
-      return;
-    }
-
-    // Validar rango de fechas
-    const adjustedRange = validateDateRange(dateRange.start, dateRange.end);
-    if (adjustedRange) {
-      setDateRange(adjustedRange);
-      return;
-    }
-
-    const loadMediciones = async () => {
-      try {
-        setLoading(true);
-        // Cargar datos de TODAS las métricas para que el selector muestre todas las disponibles
+        // Cargar datos de TODAS las métricas en una sola petición
         const data = await SupabaseRPCService.getMedicionesNodoDetallado({
           nodoid: selectedLocalizacion.nodoid,
           startDate: dateRange.start,
           endDate: dateRange.end
-          // NO pasar metricaid - cargar todo para detectar métricas disponibles
         });
 
         const medicionesData = data || [];
-
         setMediciones(medicionesData);
         
         // CRÍTICO: Detectar todas las métricas en la carga inicial y guardarlas
-        // Esto se usa para mostrar los botones, independientemente de cuál métrica esté seleccionada
         const uniqueMetricIds = new Set<number>();
         medicionesData.forEach(m => {
           const metricaId = m.metricaid || m.localizacion?.metricaid;
@@ -351,8 +292,6 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
           }));
 
         setAllMetricsFromInitialLoad(allMetricsDetected);
-        
-        // Actualizar availableMetrics con todas las métricas iniciales
         setAvailableMetrics(allMetricsDetected);
         
         // Seleccionar primera métrica si no hay seleccionada
@@ -360,20 +299,22 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
           setSelectedMetricId(allMetricsDetected[0].id);
         }
       } catch (err: any) {
-        console.error('Error cargando mediciones:', err);
+        console.error('Error cargando datos:', err);
         if (err.message && err.message.includes('90 días')) {
           showError('Error', err.message);
         } else {
-          showError('Error', 'Error al cargar mediciones');
+          showError('Error', 'Error al cargar datos');
         }
         setMediciones([]);
         setAllMetricsFromInitialLoad([]);
+        setAvailableMetrics([]);
+        setSelectedMetricId(null);
       } finally {
         setLoading(false);
       }
     };
 
-    loadMediciones();
+    loadData();
   }, [selectedLocalizacion, dateRange.start, dateRange.end, showError, validateDateRange]);
 
   // OPTIMIZACIÓN: Cargar datos SOLO de la métrica seleccionada cuando se cambia
@@ -472,18 +413,18 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   // Función para obtener etiqueta de serie (sensor)
   const getSeriesLabel = useCallback((medicion: any) => {
     const sensorId = medicion.sensorid || medicion.localizacion?.sensorid;
-    const sensorInfo = sensores.find(s => s.sensorid === sensorId);
+    const sensorInfo = memoizedSensores.find(s => s.sensorid === sensorId);
     const sensorName = sensorInfo?.sensor || sensorInfo?.nombre || `Sensor ${sensorId}`;
 
     const tipoId = medicion.tipoid || sensorInfo?.tipoid || medicion.localizacion?.sensor?.tipoid;
-    const tipoInfo = tipos.find(t => t.tipoid === tipoId);
+    const tipoInfo = memoizedTipos.find(t => t.tipoid === tipoId);
     const tipoName = tipoInfo?.tipo || 'Sensor';
 
     if (sensorName && sensorName !== tipoName) {
       return `${tipoName} - ${sensorName}`;
     }
     return tipoName;
-  }, [sensores, tipos]);
+  }, [memoizedSensores, memoizedTipos]);
 
   // Filtrar mediciones por métrica seleccionada (ya vienen filtradas del backend, pero aplicar filtro por si acaso)
   const medicionesFiltradasPorMetrica = useMemo(() => {
@@ -498,21 +439,20 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
       return Number(metricaId) === Number(selectedMetricId);
     });
     
-    // Actualizar la unidad de la métrica seleccionada
-    if (filtered.length > 0) {
-      // Buscar la unidad en el primer registro que tenga esa métrica
-      const unitFromData = 
-        filtered[0]?.unidad ||
-        filtered[0]?.metrica_nombre?.unidad ||
-        '';
-      
-      setSelectedMetricUnit(unitFromData || '');
-    } else {
-      setSelectedMetricUnit('');
-    }
-    
     return filtered;
   }, [mediciones, selectedMetricId]);
+
+  // Calcular la unidad de la métrica seleccionada sin setState (evita re-renders)
+  const unitFromData = useMemo(() => {
+    if (medicionesFiltradasPorMetrica.length > 0) {
+      return (
+        medicionesFiltradasPorMetrica[0]?.unidad ||
+        medicionesFiltradasPorMetrica[0]?.metrica_nombre?.unidad ||
+        ''
+      );
+    }
+    return '';
+  }, [medicionesFiltradasPorMetrica]);
 
   // Auto-ajustar eje Y cuando cambia la métrica seleccionada
   useEffect(() => {
@@ -560,7 +500,14 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
       max: maxValue + padding
     };
 
-    setYAxisDomain(calculatedDomain);
+    // Solo actualizar si los valores realmente cambiaron
+    setYAxisDomain(prevDomain => {
+      if (prevDomain.min === calculatedDomain.min && prevDomain.max === calculatedDomain.max) {
+        return prevDomain; // No cambió, retornar el anterior
+      }
+      return calculatedDomain;
+    });
+
     setInitialYAxisDomain(calculatedDomain);
   }, [medicionesFiltradasPorMetrica]);
 
@@ -572,8 +519,6 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     const timeSpan = new Date(dateRange.end).getTime() - new Date(dateRange.start).getTime();
     const daysSpan = timeSpan / (1000 * 60 * 60 * 24);
     const hoursSpan = daysSpan * 24;
-
-    console.log('[chartData PREP] dateRange:', dateRange, 'daysSpan:', daysSpan, 'medicionesCount:', medicionesFiltradasPorMetrica.length);
 
     // Función auxiliar para hacer grouping con una granularidad específica
     const performGrouping = (granularityType: 'minutes' | 'hours' | 'days', interval?: number, hourlyInterval?: number) => {
@@ -708,11 +653,8 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
       }
     }
 
-    console.log('[chartData FINAL] granularityType:', granularityType, 'pointCount:', pointCount, 'totalMediciones:', totalMediciones);
-    console.log('[chartData FINAL] result fechas:', result.map((r: any) => r.fecha));
-
     return result;
-  }, [medicionesFiltradasPorMetrica, getSeriesLabel, dateRange.start, dateRange.end]);
+  }, [medicionesFiltradasPorMetrica, dateRange.start, dateRange.end, memoizedSensores, memoizedTipos]);
 
   // Obtener todas las series únicas para el gráfico
   // CRÍTICO: Incluir TODOS los sensores de medicionesFiltradasPorMetrica para que nunca se pierda una línea
@@ -798,10 +740,12 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                         <button
                           key={nodo.localizacionid}
                           onClick={() => {
-                            setSelectedLocalizacion(nodo);
+                            flushSync(() => {
+                              setSelectedLocalizacion(nodo);
+                              setIsLocalizacionDropdownOpen(false);
+                              setLocalizacionSearchTerm('');
+                            });
                             syncDashboardSelectionToGlobal(nodo, 'localizacion');
-                            setIsLocalizacionDropdownOpen(false);
-                            setLocalizacionSearchTerm('');
                           }}
                           className={`w-full text-left px-3 py-2 text-base transition-colors font-mono tracking-wider ${
                             selectedLocalizacion?.localizacionid === nodo.localizacionid
@@ -1097,7 +1041,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
               key={`${selectedLocalizacion?.localizacionid}-${selectedMetricId}`}
               chartData={chartData}
               allSeries={allSeries}
-              selectedMetricUnit={selectedMetricUnit}
+              selectedMetricUnit={unitFromData}
               yAxisDomain={yAxisDomain}
               colors={COLORS}
             />

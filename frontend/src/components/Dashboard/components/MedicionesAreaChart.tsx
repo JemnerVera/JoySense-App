@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, memo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import * as echarts from 'echarts';
 import type { EChartsOption } from 'echarts';
@@ -17,7 +17,7 @@ interface MedicionesAreaChartProps {
   colors: string[];
 }
 
-export function MedicionesAreaChart({
+function MedicionesAreaChartComponent({
   chartData,
   allSeries,
   selectedMetricUnit,
@@ -30,13 +30,6 @@ export function MedicionesAreaChart({
     // Calcular rango de fechas e intervalo de etiquetas
     const dateRangeDays = calculateDateRange(xAxisData);
     const { showTime, intervalDays } = calculateXAxisInterval(dateRangeDays);
-    
-    // Log de todas las fechas únicas
-    const uniqueDates = new Set(xAxisData.map(x => x?.split(' ')[0] || x));
-    console.log(`[MedicionesAreaChart] Total puntos: ${xAxisData.length}, Fechas únicas: ${uniqueDates.size}`);
-    console.log(`[MedicionesAreaChart] Rango de fechas: ${dateRangeDays} días | showTime=${showTime}, intervalDays=${intervalDays}`);
-    console.log('[MedicionesAreaChart] Primeras 3 fechas:', xAxisData.slice(0, 3));
-    console.log('[MedicionesAreaChart] Últimas 3 fechas:', xAxisData.slice(-3));
 
     const series = allSeries.map((name, idx) => {
       const color = colors[idx % colors.length];
@@ -176,9 +169,6 @@ export function MedicionesAreaChart({
             
             // Para rangos > 7 días: mostrar solo fechas, respetando el intervalo
             if (dateRangeDays > 7) {
-              if (index === 0 || index === xAxisData.length - 1) {
-                console.log(`[formatter] dateRangeDays > 7, index=${index}, returning date: ${currentDate}`);
-              }
               return currentDate;
             }
             
@@ -301,3 +291,39 @@ export function MedicionesAreaChart({
     />
   );
 }
+
+// Custom comparator para React.memo que compara contenido en lugar de referencias
+const arePropsEqual = (prevProps: MedicionesAreaChartProps, nextProps: MedicionesAreaChartProps): boolean => {
+  // Comparar chartData por contenido (primera y última fila)
+  if (prevProps.chartData.length !== nextProps.chartData.length) return false;
+  if (prevProps.chartData.length > 0) {
+    const prevFirst = JSON.stringify(prevProps.chartData[0]);
+    const nextFirst = JSON.stringify(nextProps.chartData[0]);
+    if (prevFirst !== nextFirst) return false;
+    
+    const prevLast = JSON.stringify(prevProps.chartData[prevProps.chartData.length - 1]);
+    const nextLast = JSON.stringify(nextProps.chartData[nextProps.chartData.length - 1]);
+    if (prevLast !== nextLast) return false;
+  }
+
+  // Comparar allSeries por contenido
+  if (prevProps.allSeries.length !== nextProps.allSeries.length) return false;
+  if (prevProps.allSeries.some((s, i) => s !== nextProps.allSeries[i])) return false;
+
+  // Comparar selectedMetricUnit
+  if (prevProps.selectedMetricUnit !== nextProps.selectedMetricUnit) return false;
+
+  // Comparar yAxisDomain por contenido
+  if (prevProps.yAxisDomain.min !== nextProps.yAxisDomain.min || 
+      prevProps.yAxisDomain.max !== nextProps.yAxisDomain.max) return false;
+
+  // Comparar colors por contenido
+  if (prevProps.colors.length !== nextProps.colors.length) return false;
+  if (prevProps.colors.some((c, i) => c !== nextProps.colors[i])) return false;
+
+  // Si todo es igual, no actualizar
+  return true;
+};
+
+// Memoizar el componente con comparador personalizado
+export const MedicionesAreaChart = memo(MedicionesAreaChartComponent, arePropsEqual);
