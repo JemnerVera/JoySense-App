@@ -204,26 +204,6 @@ const AppContentInternal: React.FC<{
     setDashboardEndDate(filters.endDate);
   };
 
-  // Sincronizar dashboardSelectedUbicacion con el contexto global de filtros
-  useEffect(() => {
-    console.log('[App SYNC EFFECT] dashboardSelectedUbicacion cambió:', {
-      ubicacionid: dashboardSelectedUbicacion?.ubicacionid,
-      ubicacion: dashboardSelectedUbicacion?.ubicacion,
-      esNull: dashboardSelectedUbicacion === null
-    });
-    
-    if (dashboardSelectedUbicacion) {
-      console.log('[App] ✓ Sincronizando ubicación al contexto global:', {
-        id: dashboardSelectedUbicacion.ubicacionid,
-        nombre: dashboardSelectedUbicacion.ubicacion
-      });
-      setUbicacionSeleccionada(dashboardSelectedUbicacion);
-    } else if (dashboardSelectedUbicacion === null) {
-      console.log('[App] ✓ Limpiando ubicación del contexto global');
-      setUbicacionSeleccionada(null);
-    }
-  }, [dashboardSelectedUbicacion?.ubicacionid, setUbicacionSeleccionada]);
-
   // Estados para parámetros
   const [selectedTable, setSelectedTable] = useState<string>('');
   const [activeSubTab, setActiveSubTab] = useState<'status' | 'insert' | 'update' | 'massive' | 'asignar'>('status');

@@ -69,7 +69,7 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = ({
   // Cargar mediciones cuando cambien los filtros
   useEffect(() => {
     const loadMediciones = async () => {
-      if (!selectedUbicacion?.ubicacionid || !startDate || !endDate) {
+      if (!ubicacionSeleccionada?.ubicacionid || !startDate || !endDate) {
         setMediciones([]);
         return;
       }
@@ -78,14 +78,8 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = ({
       setError(null);
 
       try {
-        console.log('🔍 DynamicHierarchy: Cargando mediciones con filtros:', {
-          ubicacionId: selectedUbicacion.ubicacionid,
-          startDate,
-          endDate
-        });
-
         const data = await JoySenseService.getMediciones({
-          ubicacionId: selectedUbicacion.ubicacionid,
+          ubicacionId: ubicacionSeleccionada.ubicacionid,
           startDate,
           endDate
         });

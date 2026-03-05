@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 
 export interface FiltersBatch {
   paisId?: string;
@@ -43,19 +43,39 @@ export const FilterProvider: React.FC<FilterProviderProps> = ({ children }) => {
   const [ubicacionSeleccionada, setUbicacionSeleccionada] = useState<any | null>(null);
   const [showDetailedAnalysis, setShowDetailedAnalysis] = useState<boolean>(false);
 
-  const resetFilters = () => {
+  const setPaisSeleccionadoCb = useCallback((pais: string) => {
+    setPaisSeleccionado(pais);
+  }, []);
+
+  const setEmpresaSeleccionadaCb = useCallback((empresa: string) => {
+    setEmpresaSeleccionada(empresa);
+  }, []);
+
+  const setFundoSeleccionadoCb = useCallback((fundo: string) => {
+    setFundoSeleccionado(fundo);
+  }, []);
+
+  const setUbicacionSeleccionadaCb = useCallback((ubicacion: any | null) => {
+    setUbicacionSeleccionada(ubicacion);
+  }, []);
+
+  const setShowDetailedAnalysisCb = useCallback((show: boolean) => {
+    setShowDetailedAnalysis(show);
+  }, []);
+
+  const resetFilters = useCallback(() => {
     setPaisSeleccionado('');
     setEmpresaSeleccionada('');
     setFundoSeleccionado('');
     setUbicacionSeleccionada(null);
-  };
+  }, []);
 
-  const setFiltersBatch = (batch: FiltersBatch) => {
+  const setFiltersBatch = useCallback((batch: FiltersBatch) => {
     if (batch.paisId !== undefined) setPaisSeleccionado(batch.paisId);
     if (batch.empresaId !== undefined) setEmpresaSeleccionada(batch.empresaId);
     if (batch.fundoId !== undefined) setFundoSeleccionado(batch.fundoId);
     if (batch.ubicacion !== undefined) setUbicacionSeleccionada(batch.ubicacion);
-  };
+  }, []);
 
   const value: FilterContextType = {
     paisSeleccionado,
@@ -63,11 +83,11 @@ export const FilterProvider: React.FC<FilterProviderProps> = ({ children }) => {
     fundoSeleccionado,
     ubicacionSeleccionada,
     showDetailedAnalysis,
-    setPaisSeleccionado,
-    setEmpresaSeleccionada,
-    setFundoSeleccionado,
-    setUbicacionSeleccionada,
-    setShowDetailedAnalysis,
+    setPaisSeleccionado: setPaisSeleccionadoCb,
+    setEmpresaSeleccionada: setEmpresaSeleccionadaCb,
+    setFundoSeleccionado: setFundoSeleccionadoCb,
+    setUbicacionSeleccionada: setUbicacionSeleccionadaCb,
+    setShowDetailedAnalysis: setShowDetailedAnalysisCb,
     setFiltersBatch,
     resetFilters,
   };
