@@ -2784,40 +2784,123 @@ const AppContentInternal: React.FC<{
       </div>
   );
 
-  // Envolver con ReportesAlertasWrapper si estamos en reportes-alertas o reportes-historial-alertas
-  if (activeTab === 'reportes-alertas' || activeTab === 'reportes-historial-alertas') {
+  // Envolver SOLO EL CONTENIDO con ReportesAlertasWrapper si estamos en reportes-alertas, reportes-historial-alertas o reportes-historial-mensajes
+  // El sidebar NO debe estar dentro del wrapper para evitar re-renders cuando cambia el contexto de alertas
+  if (activeTab === 'reportes-alertas' || activeTab === 'reportes-historial-alertas' || activeTab === 'reportes-historial-mensajes') {
     return (
-      <ReportesAlertasWrapper>
-        {layoutContent}
-        {/* Modal de protección de datos - DESACTIVADO TEMPORALMENTE */}
-        {/* {modalState && (
-          <DataLossModal
-            isOpen={modalState.isOpen}
-            onConfirm={confirmAction}
-            onCancel={cancelDataLossAction}
-            currentContext={modalState.currentContext}
-            targetContext={modalState.targetContext}
-            contextType={modalState.contextType}
+      <div className={`h-screen bg-gray-50 dark:bg-black overflow-hidden ${getThemeClass()}`}>
+        <div className="flex h-full">
+          {/* Sidebar SIN wrapper */}
+          <SidebarContainer
+            showWelcome={showWelcomeIntegrated}
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+            authToken={localStorage.getItem('authToken') || localStorage.getItem('userEmail') || ''}
+            selectedTable={selectedTable}
+            activeSubTab={(
+              activeTab.startsWith('permisos-') || activeTab.startsWith('configuracion-permisos-')
+                ? activeSubTab
+                : (activeSubTab === 'asignar' ? 'status' : activeSubTab)
+            )}
+            dashboardSubTab={dashboardSubTab}
           />
-        )} */}
-        
-        {/* Modal de confirmación de cambios - DESACTIVADO TEMPORALMENTE */}
-        {/* {(() => {
-          const changeInfo = getPendingChangeInfo();
-          if (!changeInfo) return null;
           
-          return (
-            <ChangeConfirmationModal
-              isOpen={changeInfo.isOpen}
-              onConfirm={changeInfo.onConfirm}
-              onCancel={changeInfo.onCancel}
-              contextType={changeInfo.contextType}
-              currentContext={changeInfo.currentContext}
-              targetContext={changeInfo.targetContext}
-            />
-          );
-        })()} */}
-      </ReportesAlertasWrapper>
+          {/* Contenido DENTRO del wrapper */}
+          <ReportesAlertasWrapper>
+            <div 
+              className={`${getMainContentClasses(sidebarVisible)} bg-gray-50 dark:bg-black flex-1`}
+              onMouseEnter={() => {
+                if (sidebar?.handleContentMouseEnter) {
+                  sidebar.handleContentMouseEnter();
+                }
+              }}
+              onMouseLeave={() => {
+                if (sidebar?.handleContentMouseLeave) {
+                  sidebar.handleContentMouseLeave();
+                }
+              }}
+            >
+              {/* Reutilizar la lógica del header y main del layoutContent */}
+              {!showWelcomeIntegrated && (
+                <div className="flex-shrink-0">
+                  <div className="h-16 bg-white dark:bg-neutral-800 border-b border-gray-200 dark:border-neutral-700 flex items-center justify-between px-6">
+                    <div className="flex items-center gap-4">
+                      <div className="text-sm font-mono">
+                        <span className="text-blue-500">
+                          {(() => {
+                            const reporteTab = activeTab.replace('reportes-', '');
+                            const reporteNames: { [key: string]: string } = {
+                              'dashboard': t('subtabs.dashboard'),
+                              'historial': 'HISTORIAL',
+                              'historial-alertas': t('subtabs.alerts'),
+                              'historial-mensajes': t('subtabs.messages'),
+                              'alertas': t('subtabs.alerts'),
+                              'mensajes': t('subtabs.messages')
+                            };
+                            if (reporteTab.startsWith('historial-')) {
+                              const historialSubTab = reporteTab.replace('historial-', '');
+                              return `${t('tabs.reports')} / HISTORIAL / ${reporteNames[`historial-${historialSubTab}`] || historialSubTab.toUpperCase()}`;
+                            }
+                            return `${t('tabs.reports')} / ${reporteNames[reporteTab] || reporteTab.toUpperCase()}`;
+                          })()}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-4">
+                      <div className="text-xs text-neutral-500 font-mono">
+                        {t('header.last_update')} {new Date().toLocaleDateString('es-ES')} {new Date().toLocaleTimeString('es-ES')}
+                      </div>
+                      <UserControls activeTab={activeTab as string} />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <main 
+                id="main-content"
+                className="flex-1 overflow-y-auto custom-scrollbar"
+                style={{ 
+                  maxHeight: showWelcomeIntegrated ? '100vh' : 'calc(100vh - 56px)',
+                  scrollBehavior: 'smooth'
+                }}
+              >
+                {showWelcomeIntegrated ? (
+                  <div className="flex items-center justify-center h-full min-h-screen bg-white dark:bg-black">
+                    <div className="text-center max-w-2xl mx-auto px-6">
+                      <div className="mb-12">
+                        <div className="w-32 h-32 bg-gray-200 dark:bg-neutral-900 border-2 border-orange-500 rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl">
+                          <img src="/Logo - icono.png" alt="JoySense" className="w-16 h-16" />
+                        </div>
+                        <h1 className="text-5xl font-bold text-orange-500 mb-4 leading-tight font-mono tracking-wider">
+                          {t('welcome.title')}
+                        </h1>
+                        <p className="text-2xl text-gray-600 dark:text-neutral-300 mb-12 font-mono tracking-wider">
+                          {t('welcome.subtitle')}
+                        </p>
+                        <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-2xl p-8">
+                          <div className="flex items-center justify-center mb-4">
+                            <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center mr-3">
+                              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            </div>
+                            <p className="text-xl text-gray-900 dark:text-white font-mono tracking-wider">
+                              {t('welcome.instruction')}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  renderContent()
+                )}
+              </main>
+            </div>
+          </ReportesAlertasWrapper>
+        </div>
+      </div>
     );
   }
 
