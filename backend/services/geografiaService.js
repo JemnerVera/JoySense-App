@@ -542,71 +542,28 @@ const _getNodosConLocalizacionDashboardPrincipal = async (supabase, { limit, fun
     return [];
   }
 
-  // Obtener todas las localizaciones para los nodos obtenidos (paginación para >1000 filas)
+  // Obtener todas las localizaciones para los nodos obtenidos
   const nodoidList = nodos.map(n => n.nodoid);
   logger.info(`[getNodosConLocalizacionDashboardPrincipal] Obteniendo localizaciones para ${nodoidList.length} nodos`);
   
-  let localizacionesData = [];
-  const pageSize = 1000;
-  let page = 0;
-  let hasMore = true;
-  const maxPages = 50;
-  
-  while (hasMore && page < maxPages) {
-    const start = page * pageSize;
-    const end = start + pageSize - 1;
-    
-    const localizacionesRes = await supabase
-      .schema(dbSchema)
-      .from('localizacion')
-      .select('localizacionid, localizacion, metricaid, nodoid')
-      .eq('statusid', 1)
-      .in('nodoid', nodoidList)
-      .range(start, end);
-    
-    if (localizacionesRes.error) {
-      logger.error(`[getNodosConLocalizacionDashboardPrincipal] Error en paginación página ${page}:`, localizacionesRes.error);
-      throw localizacionesRes.error;
-    }
-    
-    const pageData = localizacionesRes.data || [];
-    
-    if (pageData.length === 0) {
-      hasMore = false;
-    } else {
-      localizacionesData = localizacionesData.concat(pageData);
-      page++;
-      if (pageData.length < pageSize) {
-        hasMore = false;
-        logger.info(`[getNodosConLocalizacionDashboardPrincipal] Última página (${pageData.length} < ${pageSize})`);
-      }
-    }
-  }
-  
-  if (page >= maxPages) {
-    logger.warn(`[getNodosConLocalizacionDashboardPrincipal] Límite de páginas alcanzado (${maxPages}). Total: ${localizacionesData.length}`);
-  }
-  
-  // Validar total de localizaciones obtenidas
-  const { count: totalLocalizacionesEsperadas, error: countError } = await supabase
+  const { data: localizacionesData, error: locError } = await supabase
     .schema(dbSchema)
     .from('localizacion')
-    .select('*', { count: 'exact', head: true })
-    .eq('statusid', 1)
-    .in('nodoid', nodoidList);
-  
-  if (!countError && totalLocalizacionesEsperadas !== null) {
-    if (localizacionesData.length < totalLocalizacionesEsperadas) {
-      logger.warn(`[getNodosConLocalizacionDashboardPrincipal] Diferencia en total: esperado=${totalLocalizacionesEsperadas}, obtenido=${localizacionesData.length}`);
-    } else if (localizacionesData.length > totalLocalizacionesEsperadas) {
-      logger.warn(`[getNodosConLocalizacionDashboardPrincipal] Diferencia en total: obtenido=${localizacionesData.length}, esperado=${totalLocalizacionesEsperadas}`);
-    }
-  } else if (countError) {
-    logger.warn(`[getNodosConLocalizacionDashboardPrincipal] No se pudo validar total de localizaciones:`, countError);
+    .select('localizacionid, localizacion, metricaid, nodoid')
+    .in('nodoid', nodoidList)
+    .eq('statusid', 1);
+
+  if (locError) {
+    logger.error(`[getNodosConLocalizacionDashboardPrincipal] Error obteniendo localizaciones:`, locError);
+    throw locError;
   }
-  
-  // Log de nodoid únicos en las localizaciones
-  const nodoidEnLocalizaciones = [...new Set(localizacionesData.map(l => l.nodoid))].sort((a,b)=>a-b);
+
+  if (!localizacionesData || localizacionesData.length === 0) {
+    logger.info(`[getNodosConLocalizacionDashboardPrincipal] Sin localizaciones, retornando []`);
+    return [];
+  }
+
+  logger.info(`[getNodosConLocalizacionDashboardPrincipal] Obtenidas ${localizacionesData.length} localizaciones`);
 
   // Obtener entidades_localizacion
   const locIds = localizacionesData.map(l => l.localizacionid);
@@ -775,7 +732,8 @@ const _getNodosConLocalizacionDashboardFallback = async (supabase, { limit, fund
     .schema(dbSchema)
     .from('localizacion')
     .select('localizacionid, localizacion, nodoid, metricaid')
-    .in('nodoid', nodoidList);
+    .in('nodoid', nodoidList)
+    .eq('statusid', 1);
 
   if (locError) throw locError;
 
