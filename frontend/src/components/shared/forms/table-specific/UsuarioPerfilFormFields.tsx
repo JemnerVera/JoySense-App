@@ -7,6 +7,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useLanguage } from '../../../../contexts/LanguageContext';
 import { UserSelector } from '../UserSelector';
 import { getColumnDisplayNameTranslated } from '../../../../utils/systemParametersUtils';
+import { JoySenseService } from '../../../../services/backend-api';
 
 interface UsuarioPerfilFormFieldsProps {
   visibleColumns: any[];
@@ -36,6 +37,10 @@ export const UsuarioPerfilFormFields: React.FC<UsuarioPerfilFormFieldsProps> = (
   // Estado para los perfiles seleccionados (perfilid -> statusid)
   const [perfilesStatus, setPerfilesStatus] = useState<Record<number, number>>({});
   
+  // Estado para los perfiles existentes cargados dinámicamente
+  const [perfilesExistentes, setPerfilesExistentes] = useState<any[]>([]);
+  const [loadingPerfiles, setLoadingPerfiles] = useState(false);
+  
   // Ref para rastrear si ya se inicializó para evitar loops
   const initializedRef = useRef<number | null>(null);
   const lastPerfilesStatusRef = useRef<string>('');
@@ -44,46 +49,83 @@ export const UsuarioPerfilFormFields: React.FC<UsuarioPerfilFormFieldsProps> = (
   const usuarioidField = visibleColumns.find(c => c.columnName === 'usuarioid');
   const usuarioid = formData.usuarioid;
 
+  // Cargar dinámicamente los perfiles existentes del usuario seleccionado
+  useEffect(() => {
+    const loadExistingPerfiles = async () => {
+      if (!usuarioid) {
+        setPerfilesExistentes([]);
+        return;
+      }
+
+      setLoadingPerfiles(true);
+      try {
+        const usuarioperfilData = await JoySenseService.getTableData('usuarioperfil', 1000);
+        const data = Array.isArray(usuarioperfilData) ? usuarioperfilData : (usuarioperfilData as any)?.data || [];
+        
+        // Filtrar los perfiles que pertenecen al usuario seleccionado
+        const perfilesDelUsuario = data.filter((up: any) => 
+          Number(up.usuarioid) === Number(usuarioid)
+        );
+        
+        setPerfilesExistentes(perfilesDelUsuario);
+        console.log('[UsuarioPerfilFormFields] Perfiles existentes cargados:', {
+          usuarioid,
+          totalPerfiles: perfilesDelUsuario.length,
+          perfiles: perfilesDelUsuario.map((p: any) => ({ perfilid: p.perfilid, statusid: p.statusid }))
+        });
+      } catch (error) {
+        console.error('[UsuarioPerfilFormFields] Error cargando perfiles existentes:', error);
+        setPerfilesExistentes([]);
+      } finally {
+        setLoadingPerfiles(false);
+      }
+    };
+
+    loadExistingPerfiles();
+  }, [usuarioid]);
+
   // Cuando se selecciona un usuario, inicializar los perfiles
   useEffect(() => {
     // Solo inicializar si cambió el usuarioid o si no se ha inicializado
-    if (usuarioid && initializedRef.current !== usuarioid) {
+    if (usuarioid && initializedRef.current !== usuarioid && !loadingPerfiles) {
       const initialStatus: Record<number, number> = {};
       
-      if (isUpdateMode && existingPerfiles.length > 0) {
-        // En modo UPDATE: cargar perfiles existentes
-        existingPerfiles.forEach((row: any) => {
+      // Usar perfiles existentes del prop (modo UPDATE) o cargados dinámicamente (modo CREATE)
+      const perfilesAUsar = existingPerfiles.length > 0 ? existingPerfiles : perfilesExistentes;
+      
+      if (perfilesAUsar.length > 0) {
+        // Cargar perfiles existentes
+        perfilesAUsar.forEach((row: any) => {
           initialStatus[row.perfilid] = row.statusid || 0;
         });
-        // Inicializar perfiles no existentes como inactivos
-        perfilesData.forEach((perfil: any) => {
-          if (!initialStatus.hasOwnProperty(perfil.perfilid)) {
-            initialStatus[perfil.perfilid] = 0;
-          }
-        });
-      } else {
-        // En modo CREATE: inicializar todos los perfiles como inactivos
-        perfilesData.forEach((perfil: any) => {
-          initialStatus[perfil.perfilid] = 0; // Por defecto inactivo
-        });
       }
+      
+      // Inicializar perfiles no existentes como inactivos
+      perfilesData.forEach((perfil: any) => {
+        if (!initialStatus.hasOwnProperty(perfil.perfilid)) {
+          initialStatus[perfil.perfilid] = 0;
+        }
+      });
       
       setPerfilesStatus(initialStatus);
       initializedRef.current = usuarioid;
       
       // Limpiar perfilid del formData ya que ahora usamos la tabla (solo si existe)
-      if (formData.perfilid) {
-        setFormData((prev: Record<string, any>) => ({
-          ...prev,
-          perfilid: null
-        }));
-      }
+      setFormData((prev: Record<string, any>) => {
+        if (prev.perfilid) {
+          return {
+            ...prev,
+            perfilid: null
+          };
+        }
+        return prev;
+      });
     } else if (!usuarioid) {
       // Si no hay usuario seleccionado, limpiar los perfiles
       setPerfilesStatus({});
       initializedRef.current = null;
     }
-  }, [usuarioid, isUpdateMode]); // Remover formData y otras dependencias que cambian constantemente
+  }, [usuarioid, loadingPerfiles, perfilesExistentes]);
 
   // Manejar cambio de checkbox de perfil
   const handlePerfilToggle = (perfilid: number) => {
@@ -118,10 +160,23 @@ export const UsuarioPerfilFormFields: React.FC<UsuarioPerfilFormFieldsProps> = (
     }));
   }, [perfilesStatus, setFormData]);
 
-  // Filtrar perfiles activos
+  // Filtrar y ordenar perfiles activos por perfilid ascendente
   const perfilesActivos = useMemo(() => {
-    return perfilesData.filter((p: any) => p.statusid === 1);
+    return perfilesData
+      .filter((p: any) => p.statusid === 1)
+      .sort((a: any, b: any) => a.perfilid - b.perfilid);
   }, [perfilesData]);
+
+  // Obtener perfiles que fueron activos (no editables)
+  // Usa existingPerfiles si viene del prop (modo UPDATE) o perfilesExistentes si se cargó dinámicamente
+  const perfilesActualesActivos = useMemo(() => {
+    const perfilesAUsar = existingPerfiles.length > 0 ? existingPerfiles : perfilesExistentes;
+    return new Set(
+      perfilesAUsar
+        .filter((p: any) => p.statusid === 1)
+        .map((p: any) => p.perfilid)
+    );
+  }, [existingPerfiles, perfilesExistentes]);
 
   return (
     <div>
@@ -164,24 +219,56 @@ export const UsuarioPerfilFormFields: React.FC<UsuarioPerfilFormFieldsProps> = (
               <tbody>
                 {perfilesActivos.map((perfil: any) => {
                   const isChecked = perfilesStatus[perfil.perfilid] === 1;
+                  // Verificar si este perfil ya está activo en la BD (tanto en CREATE como en UPDATE)
+                  const esPerfilActualmentActivo = perfilesActualesActivos.has(perfil.perfilid);
+                  // Deshabilitar checkbox si el perfil ya está activo en la BD
+                  const isCheckboxDisabled = esPerfilActualmentActivo;
+                  
                   return (
                     <tr
                       key={perfil.perfilid}
-                      className="border-b border-gray-300 dark:border-neutral-600 hover:bg-gray-50 dark:hover:bg-neutral-700 transition-colors"
+                      className={`border-b border-gray-300 dark:border-neutral-600 transition-colors ${
+                        esPerfilActualmentActivo
+                          ? 'bg-orange-50 dark:bg-orange-950/20 hover:bg-orange-100 dark:hover:bg-orange-950/30'
+                          : 'hover:bg-gray-50 dark:hover:bg-neutral-700'
+                      }`}
                     >
-                      <td className="px-4 py-3 text-gray-800 dark:text-white font-mono">
-                        {perfil.perfil || `Perfil ${perfil.perfilid}`}
+                      <td className={`px-4 py-3 font-mono ${
+                        esPerfilActualmentActivo
+                          ? 'text-orange-800 dark:text-orange-400 font-bold'
+                          : 'text-gray-800 dark:text-white'
+                      }`}>
+                        <div className="flex items-center gap-2">
+                          {perfil.perfil || `Perfil ${perfil.perfilid}`}
+                          {esPerfilActualmentActivo && (
+                            <span title="Este perfil está actualmente activo y no puede ser modificado" className="text-lg">
+                              🔒
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center">
+                        <div className="flex items-center gap-2">
                           <input
                             type="checkbox"
                             checked={isChecked}
-                            onChange={() => handlePerfilToggle(perfil.perfilid)}
-                            className={`w-5 h-5 ${getThemeColor('text')} bg-neutral-800 border-neutral-600 rounded focus:ring-2 ${getThemeColor('focus')} cursor-pointer`}
+                            onChange={() => !isCheckboxDisabled && handlePerfilToggle(perfil.perfilid)}
+                            disabled={isCheckboxDisabled}
+                            className={`w-5 h-5 rounded focus:ring-2 ${getThemeColor('focus')} ${
+                              isCheckboxDisabled
+                                ? 'opacity-60 cursor-not-allowed bg-gray-300 dark:bg-neutral-700 border-gray-400 dark:border-neutral-600'
+                                : `${getThemeColor('text')} bg-neutral-800 border-neutral-600 cursor-pointer`
+                            }`}
                           />
-                          <span className="ml-2 text-gray-800 dark:text-white font-mono text-sm">
-                            {isChecked ? t('create.active') : t('create.inactive')}
+                          <span className={`font-mono text-sm ${
+                            isCheckboxDisabled
+                              ? 'text-gray-600 dark:text-gray-400 font-semibold'
+                              : 'text-gray-800 dark:text-white'
+                          }`}>
+                            {esPerfilActualmentActivo 
+                              ? '✓ ACTIVO' 
+                              : (isChecked ? t('create.active') : t('create.inactive'))
+                            }
                           </span>
                         </div>
                       </td>
