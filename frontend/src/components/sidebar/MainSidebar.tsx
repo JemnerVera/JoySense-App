@@ -120,14 +120,6 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
               >
                 <SidebarFilters authToken={authToken} />
               </div>
-              <div
-                style={{
-                  height: '1px',
-                  backgroundColor: TEMPLATE_COLORS.borderColor,
-                  margin: '8px 0',
-                  opacity: 0.5,
-                }}
-              />
             </>
           )}
 
