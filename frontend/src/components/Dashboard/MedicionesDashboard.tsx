@@ -60,6 +60,10 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     min: null,
     max: null
   });
+  const [initialYAxisDomain, setInitialYAxisDomain] = useState<{ min: number | null; max: number | null }>({
+    min: null,
+    max: null
+  });
 
   // Estados para combobox de localización con searchbar
   const [isLocalizacionDropdownOpen, setIsLocalizacionDropdownOpen] = useState(false);
@@ -514,6 +518,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   useEffect(() => {
     if (medicionesFiltradasPorMetrica.length === 0) {
       setYAxisDomain({ min: null, max: null });
+      setInitialYAxisDomain({ min: null, max: null });
       return;
     }
 
@@ -535,6 +540,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
 
     if (minValue === Infinity || maxValue === -Infinity) {
       setYAxisDomain({ min: null, max: null });
+      setInitialYAxisDomain({ min: null, max: null });
       return;
     }
 
@@ -549,10 +555,13 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
       calculatedMin = 0;
     }
 
-    setYAxisDomain({
+    const calculatedDomain = {
       min: calculatedMin,
       max: maxValue + padding
-    });
+    };
+
+    setYAxisDomain(calculatedDomain);
+    setInitialYAxisDomain(calculatedDomain);
   }, [medicionesFiltradasPorMetrica]);
 
   // Preparar datos para el gráfico (usando mediciones ya filtradas por métrica)
@@ -985,7 +994,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                 className="h-10 w-32 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-base font-mono"
               />
               <button
-                onClick={() => setYAxisDomain({ min: null, max: null })}
+                onClick={() => setYAxisDomain(initialYAxisDomain)}
                 className="h-10 px-3 bg-gray-500 hover:bg-gray-600 text-white rounded text-base font-mono"
               >
                 Reset
