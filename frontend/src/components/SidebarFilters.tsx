@@ -53,11 +53,8 @@ const SidebarFilters: React.FC<SidebarFiltersProps> = ({ authToken }) => {
     return (
       <div className="p-4 border-b border-gray-300 dark:border-gray-700">
         <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Filtros Globales</h3>
-        <div className="space-y-3">
-          <div className="animate-pulse bg-gray-300 dark:bg-gray-700 h-8 rounded"></div>
-          <div className="animate-pulse bg-gray-300 dark:bg-gray-700 h-8 rounded"></div>
-          <div className="animate-pulse bg-gray-300 dark:bg-gray-700 h-8 rounded"></div>
-          <div className="animate-pulse bg-gray-300 dark:bg-gray-700 h-8 rounded"></div>
+        <div className="flex justify-center py-6">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
         </div>
       </div>
     );
