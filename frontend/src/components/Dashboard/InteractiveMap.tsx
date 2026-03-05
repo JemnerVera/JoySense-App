@@ -302,8 +302,8 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
       <div className="bg-neutral-700 rounded-lg p-4 h-full flex items-center justify-center" style={{ height: '100%' }}>
         <div className="text-center text-neutral-400">
           <div className="text-4xl mb-4">🗺️</div>
-          <div className="text-lg font-medium mb-2">No hay nodos disponibles</div>
-          <div className="text-sm">No se encontraron nodos con coordenadas GPS</div>
+          <div className="text-lg font-medium mb-2 font-mono">No hay nodos disponibles</div>
+          <div className="text-sm font-mono">No se encontraron nodos con coordenadas GPS</div>
         </div>
       </div>
     )
