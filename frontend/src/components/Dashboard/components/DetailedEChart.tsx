@@ -132,6 +132,7 @@ export const DetailedEChart: React.FC<DetailedEChartProps> = ({
         type: 'line' as const,
         symbol: 'none' as const,
         sampling: 'lttb' as const,
+        connectNulls: true,
         itemStyle: {
           color
         },
