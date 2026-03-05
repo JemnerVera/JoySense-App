@@ -137,10 +137,10 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     (loc: any): boolean =>
       localizacionMatchesGlobalFiltersUtil(
         loc,
-        { paisSeleccionado, empresaSeleccionada, fundoSeleccionado },
+        { paisSeleccionado, empresaSeleccionada, fundoSeleccionado, ubicacionSeleccionada },
         fundosInfo
       ),
-    [paisSeleccionado, empresaSeleccionada, fundoSeleccionado, fundosInfo]
+    [paisSeleccionado, empresaSeleccionada, fundoSeleccionado, ubicacionSeleccionada, fundosInfo]
   );
 
   // Agrupar localizaciones por nombre único (sin repetir)
@@ -175,7 +175,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
       setAvailableMetrics([]);
       setSelectedMetricId(null);
     }
-  }, [paisSeleccionado, empresaSeleccionada, fundoSeleccionado, selectedLocalizacion, localizacionMatchesGlobalFilters]);
+  }, [paisSeleccionado, empresaSeleccionada, fundoSeleccionado, ubicacionSeleccionada, selectedLocalizacion, localizacionMatchesGlobalFilters]);
 
   // Sincronizar pendingDateRange con dateRange cuando cambia localización seleccionada
   useEffect(() => {

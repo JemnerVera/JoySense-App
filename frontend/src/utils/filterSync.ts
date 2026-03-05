@@ -7,6 +7,7 @@ export interface GlobalFilters {
   paisSeleccionado?: string;
   empresaSeleccionada?: string;
   fundoSeleccionado?: string;
+  ubicacionSeleccionada?: any;
 }
 
 export interface DerivedHierarchy {
@@ -157,9 +158,9 @@ export function localizacionMatchesGlobalFilters(
   filters: GlobalFilters,
   fundosInfo?: Map<number, any>
 ): boolean {
-  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = filters;
+  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado, ubicacionSeleccionada } = filters;
 
-  if (!paisSeleccionado && !empresaSeleccionada && !fundoSeleccionado) {
+  if (!paisSeleccionado && !empresaSeleccionada && !fundoSeleccionado && !ubicacionSeleccionada) {
     return true;
   }
 
@@ -169,6 +170,15 @@ export function localizacionMatchesGlobalFilters(
   if (!nodo?.ubicacion) return false;
 
   const ubicacion = unwrap(nodo.ubicacion);
+  
+  // Filtro por ubicación - verificar antes que fundo
+  if (ubicacionSeleccionada?.ubicacionid) {
+    const locUbicacionId = ubicacion?.ubicacionid;
+    if (!locUbicacionId || locUbicacionId.toString() !== ubicacionSeleccionada.ubicacionid.toString()) {
+      return false;
+    }
+  }
+  
   if (!ubicacion?.fundo) return false;
 
   const fundo = unwrap(ubicacion.fundo);
