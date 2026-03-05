@@ -1064,7 +1064,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
           </div>
         ) : chartData.length === 0 ? (
           <div className="flex items-center justify-center flex-1 bg-white dark:bg-neutral-800 rounded-lg p-6">
-            <p className="text-gray-600 dark:text-gray-400">Selecciona una localización y una métrica</p>
+            <p className="text-gray-600 dark:text-gray-400 font-mono text-base">Selecciona una localización en la barra superior</p>
           </div>
         ) : (
           <div className="bg-white dark:bg-neutral-800 rounded-lg p-4 border border-gray-200 dark:border-neutral-700 mediciones-chart flex flex-col flex-1 min-h-0">

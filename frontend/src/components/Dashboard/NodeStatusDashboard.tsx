@@ -1577,7 +1577,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
         {/* Mensaje cuando no hay nodo seleccionado - Use el botón "Nodo en Mapa" */}
         {!selectedNode && !loading && (
           <div className="flex items-center justify-center py-12 text-gray-500 dark:text-neutral-400">
-            <p>Seleccione un nodo usando el botón "Nodo en Mapa"</p>
+            <p className="font-mono text-base">Selecciona una localización o busca en el mapa</p>
           </div>
         )}
 
