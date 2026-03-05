@@ -30,6 +30,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   const [fundosInfo, setFundosInfo] = useState<Map<number, any>>(new Map()); // Cache de info de fundos
   const { syncDashboardSelectionToGlobal } = useFilterSync(fundosInfo);
   const [loading, setLoading] = useState(false);
+  const [isLoadingInitialData, setIsLoadingInitialData] = useState(true);
   const [availableMetrics, setAvailableMetrics] = useState<{ id: number; name: string }[]>([]);
   const [allMetricsFromInitialLoad, setAllMetricsFromInitialLoad] = useState<{ id: number; name: string }[]>([]);  // ← NUEVO: Almacenar todas las métricas de la carga inicial
   const [selectedMetricUnit, setSelectedMetricUnit] = useState<string>('');
@@ -78,6 +79,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     initialDataLoaded.current = true;
 
     const loadInitialData = async () => {
+      setIsLoadingInitialData(true);
       try {
         const filters =
           fundoSeleccionado != null && fundoSeleccionado !== ''
@@ -122,6 +124,8 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
       } catch (err) {
         console.error('Error cargando datos iniciales:', err);
         showError('Error', 'No se pudieron cargar los datos');
+      } finally {
+        setIsLoadingInitialData(false);
       }
     };
 
@@ -776,7 +780,11 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                     />
                   </div>
                   <div className="max-h-48 overflow-y-auto dashboard-scrollbar-blue">
-                    {filteredNodos.length > 0 ? (
+                    {isLoadingInitialData ? (
+                      <div className="flex items-center justify-center py-4">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                      </div>
+                    ) : filteredNodos.length > 0 ? (
                       filteredNodos.map((nodo: any) => (
                         <button
                           key={nodo.localizacionid}
