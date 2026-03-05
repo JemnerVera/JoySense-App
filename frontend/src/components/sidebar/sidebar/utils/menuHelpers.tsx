@@ -24,6 +24,12 @@ import {
   IconCarpeta,
   IconCarpetaUbicacion,
   IconCarpetaUsuario,
+  IconStatusNodos,
+  IconNotificaciones,
+  IconMensajes,
+  IconPermisos,
+  IconUsuarios,
+  IconConfiguracion,
 } from './menuIcons';
 
 type TFunction = (key: string) => string;
@@ -64,6 +70,16 @@ export function getTableIcon(tableName: string): React.ReactNode {
     carpeta: <IconCarpeta />,
     carpeta_ubicacion: <IconCarpetaUbicacion />,
     carpeta_usuario: <IconCarpetaUsuario />,
+    ubicacion: <IconEntidadLocalizacion />,
+    nodo: <IconStatusNodos />,
+    localizacion: <IconCriticidad />,
+    asociacion: <IconRegla />,
+    correo: <IconMensajes />,
+    codigotelefono: <IconNotificaciones />,
+    contacto: <IconUsuarios />,
+    perfil: <IconPermisos />,
+    usuarioperfil: <IconConfiguracion />,
+    usuario_canal: <IconMensajes />,
   };
   return iconMap[tableName] ?? <IconTable />;
 }
