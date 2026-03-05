@@ -948,7 +948,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                 step="0.1"
                 min="-999999"
                 max="999999"
-                value={yAxisDomain.min !== null && !isNaN(yAxisDomain.min) ? yAxisDomain.min.toFixed(1) : ''}
+                value={yAxisDomain.min !== null && !isNaN(yAxisDomain.min) ? yAxisDomain.min : ''}
                 onChange={(e) => {
                   const inputValue = e.target.value
                   if (inputValue === '') {
@@ -961,7 +961,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                   }
                 }}
                 placeholder="Min"
-                className="h-10 w-20 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-base font-mono"
+                className="h-10 w-32 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-base font-mono"
               />
               <span className="text-gray-600 dark:text-neutral-400 text-base">-</span>
               <input
@@ -969,7 +969,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                 step="0.1"
                 min="-999999"
                 max="999999"
-                value={yAxisDomain.max !== null && !isNaN(yAxisDomain.max) ? yAxisDomain.max.toFixed(1) : ''}
+                value={yAxisDomain.max !== null && !isNaN(yAxisDomain.max) ? yAxisDomain.max : ''}
                 onChange={(e) => {
                   const inputValue = e.target.value
                   if (inputValue === '') {
@@ -982,7 +982,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                   }
                 }}
                 placeholder="Max"
-                className="h-10 w-20 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-base font-mono"
+                className="h-10 w-32 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-base font-mono"
               />
               <button
                 onClick={() => setYAxisDomain({ min: null, max: null })}
