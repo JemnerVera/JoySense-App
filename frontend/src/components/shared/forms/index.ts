@@ -8,7 +8,6 @@ export { FormFieldRenderer } from './FormFieldRenderer';
 export { ContactForm } from './ContactForm';
 export { LocationSelector } from './LocationSelector';
 export { UserSelector } from './UserSelector';
-export { UsuarioEmpresaSelector } from './UsuarioEmpresaSelector';
 export { ContextualRow } from './ContextualRow';
 export { MassiveUmbralForm } from './MassiveUmbralForm';
 export { MassivePerfilUmbralForm } from './MassivePerfilUmbralForm';

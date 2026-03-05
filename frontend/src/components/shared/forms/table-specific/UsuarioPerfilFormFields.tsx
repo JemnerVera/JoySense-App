@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useLanguage } from '../../../../contexts/LanguageContext';
-import { UsuarioEmpresaSelector } from '../UsuarioEmpresaSelector';
+import { UserSelector } from '../UserSelector';
 import { getColumnDisplayNameTranslated } from '../../../../utils/systemParametersUtils';
 
 interface UsuarioPerfilFormFieldsProps {
@@ -125,13 +125,13 @@ export const UsuarioPerfilFormFields: React.FC<UsuarioPerfilFormFieldsProps> = (
 
   return (
     <div>
-      {/* Campo USUARIO con UsuarioEmpresaSelector */}
+      {/* Campo USUARIO con UserSelector */}
       {usuarioidField && (
         <div className="mb-6">
           <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
             {getColumnDisplayNameTranslated('usuarioid', t)?.toUpperCase() || 'USUARIO'}{usuarioidField.required ? '*' : ''}
           </label>
-          <UsuarioEmpresaSelector
+          <UserSelector
             value={usuarioid || null}
             onChange={(usuarioid: number | null) => {
               setFormData({
@@ -142,7 +142,6 @@ export const UsuarioPerfilFormFields: React.FC<UsuarioPerfilFormFieldsProps> = (
             placeholder="BUSQUEDA"
             isRequired={usuarioidField.required}
             themeColor="orange"
-            excludeWithProfiles={true}
           />
         </div>
       )}
