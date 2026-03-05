@@ -25,6 +25,7 @@ import {
   IconCarpeta,
   IconConfiguracion,
   IconDispositivos,
+  IconUsuario,
   IconUsuarios,
   IconPais,
   IconNotificaciones,
@@ -32,6 +33,9 @@ import {
   IconTable,
   IconAjustes,
   IconSensor,
+  IconMetricaSensor,
+  IconFundo,
+  IconCriticidad as IconUmbralAlt,
 } from '../utils/menuIcons';
 
 export function useMenuStructure() {
@@ -76,12 +80,12 @@ export function useMenuStructure() {
             label: t('subtabs.dashboard'),
             icon: <IconDashboard />,
             subMenus: [
-              { id: 'mediciones', label: 'MEDICIONES', icon: <IconMetrica /> },
+              { id: 'mediciones', label: 'MEDICIONES', icon: <IconSensor /> },
               { id: 'mapeo', label: 'MAPEO DE NODOS', icon: <IconMapeo /> },
               { id: 'status-nodos', label: 'STATUS DE NODOS', icon: <IconStatusNodos /> },
-              { id: 'status-alertas', label: 'STATUS DE ALERTAS', icon: <IconCriticidad /> },
-              { id: 'metrica', label: 'MÉTRICA POR LOCALIZACIÓN', icon: <IconMetrica /> },
-              { id: 'umbrales', label: 'UMBRALES POR LOCALIZACIÓN', icon: <IconCriticidad /> },
+              { id: 'status-alertas', label: 'STATUS DE ALERTAS', icon: <IconAlertas /> },
+              { id: 'metrica', label: 'MÉTRICA POR LOCALIZACIÓN', icon: <IconMetricaSensor /> },
+              { id: 'umbrales', label: 'UMBRALES POR LOCALIZACIÓN', icon: <IconUmbralAlt /> },
             ],
           },
           {
@@ -106,14 +110,14 @@ export function useMenuStructure() {
           {
             id: 'entidad',
             label: 'PERSONAL',
-            icon: <IconEntidad />,
+            icon: <IconUsuario />,
             hasOperations: true,
             subMenus: createOps('agrupacion-entidad'),
           },
           {
             id: 'carpeta',
             label: 'COMPARTIDA',
-            icon: <IconCarpeta />,
+            icon: <IconUsuarios />,
             hasOperations: true,
             subMenus: createOps('agrupacion-carpeta'),
           },
