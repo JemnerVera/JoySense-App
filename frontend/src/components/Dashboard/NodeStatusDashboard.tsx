@@ -242,15 +242,27 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
     return result;
   }, [nodes, selectedUbicacion, paisSeleccionado, empresaSeleccionada, fundoSeleccionado]);
 
-  // Filtrar ubicaciones por término de búsqueda
+  // Filtrar ubicaciones por filtros globales y término de búsqueda
   const filteredUbicaciones = useMemo(() => {
-    if (!ubicacionSearchTerm.trim()) {
-      return ubicaciones;
-    }
-    return ubicaciones.filter((ubicacion: any) =>
-      ubicacion.ubicacion?.toLowerCase().includes(ubicacionSearchTerm.toLowerCase())
+    // Paso 1: Extraer ubicacionid únicos de filteredNodes (que ya tiene filtros globales aplicados)
+    const ubicacionIdsDisponibles = new Set(
+      filteredNodes.map((node: any) => node.ubicacionid)
     );
-  }, [ubicaciones, ubicacionSearchTerm]);
+    
+    // Paso 2: Filtrar ubicaciones que existen en filteredNodes
+    let result = ubicaciones.filter((ubicacion: any) =>
+      ubicacionIdsDisponibles.has(ubicacion.ubicacionid)
+    );
+    
+    // Paso 3: Aplicar filtro de búsqueda
+    if (ubicacionSearchTerm.trim()) {
+      result = result.filter((ubicacion: any) =>
+        ubicacion.ubicacion?.toLowerCase().includes(ubicacionSearchTerm.toLowerCase())
+      );
+    }
+    
+    return result;
+  }, [ubicaciones, filteredNodes, ubicacionSearchTerm]);
 
   // Obtener localizaciones únicas de los nodos filtrados
   const localizacionesDisponibles = useMemo(() => {
@@ -1331,6 +1343,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                                     const ubicacionCorrespondiente = ubicaciones.find((u: any) => u.ubicacionid === nodoConLocalizacion.ubicacionid);
                                     if (ubicacionCorrespondiente) {
                                       setSelectedUbicacion(ubicacionCorrespondiente);
+                                      syncDashboardSelectionToGlobal(ubicacionCorrespondiente, 'ubicacion');
                                     }
                                   }
                                 }
