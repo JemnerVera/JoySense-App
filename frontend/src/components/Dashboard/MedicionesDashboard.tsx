@@ -152,15 +152,17 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     [paisSeleccionado, empresaSeleccionada, fundoSeleccionado, ubicacionSeleccionada, memoizedFundosInfo]
   );
 
-  // Agrupar localizaciones por nombre único (sin repetir)
+  // Agrupar localizaciones por nombre + nodoid (clave compuesta)
+  // Esto permite mantener múltiples nodos bajo la misma localización
   useEffect(() => {
     const localizacionesMap = new Map<string, any>();
     
     localizaciones.forEach((loc: Localizacion) => {
       if (loc.localizacion && loc.nodoid) {
-        // Usar el nombre de localización como clave
-        if (!localizacionesMap.has(loc.localizacion)) {
-          localizacionesMap.set(loc.localizacion, {
+        // Usar clave compuesta: localización + nodoid para diferenciar nodos en la misma localización
+        const key = `${loc.localizacion}__${loc.nodoid}`;
+        if (!localizacionesMap.has(key)) {
+          localizacionesMap.set(key, {
             localizacionid: loc.localizacionid,
             localizacion: loc.localizacion,
             nodoid: loc.nodoid,
