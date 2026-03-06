@@ -18,7 +18,7 @@ const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'
 export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   const { t } = useLanguage();
   const { showError } = useToast();
-  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado, ubicacionSeleccionada } = useFilters();
+  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado, ubicacionSeleccionada, setUbicacionSeleccionada } = useFilters();
 
   // Estados principales
   const [localizaciones, setLocalizaciones] = useState<Localizacion[]>([]);
@@ -428,6 +428,12 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     return tipoName;
   }, [memoizedSensores, memoizedTipos]);
 
+  // Función para limpiar la localización seleccionada
+  const handleClearLocalizacion = useCallback(() => {
+    setSelectedLocalizacion(null);
+    setUbicacionSeleccionada(null);
+  }, [setUbicacionSeleccionada]);
+
   // Filtrar mediciones por métrica seleccionada (ya vienen filtradas del backend, pero aplicar filtro por si acaso)
   const medicionesFiltradasPorMetrica = useMemo(() => {
     if (!selectedMetricId || mediciones.length === 0) {
@@ -695,22 +701,23 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
           style={{ scrollBehavior: 'smooth' }}
         >
           {/* Selector de Localización (agrupada por Nodo) con searchbar */}
-          <div className="flex flex-col items-center flex-shrink-0" ref={localizacionDropdownRef}>
-            <label className="text-base font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
-              Localización:
-            </label>
-            <div className="relative">
-              <button
-                onClick={() => setIsLocalizacionDropdownOpen(!isLocalizacionDropdownOpen)}
-                className="h-10 min-w-[180px] px-3 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-base flex items-center justify-between"
-              >
-                <span className={selectedLocalizacion ? 'text-gray-800 dark:text-white' : 'text-gray-500 dark:text-neutral-400'}>
-                  {selectedLocalizacion?.localizacion || 'Selecciona'}
-                </span>
-                <svg className={`w-4 h-4 transition-transform ${isLocalizacionDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex flex-col items-center flex-shrink-0" ref={localizacionDropdownRef}>
+              <label className="text-base font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
+                Localización:
+              </label>
+              <div className="relative">
+                <button
+                  onClick={() => setIsLocalizacionDropdownOpen(!isLocalizacionDropdownOpen)}
+                  className="h-10 min-w-[180px] px-3 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-base flex items-center justify-between"
+                >
+                  <span className={selectedLocalizacion ? 'text-gray-800 dark:text-white' : 'text-gray-500 dark:text-neutral-400'}>
+                    {selectedLocalizacion?.localizacion || 'Selecciona'}
+                  </span>
+                  <svg className={`w-4 h-4 transition-transform ${isLocalizacionDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
               
               {isLocalizacionDropdownOpen && localizacionDropdownPosition && (
                 <div 
@@ -766,7 +773,19 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                   </div>
                 </div>
               )}
+              </div>
             </div>
+            
+            {/* Botón para limpiar localización */}
+            {selectedLocalizacion && (
+              <button
+                onClick={handleClearLocalizacion}
+                className="h-10 w-10 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded font-bold text-lg transition-colors flex-shrink-0 self-end mb-0"
+                title="Limpiar localización"
+              >
+                ×
+              </button>
+            )}
           </div>
 
           {/* Separador visual */}
