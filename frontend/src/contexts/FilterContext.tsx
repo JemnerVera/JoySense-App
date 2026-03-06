@@ -5,6 +5,7 @@ export interface FiltersBatch {
   empresaId?: string;
   fundoId?: string;
   ubicacion?: any | null;
+  localizacion?: any | null;
 }
 
 interface FilterContextType {
@@ -12,11 +13,13 @@ interface FilterContextType {
   empresaSeleccionada: string;
   fundoSeleccionado: string;
   ubicacionSeleccionada: any | null;
+  localizacionSeleccionada: any | null;
   showDetailedAnalysis: boolean;
   setPaisSeleccionado: (pais: string) => void;
   setEmpresaSeleccionada: (empresa: string) => void;
   setFundoSeleccionado: (fundo: string) => void;
   setUbicacionSeleccionada: (ubicacion: any | null) => void;
+  setLocalizacionSeleccionada: (localizacion: any | null) => void;
   setShowDetailedAnalysis: (show: boolean) => void;
   setFiltersBatch: (batch: FiltersBatch) => void;
   resetFilters: () => void;
@@ -41,6 +44,7 @@ export const FilterProvider: React.FC<FilterProviderProps> = ({ children }) => {
   const [empresaSeleccionada, setEmpresaSeleccionada] = useState<string>('');
   const [fundoSeleccionado, setFundoSeleccionado] = useState<string>('');
   const [ubicacionSeleccionada, setUbicacionSeleccionada] = useState<any | null>(null);
+  const [localizacionSeleccionada, setLocalizacionSeleccionada] = useState<any | null>(null);
   const [showDetailedAnalysis, setShowDetailedAnalysis] = useState<boolean>(false);
 
   const setPaisSeleccionadoCb = useCallback((pais: string) => {
@@ -59,6 +63,10 @@ export const FilterProvider: React.FC<FilterProviderProps> = ({ children }) => {
     setUbicacionSeleccionada(ubicacion);
   }, []);
 
+  const setLocalizacionSeleccionadaCb = useCallback((localizacion: any | null) => {
+    setLocalizacionSeleccionada(localizacion);
+  }, []);
+
   const setShowDetailedAnalysisCb = useCallback((show: boolean) => {
     setShowDetailedAnalysis(show);
   }, []);
@@ -68,6 +76,7 @@ export const FilterProvider: React.FC<FilterProviderProps> = ({ children }) => {
     setEmpresaSeleccionada('');
     setFundoSeleccionado('');
     setUbicacionSeleccionada(null);
+    setLocalizacionSeleccionada(null);
   }, []);
 
   const setFiltersBatch = useCallback((batch: FiltersBatch) => {
@@ -75,6 +84,7 @@ export const FilterProvider: React.FC<FilterProviderProps> = ({ children }) => {
     if (batch.empresaId !== undefined) setEmpresaSeleccionada(batch.empresaId);
     if (batch.fundoId !== undefined) setFundoSeleccionado(batch.fundoId);
     if (batch.ubicacion !== undefined) setUbicacionSeleccionada(batch.ubicacion);
+    if (batch.localizacion !== undefined) setLocalizacionSeleccionada(batch.localizacion);
   }, []);
 
   const value: FilterContextType = {
@@ -82,11 +92,13 @@ export const FilterProvider: React.FC<FilterProviderProps> = ({ children }) => {
     empresaSeleccionada,
     fundoSeleccionado,
     ubicacionSeleccionada,
+    localizacionSeleccionada,
     showDetailedAnalysis,
     setPaisSeleccionado: setPaisSeleccionadoCb,
     setEmpresaSeleccionada: setEmpresaSeleccionadaCb,
     setFundoSeleccionado: setFundoSeleccionadoCb,
     setUbicacionSeleccionada: setUbicacionSeleccionadaCb,
+    setLocalizacionSeleccionada: setLocalizacionSeleccionadaCb,
     setShowDetailedAnalysis: setShowDetailedAnalysisCb,
     setFiltersBatch,
     resetFilters,
