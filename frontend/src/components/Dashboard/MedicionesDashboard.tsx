@@ -691,7 +691,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
       <div className="bg-gray-200 dark:bg-neutral-700 rounded-lg p-3 mb-4 mx-6 mt-6 flex-shrink-0 min-w-0 overflow-hidden">
         <div 
           ref={scrollContainerRef}
-          className="flex items-center gap-4 flex-nowrap overflow-x-auto overflow-y-hidden w-full px-2 py-1 scrollbar-thin"
+          className={`flex items-center gap-4 flex-nowrap overflow-x-auto overflow-y-hidden w-full px-2 py-1 scrollbar-thin ${!selectedLocalizacion ? 'justify-center' : ''}`}
           style={{ scrollBehavior: 'smooth' }}
         >
           {/* Selector de Localización (agrupada por Nodo) con searchbar */}
