@@ -34,6 +34,11 @@ export function useFilterSync(fundosInfo?: Map<number, any>) {
       if (derived.fundoId) batch.fundoId = derived.fundoId;
       if (derived.ubicacion) batch.ubicacion = derived.ubicacion;
       
+      // Si es una localización, incluirla en el batch
+      if (type === 'localizacion') {
+        batch.localizacion = selection;
+      }
+      
       setFiltersBatch(batch);
     },
     [setFiltersBatch, fundosInfo]

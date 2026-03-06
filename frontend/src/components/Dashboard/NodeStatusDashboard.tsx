@@ -62,11 +62,12 @@ const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
   const { t } = useLanguage();
   const { showError } = useToast();
-  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado, ubicacionSeleccionada, setUbicacionSeleccionada } = useFilters();
+  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado, ubicacionSeleccionada, setUbicacionSeleccionada, localizacionSeleccionada, setLocalizacionSeleccionada } = useFilters();
 
   const [nodes, setNodes] = useState<NodeData[]>([]);
   const [selectedNode, setSelectedNode] = useState<NodeData | null>(null);
   const [selectedUbicacion, setSelectedUbicacion] = useState<any>(null);
+  const [selectedLocalizacion, setSelectedLocalizacion] = useState<any>(null);
   const [ubicaciones, setUbicaciones] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [isLoadingInitialData, setIsLoadingInitialData] = useState(true);
@@ -393,10 +394,12 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
     return true;
   }, [paisSeleccionado, empresaSeleccionada, fundoSeleccionado, fundosInfo]);
 
-  // Sincronizar el filtro global de ubicación con el estado local
+  // Sincronizar el filtro global de ubicación y localización con el estado local
   useEffect(() => {
     console.log('[NodeStatusDashboard SYNC EFFECT] ubicacionSeleccionada:', ubicacionSeleccionada);
+    console.log('[NodeStatusDashboard SYNC EFFECT] localizacionSeleccionada:', localizacionSeleccionada);
     console.log('[NodeStatusDashboard SYNC EFFECT] selectedUbicacion:', selectedUbicacion);
+    console.log('[NodeStatusDashboard SYNC EFFECT] selectedLocalizacion:', selectedLocalizacion);
     
     if (ubicacionSeleccionada) {
       // Si la ubicación seleccionada es diferente por ID, actualizar el estado local
@@ -416,13 +419,64 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
     } else {
       console.log('[NodeStatusDashboard] - Sin ubicación en contexto ni local');
     }
-  }, [ubicacionSeleccionada]);
+
+    // Sincronizar la localización desde el contexto global
+    if (localizacionSeleccionada) {
+      if (!selectedLocalizacion || selectedLocalizacion.nodoid !== localizacionSeleccionada.nodoid) {
+        console.log('[NodeStatusDashboard] ✓ SINCRONIZANDO localización global:', {
+          localizacion: localizacionSeleccionada.localizacion,
+          nodoid: localizacionSeleccionada.nodoid
+        });
+        setSelectedLocalizacion(localizacionSeleccionada);
+        // Si también existe un nodo correspondiente, seleccionarlo
+        const nodoCorrespondiente = filteredNodes.find((n: any) => 
+          n.nodoid === localizacionSeleccionada.nodoid &&
+          n.localizacion === localizacionSeleccionada.localizacion
+        );
+        if (nodoCorrespondiente) {
+          console.log('[NodeStatusDashboard] ✓ SELECCIONANDO nodo correspondiente a la localización');
+          setSelectedNode(nodoCorrespondiente);
+        }
+      } else {
+        console.log('[NodeStatusDashboard] - Localización ya sincronizada');
+      }
+    } else if (selectedLocalizacion && !localizacionSeleccionada) {
+      console.log('[NodeStatusDashboard] ✓ LIMPIANDO localización seleccionada');
+      setSelectedLocalizacion(null);
+    }
+  }, [ubicacionSeleccionada, localizacionSeleccionada, filteredNodes]);
+
+  // Sincronizar la localización cuando se selecciona ubicación
+  // Extraer la localización del nodo seleccionado y mantenerla sincronizada
+  useEffect(() => {
+    if (selectedNode && selectedNode.localizacion) {
+      const localizacionObj = {
+        localizacion: selectedNode.localizacion,
+        nodoid: selectedNode.nodoid,
+        nodo: selectedNode.nodo
+      };
+      
+      if (!selectedLocalizacion || selectedLocalizacion.nodoid !== selectedNode.nodoid) {
+        console.log('[NodeStatusDashboard] ✓ SINCRONIZANDO localización desde nodo seleccionado:', {
+          localizacion: selectedNode.localizacion,
+          nodoid: selectedNode.nodoid
+        });
+        setSelectedLocalizacion(localizacionObj);
+        // Sincronizar también con el contexto global para que el MAPEO DE NODOS lo refleje
+        syncDashboardSelectionToGlobal(localizacionObj, 'localizacion');
+      }
+    } else if (selectedLocalizacion && !selectedNode) {
+      console.log('[NodeStatusDashboard] ✓ LIMPIANDO localización seleccionada');
+      setSelectedLocalizacion(null);
+    }
+  }, [selectedNode?.nodoid, selectedNode?.localizacion, syncDashboardSelectionToGlobal]);
 
   // Limpiar nodo cuando cambian los filtros globales y el nodo ya no es válido
   useEffect(() => {
     if (selectedNode && !nodoMatchesGlobalFilters(selectedNode)) {
       setSelectedNode(null);
       setSelectedUbicacion(null);
+      setSelectedLocalizacion(null);   // Limpiar también localización seleccionada
       setUbicacionSearchTerm('');      // Limpiar búsqueda de ubicaciones
       setNodoSearchTerm('');           // Limpiar búsqueda de nodos
       setMediciones([]);
@@ -438,6 +492,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
   useEffect(() => {
     if (selectedUbicacion && selectedNode && selectedNode.ubicacionid !== selectedUbicacion.ubicacionid) {
       setSelectedNode(null);
+      setSelectedLocalizacion(null);   // Limpiar también localización cuando cambia ubicación
       setLocalizacionesNodo([]);
     }
   }, [selectedUbicacion]);
@@ -1330,8 +1385,8 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                   onClick={() => setIsNodoDropdownOpen(!isNodoDropdownOpen)}
                   className="h-10 min-w-[120px] px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-base flex items-center justify-between"
                 >
-                  <span className={selectedNode?.localizacion ? 'text-gray-800 dark:text-white' : 'text-gray-500 dark:text-neutral-400'}>
-                    {selectedNode?.localizacion || 'Selecciona Localización'}
+                  <span className={selectedLocalizacion?.localizacion ? 'text-gray-800 dark:text-white' : 'text-gray-500 dark:text-neutral-400'}>
+                    {selectedLocalizacion?.localizacion || 'Selecciona Localización'}
                   </span>
                   <svg className={`w-4 h-4 transition-transform ${isNodoDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -1383,6 +1438,8 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                                       syncDashboardSelectionToGlobal(ubicacionCorrespondiente, 'ubicacion');
                                     }
                                   }
+                                  // Sincronizar la localización con el contexto global
+                                  syncDashboardSelectionToGlobal(nodoConLocalizacion, 'localizacion');
                                 }
                                 setIsNodoDropdownOpen(false);
                                 setNodoSearchTerm('');
