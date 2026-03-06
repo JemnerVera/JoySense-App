@@ -276,15 +276,29 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
     return result;
   }, [ubicaciones, filteredNodes, ubicacionSearchTerm]);
 
-  // Obtener localizaciones únicas de los nodos filtrados
+  // Obtener localizaciones con sus nodos (permitiendo múltiples nodos por localización)
   const localizacionesDisponibles = useMemo(() => {
-    const localizacionesSet = new Set<string>();
+    const localizacionesMap = new Map<string, any>();
+    
     filteredNodes.forEach((node: any) => {
-      if (node.localizacion) {
-        localizacionesSet.add(node.localizacion);
+      if (node.localizacion && node.nodoid) {
+        // Usar clave compuesta: localización + nodoid para diferenciar nodos en la misma localización
+        const key = `${node.localizacion}__${node.nodoid}`;
+        if (!localizacionesMap.has(key)) {
+          localizacionesMap.set(key, {
+            localizacion: node.localizacion,
+            nodoid: node.nodoid,
+            nodo: node.nodo
+          });
+        }
       }
     });
-    return Array.from(localizacionesSet).sort();
+    
+    // Retornar como array ordenado por nombre de localización, luego por nodoid
+    return Array.from(localizacionesMap.values()).sort((a, b) => {
+      const nameCompare = a.localizacion.localeCompare(b.localizacion);
+      return nameCompare !== 0 ? nameCompare : a.nodoid - b.nodoid;
+    });
   }, [filteredNodes]);
 
   // Filtrar localizaciones por término de búsqueda
@@ -292,8 +306,9 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
     if (!nodoSearchTerm.trim()) {
       return localizacionesDisponibles;
     }
-    return localizacionesDisponibles.filter((localizacion: string) =>
-      localizacion.toLowerCase().includes(nodoSearchTerm.toLowerCase())
+    return localizacionesDisponibles.filter((loc: any) =>
+      loc.localizacion.toLowerCase().includes(nodoSearchTerm.toLowerCase()) ||
+      loc.nodo.toLowerCase().includes(nodoSearchTerm.toLowerCase())
     );
   }, [localizacionesDisponibles, nodoSearchTerm]);
 
@@ -1349,12 +1364,14 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
                         </div>
                       ) : filteredLocalizacionesBySearch.length > 0 ? (
-                        filteredLocalizacionesBySearch.map((localizacion: string) => {
-                          // Obtener el primer nodo que tiene esta localización para poder seleccionarlo
-                          const nodoConLocalizacion = filteredNodes.find((n: any) => n.localizacion === localizacion);
+                        filteredLocalizacionesBySearch.map((loc: any) => {
+                          // Buscar el nodo específico que corresponde a esta localización + nodoid
+                          const nodoConLocalizacion = filteredNodes.find((n: any) => 
+                            n.localizacion === loc.localizacion && n.nodoid === loc.nodoid
+                          );
                           return (
                             <button
-                              key={localizacion}
+                              key={`${loc.localizacion}__${loc.nodoid}`}
                               onClick={() => {
                                 if (nodoConLocalizacion) {
                                   setSelectedNode(nodoConLocalizacion);
@@ -1371,12 +1388,13 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                                 setNodoSearchTerm('');
                               }}
                               className={`w-full text-left px-3 py-2 text-base transition-colors font-mono tracking-wider ${
-                                selectedNode?.localizacion === localizacion
+                                selectedNode?.nodoid === loc.nodoid && selectedNode?.localizacion === loc.localizacion
                                   ? 'bg-blue-500 text-white'
                                   : 'text-gray-700 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-800'
                               }`}
                             >
-                              {localizacion}
+                              <div>{loc.localizacion}</div>
+                              <div className="text-xs text-gray-500 dark:text-neutral-400">{loc.nodo}</div>
                             </button>
                           );
                         })
