@@ -417,10 +417,10 @@ export const useTableDataManagement = () => {
         return;
       }
       
-      // Para tablas grandes (metricasensor, localizacion), no aplicar límite para obtener todos los registros
+      // Para tablas grandes (metricasensor, localizacion, asociacion), no aplicar límite para obtener todos los registros
       // Para tablas muy grandes (sensor_valor_error con 3M+ registros), usar límite bajo
       let dataResponse;
-      const tablesWithNoLimit = ['metricasensor', 'localizacion'];
+      const tablesWithNoLimit = ['metricasensor', 'localizacion', 'asociacion'];
       const tablesWithLowLimit = ['sensor_valor_error', 'audit_log_umbral', 'msg_outbox', 'auth_outbox'];
       
       try {
