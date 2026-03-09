@@ -164,17 +164,17 @@ export const MassiveLocalizacionForm = memo(function MassiveLocalizacionForm({
 
   const sortSensores = (sensores: any[]): any[] => {
     return [...sensores].sort((a, b) => {
-      const depthA = extractDepth(a.label);
-      const depthB = extractDepth(b.label);
-      
-      if (depthA !== depthB) {
-        return depthA - depthB;
-      }
-      
       const tipoA = getTipoDisplay(a.fullData || {});
       const tipoB = getTipoDisplay(b.fullData || {});
       
-      return tipoA.localeCompare(tipoB);
+      if (tipoA !== tipoB) {
+        return tipoA.localeCompare(tipoB);
+      }
+      
+      const depthA = extractDepth(a.label);
+      const depthB = extractDepth(b.label);
+      
+      return depthA - depthB;
     });
   };
 
