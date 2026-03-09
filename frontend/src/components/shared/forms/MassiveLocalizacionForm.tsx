@@ -51,6 +51,7 @@ export const MassiveLocalizacionForm = memo(function MassiveLocalizacionForm({
   const [loadingOptions, setLoadingOptions] = useState<boolean>(false);
   const [sensoresMap, setSensoresMap] = useState<Map<number, string>>(new Map());
   const [metricasMap, setMetricasMap] = useState<Map<number, string>>(new Map());
+  const [sensoresFullData, setSensoresFullData] = useState<Map<number, any>>(new Map());
 
   // ============================================================================
   // FORM HOOK
@@ -101,14 +102,21 @@ export const MassiveLocalizacionForm = memo(function MassiveLocalizacionForm({
         setLoadingOptions(true);
         logger.info(`Cargando sensores y métricas disponibles`);
 
-        const [allSensores, allMetricas] = await Promise.all([
+        const [allSensores, allMetricas, allTipos] = await Promise.all([
           JoySenseService.getTableData('sensor', 1000),
-          JoySenseService.getTableData('metrica', 1000)
+          JoySenseService.getTableData('metrica', 1000),
+          JoySenseService.getTableData('tipo', 1000)
         ]);
+
+        const tiposMap = new Map(allTipos.map((t: any) => [t.tipoid, t.tipo]));
 
         const sensoresOpts = allSensores.map((s: any) => ({
           value: s.sensorid,
-          label: s.sensor
+          label: s.sensor,
+          fullData: {
+            ...s,
+            tipoName: tiposMap.get(s.tipoid) || 'Sin tipo'
+          }
         }));
 
         const metricasOpts = allMetricas.map((m: any) => ({
@@ -116,16 +124,20 @@ export const MassiveLocalizacionForm = memo(function MassiveLocalizacionForm({
           label: m.metrica
         }));
 
+        const sortedSensores = sortSensores(sensoresOpts);
+
         const sMap = new Map(allSensores.map((s: any) => [s.sensorid, s.sensor]));
         const mMap = new Map(allMetricas.map((m: any) => [m.metricaid, m.metrica]));
+        const sFullDataMap = new Map(allSensores.map((s: any) => [s.sensorid, s]));
 
-        setSensoresOptions(sensoresOpts);
+        setSensoresOptions(sortedSensores);
         setMetricasOptions(metricasOpts);
         setSensoresMap(sMap);
         setMetricasMap(mMap);
+        setSensoresFullData(sFullDataMap);
         setLoadingOptions(false);
 
-        logger.info(`Sensores disponibles: ${sensoresOpts.length}, Métricas disponibles: ${metricasOpts.length}`);
+        logger.info(`Sensores disponibles: ${sortedSensores.length}, Métricas disponibles: ${metricasOpts.length}`);
       } catch (error) {
         logger.error('Error cargando opciones:', error);
         setSensoresOptions([]);
@@ -136,6 +148,35 @@ export const MassiveLocalizacionForm = memo(function MassiveLocalizacionForm({
 
     loadOptions();
   }, []);
+
+  // ============================================================================
+  // UTILITY FUNCTIONS
+  // ============================================================================
+
+  const extractDepth = (sensorName: string): number => {
+    const match = sensorName.match(/(\d+)\s*cm/i);
+    return match ? parseInt(match[1]) : Infinity;
+  };
+
+  const getTipoDisplay = (sensorData: any): string => {
+    return sensorData?.tipoName || '';
+  };
+
+  const sortSensores = (sensores: any[]): any[] => {
+    return [...sensores].sort((a, b) => {
+      const depthA = extractDepth(a.label);
+      const depthB = extractDepth(b.label);
+      
+      if (depthA !== depthB) {
+        return depthA - depthB;
+      }
+      
+      const tipoA = getTipoDisplay(a.fullData || {});
+      const tipoB = getTipoDisplay(b.fullData || {});
+      
+      return tipoA.localeCompare(tipoB);
+    });
+  };
 
   // ============================================================================
   // HANDLERS
@@ -297,24 +338,28 @@ export const MassiveLocalizacionForm = memo(function MassiveLocalizacionForm({
                     {sensoresOptions.length === 0 ? (
                       <div className="text-gray-500 dark:text-neutral-400 text-sm">No hay sensores disponibles</div>
                     ) : (
-                      sensoresOptions.map((sensor) => (
-                        <label key={sensor.value} className="flex items-center mb-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-neutral-700 p-1 rounded">
-                          <input
-                            type="checkbox"
-                            checked={selectedSensorIds.includes(sensor.value)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedSensorIds([...selectedSensorIds, sensor.value]);
-                              } else {
-                                setSelectedSensorIds(selectedSensorIds.filter(id => id !== sensor.value));
-                              }
-                            }}
-                            disabled={loading}
-                            className="w-4 h-4 text-orange-500 rounded cursor-pointer"
-                          />
-                          <span className="ml-2 text-sm font-mono text-gray-700 dark:text-neutral-300">{sensor.label}</span>
-                        </label>
-                      ))
+                      sensoresOptions.map((sensor) => {
+                        const tipoDisplay = getTipoDisplay(sensor.fullData);
+                        const labelWithType = tipoDisplay ? `${sensor.label} - ${tipoDisplay}` : sensor.label;
+                        return (
+                          <label key={sensor.value} className="flex items-center mb-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-neutral-700 p-1 rounded">
+                            <input
+                              type="checkbox"
+                              checked={selectedSensorIds.includes(sensor.value)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedSensorIds([...selectedSensorIds, sensor.value]);
+                                } else {
+                                  setSelectedSensorIds(selectedSensorIds.filter(id => id !== sensor.value));
+                                }
+                              }}
+                              disabled={loading}
+                              className="w-4 h-4 text-orange-500 rounded cursor-pointer"
+                            />
+                            <span className="ml-2 text-sm font-mono text-gray-700 dark:text-neutral-300">{labelWithType}</span>
+                          </label>
+                        );
+                      })
                     )}
                   </div>
                   {selectedSensorIds.length > 0 && (
