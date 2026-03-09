@@ -703,7 +703,8 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
             </div>
           ) : (
             /* Formulario normal para otras tablas */
-            <NormalUpdateForm
+            <div className="space-y-4">
+              <NormalUpdateForm
                 config={config}
                 formData={formData}
                 formErrors={formErrors}
@@ -718,6 +719,34 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
                 ubicacionesData={relatedData.ubicacionesData}
                 themeColor={themeColor}
               />
+              {/* Botones de guardar y cancelar */}
+              <div className="flex gap-3 pt-4 justify-center">
+                <button
+                  onClick={handleUpdate}
+                  disabled={isSubmitting}
+                  className={`px-6 py-2 text-white rounded-lg font-mono font-bold tracking-wider transition-colors disabled:opacity-50 ${
+                    themeColor === 'red' 
+                      ? 'bg-red-500 hover:bg-red-600'
+                      : themeColor === 'blue'
+                      ? 'bg-blue-500 hover:bg-blue-600'
+                      : themeColor === 'green'
+                      ? 'bg-green-500 hover:bg-green-600'
+                      : themeColor === 'purple'
+                      ? 'bg-purple-500 hover:bg-purple-600'
+                      : 'bg-orange-500 hover:bg-orange-600'
+                  }`}
+                >
+                  {isSubmitting ? 'GUARDANDO...' : 'ACTUALIZAR'}
+                </button>
+                <button
+                  onClick={handleCancelSelection}
+                  disabled={isSubmitting}
+                  className="px-6 py-2 bg-gray-500 hover:bg-gray-600 disabled:bg-gray-400 text-white rounded-lg font-mono font-bold tracking-wider transition-colors"
+                >
+                  CANCELAR
+                </button>
+              </div>
+            </div>
           )}
 
         </div>
