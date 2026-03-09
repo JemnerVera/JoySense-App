@@ -1067,7 +1067,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
             {activeSubTab === 'update' && (
               <UpdateTab
                 tableName={selectedTable}
-                tableData={tableState.data}
+                tableData={tableData}
                 columns={uniqueColumns}
                 relatedData={relatedDataForStatus}
                 config={config}
