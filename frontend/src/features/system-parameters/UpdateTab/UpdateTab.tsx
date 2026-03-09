@@ -99,14 +99,14 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
       const ubicacionesRes = await JoySenseService.getTableData('carpeta_ubicacion', 1000);
       const ubicacionesData = Array.isArray(ubicacionesRes) ? ubicacionesRes : (ubicacionesRes as any)?.data || [];
       const ubicacionidsForCarpeta = ubicacionesData
-        .filter((u: any) => u.carpetaid === carpetaid && u.statusid === 1)
+        .filter((u: any) => u.carpetaid === carpetaid)
         .map((u: any) => u.ubicacionid);
 
       // Cargar carpeta_usuario
       const usuariosRes = await JoySenseService.getTableData('carpeta_usuario', 1000);
       const usuariosData = Array.isArray(usuariosRes) ? usuariosRes : (usuariosRes as any)?.data || [];
       const usuarioidesForCarpeta = usuariosData
-        .filter((u: any) => u.carpetaid === carpetaid && u.statusid === 1)
+        .filter((u: any) => u.carpetaid === carpetaid)
         .map((u: any) => u.usuarioid);
 
       setCarpetaRelatedData({
@@ -128,15 +128,15 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
       const localizacionesRes = await JoySenseService.getTableData('entidad_localizacion', 1000);
       const localizacionesData = Array.isArray(localizacionesRes) ? localizacionesRes : (localizacionesRes as any)?.data || [];
       
-      // Obtener SOLO las localizaciones ACTIVAS (statusid === 1) para mostrar en la UI
+      // Obtener todas las localizaciones para mostrar en la UI (incluyendo inactivas)
       const localizacionidsForEntidad = localizacionesData
-        .filter((l: any) => l.entidadid === entidadid && l.statusid === 1)
+        .filter((l: any) => l.entidadid === entidadid)
         .map((l: any) => l.localizacionid);
 
       console.log('[UpdateTab] loadEntidadRelatedData:', {
         entidadid,
         allLocalizaciones: localizacionesData.filter((l: any) => l.entidadid === entidadid),
-        activeLocalizacionids: localizacionidsForEntidad
+        localizacionids: localizacionidsForEntidad
       });
 
       setEntidadRelatedData({ localizacionids: localizacionidsForEntidad });
