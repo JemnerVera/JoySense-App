@@ -125,19 +125,20 @@ export const MassiveLocalizacionForm = memo(function MassiveLocalizacionForm({
         }));
 
         const sortedSensores = sortSensores(sensoresOpts);
+        const sortedMetricas = sortMetricas(metricasOpts);
 
         const sMap = new Map(allSensores.map((s: any) => [s.sensorid, s.sensor]));
         const mMap = new Map(allMetricas.map((m: any) => [m.metricaid, m.metrica]));
         const sFullDataMap = new Map(allSensores.map((s: any) => [s.sensorid, s]));
 
         setSensoresOptions(sortedSensores);
-        setMetricasOptions(metricasOpts);
+        setMetricasOptions(sortedMetricas);
         setSensoresMap(sMap);
         setMetricasMap(mMap);
         setSensoresFullData(sFullDataMap);
         setLoadingOptions(false);
 
-        logger.info(`Sensores disponibles: ${sortedSensores.length}, Métricas disponibles: ${metricasOpts.length}`);
+        logger.info(`Sensores disponibles: ${sortedSensores.length}, Métricas disponibles: ${sortedMetricas.length}`);
       } catch (error) {
         logger.error('Error cargando opciones:', error);
         setSensoresOptions([]);
@@ -176,6 +177,10 @@ export const MassiveLocalizacionForm = memo(function MassiveLocalizacionForm({
       
       return depthA - depthB;
     });
+  };
+
+  const sortMetricas = (metricas: any[]): any[] => {
+    return [...metricas].sort((a, b) => a.value - b.value);
   };
 
   // ============================================================================
