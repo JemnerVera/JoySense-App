@@ -113,12 +113,8 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
       return [];
     }
 
-    console.log(`[LocationSelector] Iniciando búsqueda con: "${inputValue}"`);
-
     try {
       const results = await JoySenseService.searchLocations(inputValue);
-      console.log(`[LocationSelector] Resultados del backend:`, results);
-      console.log(`[LocationSelector] Total de resultados: ${results.length}`);
       
       const mappedResults = results.map((loc: any) => ({
         value: `${loc.nodoid}|${loc.localizacionName}`, // Identificador único por ubicación
@@ -127,7 +123,6 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
         localizacionName: loc.localizacionName
       }));
       
-      console.log(`[LocationSelector] Opciones mapeadas:`, mappedResults);
       return mappedResults;
     } catch (error) {
       console.error('Error en búsqueda de localizaciones:', error);
