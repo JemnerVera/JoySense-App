@@ -3,15 +3,15 @@ import { JoySenseService } from '../../../services/backend-api';
 import { useLanguage } from '../../../contexts/LanguageContext';
 
 interface LocationOption {
-  value: number; // localizacionid
+  value: string; // nodoid|localizacionName (identificador único por ubicación)
   label: string; // Breadcrumb completo para mostrar en el dropdown: "País → Empresa → Fundo → Ubicación → Localización"
-  localizacionid: number;
-  localizacionNombre?: string; // Nombre de la localización para mostrar en el input
+  nodoid: number; // nodoid para identificar la ubicación
+  localizacionName: string; // Nombre de la localización
 }
 
 interface LocationSelectorProps {
-  value: number | null;
-  onChange: (localizacionid: number | null) => void;
+  value: string | null; // "nodoid|localizacionName"
+  onChange: (value: string | null) => void; // Retorna "nodoid|localizacionName"
   onNombreChange?: (nombre: string) => void;
   placeholder?: string;
   isRequired?: boolean;
@@ -113,16 +113,22 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
       return [];
     }
 
+    console.log(`[LocationSelector] Iniciando búsqueda con: "${inputValue}"`);
+
     try {
       const results = await JoySenseService.searchLocations(inputValue);
-      return results.map((loc: any) => ({
-        value: loc.localizacionid,
-        // Guardar el breadcrumb completo en el label para mostrarlo en el dropdown
-        // pero cuando se seleccione, guardaremos solo el nombre de la localización
-        label: loc.breadcrumb || `${loc.localizacion || 'Localización'} (${loc.localizacionid})`,
-        localizacionid: loc.localizacionid,
-        localizacionNombre: loc.localizacion // Guardar el nombre para usarlo después
+      console.log(`[LocationSelector] Resultados del backend:`, results);
+      console.log(`[LocationSelector] Total de resultados: ${results.length}`);
+      
+      const mappedResults = results.map((loc: any) => ({
+        value: `${loc.nodoid}|${loc.localizacionName}`, // Identificador único por ubicación
+        label: loc.breadcrumb || `${loc.localizacionName || 'Localización'} (nodoid: ${loc.nodoid})`,
+        nodoid: loc.nodoid,
+        localizacionName: loc.localizacionName
       }));
+      
+      console.log(`[LocationSelector] Opciones mapeadas:`, mappedResults);
+      return mappedResults;
     } catch (error) {
       console.error('Error en búsqueda de localizaciones:', error);
       return [];
@@ -206,10 +212,10 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
   // Manejar selección desde sugerencias
   const handleSelectSuggestion = (option: LocationOption) => {
     // Guardar solo el nombre de la localización, no el breadcrumb completo
-    const nombre = option.localizacionNombre || option.label.split(' → ').pop() || `Localización ${option.localizacionid}`;
+    const nombre = option.localizacionName;
     setSelectedLabel(nombre);
     setInputValue(nombre);
-    onChange(option.localizacionid);
+    onChange(option.value); // Pasar "nodoid|localizacionName"
     if (onNombreChange) {
       onNombreChange(nombre);
     }
@@ -230,6 +236,13 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
     if (inputRef.current) {
       inputRef.current.focus();
     }
+  };
+  
+  // Parsear value (que es "nodoid|localizacionName") para obtener el nombre de localización
+  const getLocalizacionNameFromValue = (val: string | null): string | null => {
+    if (!val) return null;
+    const parts = val.split('|');
+    return parts.length > 1 ? parts[1] : null;
   };
 
   // Manejar apertura del modal
@@ -383,7 +396,7 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
               ) : (
                 suggestions.map((option) => (
                   <button
-                    key={option.localizacionid}
+                    key={option.value}
                     type="button"
                     onClick={() => handleSelectSuggestion(option)}
                     className="w-full text-left px-3 py-2 text-sm text-gray-900 dark:text-white font-mono hover:bg-gray-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"

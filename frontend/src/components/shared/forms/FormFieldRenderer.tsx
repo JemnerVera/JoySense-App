@@ -373,10 +373,10 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
         </label>
         <LocationSelector
           value={formData[col.columnName] || null}
-          onChange={(localizacionid: number | null) => {
+          onChange={(value: string | null) => {
             const newFormData: any = {
               ...formData,
-              [col.columnName]: localizacionid
+              [col.columnName]: value
             };
             setFormData(newFormData);
           }}
@@ -535,10 +535,10 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
         </label>
         <LocationSelector
           value={formData[col.columnName] || null}
-          onChange={(localizacionid: number | null) => {
+          onChange={(value: string | null) => {
             const newFormData: any = {
               ...formData,
-              [col.columnName]: localizacionid
+              [col.columnName]: value
             };
             setFormData(newFormData);
           }}
