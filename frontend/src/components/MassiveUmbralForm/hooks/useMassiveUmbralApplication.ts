@@ -10,7 +10,7 @@ interface UseMassiveUmbralApplicationProps {
   selectedNodes: SelectedNode[];
   getUniqueOptionsForField: (field: string, filters?: any) => any[];
   localizacionesData?: any[];
-  onApply: (data: UmbralDataToApply[]) => void;
+  onApply: (data: UmbralDataToApply[]) => Promise<{ success: boolean; error?: string }>;
 }
 
 export const useMassiveUmbralApplication = ({
@@ -20,9 +20,11 @@ export const useMassiveUmbralApplication = ({
   localizacionesData,
   onApply
 }: UseMassiveUmbralApplicationProps) => {
-  const handleApply = () => {
+  const handleApply = async (): Promise<{ success: boolean; error?: string }> => {
     const selectedNodesData = selectedNodes.filter(node => node.selected);
-    if (selectedNodesData.length === 0) return;
+    if (selectedNodesData.length === 0) {
+      return { success: false, error: 'No hay nodos seleccionados' };
+    }
 
     const dataToApply: UmbralDataToApply[] = [];
 
@@ -89,7 +91,8 @@ export const useMassiveUmbralApplication = ({
       }
     }
 
-    onApply(dataToApply);
+    const result = await onApply(dataToApply);
+    return result;
   };
 
   return {

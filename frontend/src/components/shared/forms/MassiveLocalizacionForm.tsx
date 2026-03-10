@@ -274,7 +274,7 @@ export const MassiveLocalizacionForm = memo(function MassiveLocalizacionForm({
     localizacionName
   });
 
-  const { handleApply } = useMassiveLocalizacionApplication({
+  const { handleApply: handleApplyRaw } = useMassiveLocalizacionApplication({
     formData: {
       ...formData,
       sensoresMetricasData: combinacionesAgregadas
@@ -284,6 +284,26 @@ export const MassiveLocalizacionForm = memo(function MassiveLocalizacionForm({
     localizacionName,
     onApply
   });
+
+  const handleApply = useCallback(async () => {
+    try {
+      const result = await handleApplyRaw();
+      
+      if (result.success) {
+        setCombinacionesAgregadas([]);
+        setFormData({
+          nodoid: selectedNodo?.nodoid || null,
+          localizacionid: null,
+          sensoresMetricasData: []
+        });
+        setLocalizacionName('');
+        setSelectedSensorIds([]);
+        setSelectedMetricaIds([]);
+      }
+    } catch (error) {
+      logger.error('Error en handleApply:', error);
+    }
+  }, [handleApplyRaw, selectedNodo, setFormData]);
 
   // ============================================================================
   // CANCEL HANDLER

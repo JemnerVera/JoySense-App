@@ -4,7 +4,7 @@
 
 export interface MassiveUmbralFormProps {
   getUniqueOptionsForField: (field: string, filters?: any) => any[];
-  onApply: (data: any[]) => void;
+  onApply: (data: any[]) => Promise<{ success: boolean; error?: string }>;
   onCancel: () => void;
   loading?: boolean;
   paisSeleccionado?: string;

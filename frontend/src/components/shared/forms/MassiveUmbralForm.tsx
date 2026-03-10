@@ -2,7 +2,7 @@
 // IMPORTS
 // ============================================================================
 
-import React, { useState, useEffect, useMemo, memo } from 'react';
+import React, { useState, useEffect, useMemo, memo, useCallback } from 'react';
 import { SelectWithPlaceholder } from '../../shared/selectors';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { JoySenseService } from '../../../services/backend-api';
@@ -132,13 +132,30 @@ export const MassiveUmbralForm = memo(function MassiveUmbralForm({
   // APPLICATION HOOK
   // ============================================================================
   
-  const { handleApply } = useMassiveUmbralApplication({
+  const { handleApply: handleApplyRaw } = useMassiveUmbralApplication({
     formData,
     selectedNodes,
     getUniqueOptionsForField,
     localizacionesData,
     onApply
   });
+
+  const handleApply = useCallback(async () => {
+    try {
+      const result = await handleApplyRaw();
+      
+      if (result.success) {
+        setFormData({ fundoid: null, entidadid: null, metricasData: [] });
+        setTempSelectedNodes([]);
+        setReplicateMode(false);
+        setSourceNodeId(null);
+        setSourceUmbrales([]);
+        setSelectedUmbralesToReplicate(new Map());
+      }
+    } catch (error) {
+      logger.error('Error en handleApply:', error);
+    }
+  }, [handleApplyRaw, setFormData]);
 
   // ============================================================================
   // REPLICATION STATE (To be extracted to hook in future)

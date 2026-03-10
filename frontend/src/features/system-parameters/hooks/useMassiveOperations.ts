@@ -25,10 +25,10 @@ export const useMassiveOperations = ({
   setMessage
 }: UseMassiveOperationsProps) => {
 
-  const handleMassiveUmbralApply = useCallback(async (dataToApply: any[]) => {
+  const handleMassiveUmbralApply = useCallback(async (dataToApply: any[]): Promise<{ success: boolean; error?: string }> => {
     if (!dataToApply || dataToApply.length === 0) {
       setMessage({ type: 'warning', text: 'No hay datos para aplicar' });
-      return;
+      return { success: false, error: 'No hay datos para aplicar' };
     }
 
     try {
@@ -71,6 +71,7 @@ export const useMassiveOperations = ({
         // Recargar datos
         loadData();
         loadTableData(selectedTable);
+        return { success: true };
       } else {
         setMessage({ 
           type: 'warning', 
@@ -79,12 +80,15 @@ export const useMassiveOperations = ({
         // Recargar datos incluso si hay errores parciales
         loadData();
         loadTableData(selectedTable);
+        return { success: errorCount === 0, error: errorCount > 0 ? `${errorCount} error(es)` : undefined };
       }
     } catch (error: any) {
+      const errorMsg = error.message || 'Error desconocido';
       setMessage({ 
         type: 'warning', 
-        text: `Error al aplicar datos: ${error.message || 'Error desconocido'}` 
+        text: `Error al aplicar datos: ${errorMsg}` 
       });
+      return { success: false, error: errorMsg };
     }
   }, [insertRow, loadData, loadTableData, selectedTable, setMessage]);
 

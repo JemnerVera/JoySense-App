@@ -12,7 +12,7 @@ interface UseMassiveLocalizacionApplicationProps {
   selectedNodo: SelectedNodo | null;
   selectedLocalizacion: SelectedLocalizacion | null;
   localizacionName: string;
-  onApply: (data: LocalizacionDataToApply[]) => void;
+  onApply: (data: LocalizacionDataToApply[]) => Promise<{ success: boolean; error?: string }>;
 }
 
 export const useMassiveLocalizacionApplication = ({
@@ -22,12 +22,12 @@ export const useMassiveLocalizacionApplication = ({
   localizacionName,
   onApply
 }: UseMassiveLocalizacionApplicationProps) => {
-  const handleApply = useCallback(async () => {
+  const handleApply = useCallback(async (): Promise<{ success: boolean; error?: string }> => {
     try {
       // Validar datos requeridos
       if (!selectedNodo || !localizacionName) {
         logger.error('Faltan datos requeridos para aplicar localizaciones masivas');
-        return;
+        return { success: false, error: 'Faltan datos requeridos' };
       }
 
       // Obtener sensores y métricas seleccionados
@@ -35,7 +35,7 @@ export const useMassiveLocalizacionApplication = ({
       
       if (selectedSensoresMetricas.length === 0) {
         logger.error('No hay sensores y métricas seleccionados');
-        return;
+        return { success: false, error: 'No hay sensores y métricas seleccionados' };
       }
 
       // Construir datos a aplicar
@@ -49,10 +49,11 @@ export const useMassiveLocalizacionApplication = ({
       }));
 
       logger.info(`Aplicando ${dataToApply.length} localizaciones masivas`, dataToApply);
-      onApply(dataToApply);
+      const result = await onApply(dataToApply);
+      return result;
     } catch (error) {
       logger.error('Error al aplicar localizaciones masivas:', error);
-      throw error;
+      return { success: false, error: error instanceof Error ? error.message : 'Error desconocido' };
     }
   }, [formData, selectedNodo, localizacionName, onApply]);
 
