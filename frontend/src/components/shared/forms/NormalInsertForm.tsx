@@ -20,6 +20,7 @@ import { CriticidadFormFields } from './table-specific/CriticidadFormFields';
 import { ReglaFormFields } from './table-specific/ReglaFormFields';
 import { ReglaPerfilFormFields } from './table-specific/ReglaPerfilFormFields';
 import { ReglaObjetoFormFields } from './table-specific/ReglaObjetoFormFields';
+import { AsociacionFormFields } from './table-specific/AsociacionFormFields';
 import PerfilGeografiaPermisoForm from '../../PerfilGeografiaPermisoForm';
 import { FormFieldRenderer } from './FormFieldRenderer';
 import { ContextualRow } from './ContextualRow';
@@ -767,7 +768,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
             getUniqueOptionsForField={getUniqueOptionsForField}
             themeColor="orange"
           />
-        ) : ['entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica', 'umbral', 'regla', 'regla_objeto', 'contacto', 'localizacion', 'origen', 'fuente', 'usuario_canal', 'perfil', 'usuarioperfil', 'regla_perfil', 'criticidad'].includes(selectedTable) ? (
+) : ['entidad', 'tipo', 'nodo', 'sensor', 'metricasensor', 'metrica', 'umbral', 'regla', 'regla_objeto', 'contacto', 'localizacion', 'origen', 'fuente', 'usuario_canal', 'perfil', 'usuarioperfil', 'regla_perfil', 'criticidad', 'asociacion'].includes(selectedTable) ? (
           <div>
             {visibleColumns.length === 0 && !loading ? (
               <LoadingSpinner message="Cargando columnas del formulario..." />
@@ -782,6 +783,15 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
                 selectedContactType={selectedContactType}
                 countryCodes={countryCodes}
                 codigotelefonosData={codigotelefonosData}
+              />
+            ) : selectedTable === 'asociacion' ? (
+              <AsociacionFormFields
+                visibleColumns={visibleColumns}
+                formData={formData}
+                setFormData={setFormData}
+                updateField={updateField}
+                getThemeColor={getThemeColor}
+                getUniqueOptionsForField={getUniqueOptionsForField}
               />
             ) : selectedTable === 'usuario_canal' ? (
               <UsuarioCanalFormFields

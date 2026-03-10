@@ -790,7 +790,8 @@ const searchLocations = async (supabase, query) => {
         )
       )
     `)
-    .limit(1000);
+    .eq('statusid', 1)
+    .limit(5000);
   
   if (locError) throw locError;
   
@@ -831,7 +832,134 @@ const searchLocations = async (supabase, query) => {
       localizacion: loc.localizacion,
       breadcrumb: breadcrumb
     };
-  });
+  })
+  // Deduplicar por nombre de localización (queda solo el primero encontrado)
+  .filter((loc, index, self) => 
+    index === self.findIndex((t) => t.localizacion === loc.localizacion)
+  );
+};
+
+/**
+ * Obtiene todas las localizaciones con el mismo nombre, incluyendo sensor, tipo y métrica
+ * Útil para mostrar en el grid de asociación cuando se selecciona una localización
+ * Sin usar FK relationships (ya que no existen en la BD)
+ */
+const getLocalizacionesByName = async (supabase, nombre) => {
+  if (!nombre) return [];
+  
+  try {
+    logger.info(`[getLocalizacionesByName] Buscando localizaciones con nombre: "${nombre}"`);
+    
+    const { data: localizaciones, error: locError } = await supabase
+      .schema(dbSchema)
+      .from('localizacion')
+      .select('localizacionid, localizacion, sensorid, metricaid')
+      .eq('localizacion', nombre)
+      .eq('statusid', 1)
+      .order('localizacionid', { ascending: true });
+    
+    if (locError) {
+      logger.error(`[getLocalizacionesByName] Error obteniendo localizaciones:`, locError);
+      throw locError;
+    }
+    
+    if (!localizaciones || localizaciones.length === 0) {
+      logger.info(`[getLocalizacionesByName] No se encontraron localizaciones con nombre: "${nombre}"`);
+      return [];
+    }
+    
+    logger.info(`[getLocalizacionesByName] Encontradas ${localizaciones.length} localizaciones`);
+    
+    const sensorIds = [...new Set(localizaciones.map(l => l.sensorid).filter(id => id != null))];
+    const metricaIds = [...new Set(localizaciones.map(l => l.metricaid).filter(id => id != null))];
+    
+    logger.info(`[getLocalizacionesByName] Obteniendo datos de ${sensorIds.length} sensores y ${metricaIds.length} métricas`);
+    
+    let sensoresMap = new Map();
+    let metricasMap = new Map();
+    
+    if (sensorIds.length > 0) {
+      const { data: sensores, error: sensoresError } = await supabase
+        .schema(dbSchema)
+        .from('sensor')
+        .select('sensorid, sensor, tipoid')
+        .in('sensorid', sensorIds)
+        .eq('statusid', 1);
+      
+      if (sensoresError) {
+        logger.error(`[getLocalizacionesByName] Error obteniendo sensores:`, sensoresError);
+        throw sensoresError;
+      }
+      
+      const tipoIds = [...new Set((sensores || []).map(s => s.tipoid).filter(id => id != null))];
+      let tiposMap = new Map();
+      
+      if (tipoIds.length > 0) {
+        const { data: tipos, error: tiposError } = await supabase
+          .schema(dbSchema)
+          .from('tipo')
+          .select('tipoid, tipo')
+          .in('tipoid', tipoIds)
+          .eq('statusid', 1);
+        
+        if (tiposError) {
+          logger.error(`[getLocalizacionesByName] Error obteniendo tipos:`, tiposError);
+          throw tiposError;
+        }
+        
+        (tipos || []).forEach(t => tiposMap.set(t.tipoid, t));
+      }
+      
+      (sensores || []).forEach(s => {
+        const tipo = tiposMap.get(s.tipoid);
+        sensoresMap.set(s.sensorid, {
+          sensorid: s.sensorid,
+          sensor: s.sensor,
+          tipoid: s.tipoid,
+          tipoNombre: tipo?.tipo || null
+        });
+      });
+    }
+    
+    if (metricaIds.length > 0) {
+      const { data: metricas, error: metricasError } = await supabase
+        .schema(dbSchema)
+        .from('metrica')
+        .select('metricaid, metrica, unidad')
+        .in('metricaid', metricaIds)
+        .eq('statusid', 1);
+      
+      if (metricasError) {
+        logger.error(`[getLocalizacionesByName] Error obteniendo métricas:`, metricasError);
+        throw metricasError;
+      }
+      
+      (metricas || []).forEach(m => metricasMap.set(m.metricaid, m));
+    }
+    
+    const resultado = localizaciones.map(loc => {
+      const sensorData = sensoresMap.get(loc.sensorid);
+      const metricaData = metricasMap.get(loc.metricaid);
+      
+      return {
+        localizacionid: loc.localizacionid,
+        localizacion: loc.localizacion,
+        sensorid: loc.sensorid,
+        sensorNombre: sensorData?.sensor || null,
+        tipoid: sensorData?.tipoid || null,
+        tipoNombre: sensorData?.tipoNombre || null,
+        metricaid: loc.metricaid,
+        metricaNombre: metricaData?.metrica || null,
+        metricaUnidad: metricaData?.unidad || null
+      };
+    });
+    
+    logger.info(`[getLocalizacionesByName] Retornando ${resultado.length} localizaciones con datos completos`);
+    return resultado;
+  } catch (error) {
+    logger.error(`[getLocalizacionesByName] Error en getLocalizacionesByName:`, error);
+    throw error;
+  }
 };
 
 module.exports = {
@@ -866,5 +994,6 @@ module.exports = {
   createLocalizacion,
   updateLocalizacion,
   getNodosConLocalizacionDashboard,
-  searchLocations
+  searchLocations,
+  getLocalizacionesByName
 };

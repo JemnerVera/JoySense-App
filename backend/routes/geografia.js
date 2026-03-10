@@ -81,5 +81,6 @@ router.put('/localizacion/:id', geografiaController.putLocalizacion);
 // ============================================================================
 router.get('/nodos-con-localizacion', geografiaController.getNodosConLocalizacionDashboard);
 router.get('/locations/search', geografiaController.searchLocations);
+router.get('/localizaciones/by-name', geografiaController.getLocalizacionesByName);
 
 module.exports = router;

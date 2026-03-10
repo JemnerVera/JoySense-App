@@ -376,3 +376,17 @@ exports.searchLocations = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+exports.getLocalizacionesByName = async (req, res) => {
+  try {
+    const { nombre } = req.query;
+    if (!nombre) {
+      return res.status(400).json({ error: 'El parámetro nombre es requerido' });
+    }
+    const result = await geografiaService.getLocalizacionesByName(getSupabase(req), nombre);
+    res.json(result);
+  } catch (error) {
+    logger.error('Error en getLocalizacionesByName:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
