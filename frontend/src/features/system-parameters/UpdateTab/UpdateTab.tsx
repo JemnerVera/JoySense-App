@@ -70,7 +70,14 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
   const [carpetaRelatedData, setCarpetaRelatedData] = useState<{ ubicacionids: number[]; usuarioids: number[] }>({ ubicacionids: [], usuarioids: [] });
   const [entidadRelatedData, setEntidadRelatedData] = useState<{ localizacionids: number[] }>({ localizacionids: [] });
   const [loadingRelated, setLoadingRelated] = useState(false);
+  const [optimisticTableData, setOptimisticTableData] = useState<any[]>(tableData);
+  const [updatingRowId, setUpdatingRowId] = useState<string | null>(null);
   const { showModal } = useModal();
+  
+  // Sincronizar optimisticTableData cuando cambia tableData
+  useEffect(() => {
+    setOptimisticTableData(tableData);
+  }, [tableData]);
   
   // Sincronizar selectedRow cuando cambia initialSelectedRow
   useEffect(() => {
@@ -151,12 +158,12 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
   // Para usuarioperfil: agrupar datos por usuarioid y agregar columna "Perfil"
   const processedTableData = useMemo(() => {
     if (tableName !== 'usuarioperfil') {
-      return tableData;
+      return optimisticTableData;
     }
 
     // Agrupar por usuarioid
     const groupedByUser: Record<number, any[]> = {};
-    tableData.forEach((row: any) => {
+    optimisticTableData.forEach((row: any) => {
       const usuarioid = row.usuarioid;
       if (!groupedByUser[usuarioid]) {
         groupedByUser[usuarioid] = [];
@@ -214,7 +221,7 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
     });
     
     return sortedGroupedRows;
-  }, [tableData, tableName, relatedData.perfilesData]);
+  }, [optimisticTableData, tableName, relatedData.perfilesData]);
 
   // Para usuarioperfil: agregar columna "Perfil"
   const processedColumns = useMemo(() => {
@@ -275,7 +282,7 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
     formErrors,
     isSubmitting,
     updateFormField,
-    handleUpdate,
+    handleUpdate: originalHandleUpdate,
     handleCancel,
     validateForm,
     revertChanges
@@ -303,6 +310,63 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
       setOriginalFormData({});
     }
   });
+
+  // Función para manejar actualización con optimismo
+  const handleUpdateWithOptimism = useCallback(async (updateFn: () => Promise<void>) => {
+    if (!selectedRow) return;
+
+    const primaryKeyValue = getPrimaryKeyValue(selectedRow);
+    const primaryKeyString = typeof primaryKeyValue === 'string' ? primaryKeyValue : JSON.stringify(primaryKeyValue);
+    
+    // Guardar la fila original para posible reversión
+    const originalRow = { ...selectedRow };
+    
+    // Actualizar la tabla de forma optimista con formData
+    setUpdatingRowId(primaryKeyString);
+    setOptimisticTableData(prevData => 
+      prevData.map(row => {
+        const rowKeyValue = getPrimaryKeyValue(row);
+        const rowKeyString = typeof rowKeyValue === 'string' ? rowKeyValue : JSON.stringify(rowKeyValue);
+        
+        if (rowKeyString === primaryKeyString) {
+          return {
+            ...row,
+            ...formData,
+            datemodified: new Date().toISOString(),
+            usermodifiedid: user?.user_metadata?.usuarioid || 1
+          };
+        }
+        return row;
+      })
+    );
+
+    try {
+      // Ejecutar la actualización al servidor
+      await updateFn();
+      // Si es exitoso, mantener los cambios optimistas
+      setUpdatingRowId(null);
+    } catch (error) {
+      // Si falla, revertir a la fila original
+      setOptimisticTableData(prevData =>
+        prevData.map(row => {
+          const rowKeyValue = getPrimaryKeyValue(row);
+          const rowKeyString = typeof rowKeyValue === 'string' ? rowKeyValue : JSON.stringify(rowKeyValue);
+          
+          if (rowKeyString === primaryKeyString) {
+            return originalRow;
+          }
+          return row;
+        })
+      );
+      setUpdatingRowId(null);
+      throw error;
+    }
+  }, [selectedRow, getPrimaryKeyValue, formData, user]);
+
+  // Wrapper para handleUpdate que incluya actualización optimista
+  const handleUpdate = useCallback(async () => {
+    await handleUpdateWithOptimism(() => originalHandleUpdate());
+  }, [handleUpdateWithOptimism, originalHandleUpdate]);
 
   // Sincronizar carpetaRelatedData a formData cuando se carga (para que handleUpdate tenga ubicacionids y usuarioids)
   useEffect(() => {
@@ -802,6 +866,7 @@ export const UpdateTab: React.FC<UpdateTabProps> = ({
                 loading={false}
                 themeColor={themeColor}
                 tableName={tableName}
+                updatingRowId={updatingRowId}
               />
 
               {/* Paginación */}

@@ -19,6 +19,7 @@ interface UpdateTableProps {
   loading?: boolean;
   themeColor?: 'orange' | 'red' | 'blue' | 'green' | 'purple' | 'cyan';
   tableName?: string;
+  updatingRowId?: string | null;
 }
 
 export const UpdateTable: React.FC<UpdateTableProps> = ({
@@ -29,7 +30,8 @@ export const UpdateTable: React.FC<UpdateTableProps> = ({
   onRowClick,
   loading = false,
   themeColor = 'orange',
-  tableName
+  tableName,
+  updatingRowId = null
 }) => {
   const { t } = useLanguage();
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
@@ -241,22 +243,28 @@ export const UpdateTable: React.FC<UpdateTableProps> = ({
                   : `row-${index}`;
               }
               
+              // Verificar si esta fila se está actualizando
+              const isUpdating = updatingRowId === rowKey;
+              
               return (
                 <tr
                   key={rowKey}
-                  className={isSelected 
-                    ? themeColor === 'red' 
-                      ? 'bg-red-100 dark:bg-red-900/20' 
-                      : themeColor === 'blue'
-                      ? 'bg-blue-100 dark:bg-blue-900/20'
-                      : themeColor === 'green'
-                      ? 'bg-green-100 dark:bg-green-900/20'
-                      : themeColor === 'purple'
-                      ? 'bg-purple-100 dark:bg-purple-900/20'
-                      : themeColor === 'cyan'
-                      ? 'bg-cyan-100 dark:bg-cyan-900/20'
-                      : 'bg-orange-100 dark:bg-orange-900/20'
-                    : 'bg-white dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800'
+                  className={
+                    isUpdating
+                      ? 'bg-yellow-50 dark:bg-yellow-900/20 opacity-70 animate-pulse border-l-4 border-yellow-500'
+                      : isSelected 
+                      ? themeColor === 'red' 
+                        ? 'bg-red-100 dark:bg-red-900/20' 
+                        : themeColor === 'blue'
+                        ? 'bg-blue-100 dark:bg-blue-900/20'
+                        : themeColor === 'green'
+                        ? 'bg-green-100 dark:bg-green-900/20'
+                        : themeColor === 'purple'
+                        ? 'bg-purple-100 dark:bg-purple-900/20'
+                        : themeColor === 'cyan'
+                        ? 'bg-cyan-100 dark:bg-cyan-900/20'
+                        : 'bg-orange-100 dark:bg-orange-900/20'
+                      : 'bg-white dark:bg-neutral-900 border-b border-gray-200 dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-800'
                   }
                 >
                   {/* Checkbox */}
