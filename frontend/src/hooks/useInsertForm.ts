@@ -1186,12 +1186,12 @@ setIsSubmitting(false);
       
       // Caso especial para tabla 'asociacion': crear múltiples registros (uno por cada dispositivo en el grid)
       if (tableName === 'asociacion' && formData._dispositivosGrid) {
-        const dispositivosGrid = formData._dispositivosGrid as Array<{id: string, id_device: string, statusid: number, activo: boolean}>;
-        const localizacionid = formData.localizacionid;
-        
-        if (!localizacionid) {
-          throw new Error('Debe seleccionar una localización');
-        }
+        const dispositivosGrid = formData._dispositivosGrid as Array<{
+          id: string;
+          localizacionid: number;
+          id_device: string;
+          activo: boolean;
+        }>;
         
         if (!dispositivosGrid || dispositivosGrid.length === 0) {
           throw new Error('Debe agregar al menos un dispositivo');
@@ -1204,14 +1204,21 @@ setIsSubmitting(false);
           throw new Error('Debe ingresar al menos un ID de dispositivo válido');
         }
         
+        logger.info('[useInsertForm] Preparando inserción de asociaciones', {
+          dispositivosCount: dispositivosGrid.length,
+          devicesWithIdCount: devicesWithId.length,
+          localizacionidsEnGrid: devicesWithId.map(d => d.localizacionid),
+          idsDispositivos: devicesWithId.map(d => d.id_device)
+        });
+        
         // Obtener usuarioid del usuario autenticado para campos de auditoría
         const currentUserId = await getUsuarioidFromUser(user);
         const userId = currentUserId || 1;
         const now = new Date().toISOString();
         
-        // Crear un registro por cada dispositivo
+        // Crear un registro por cada dispositivo CON SU PROPIO localizacionid
         const recordsToInsert = devicesWithId.map(d => ({
-          localizacionid: localizacionid,
+          localizacionid: d.localizacionid,
           id_device: d.id_device.trim(),
           statusid: d.activo ? 1 : 0,
           usercreatedid: userId,
@@ -1219,6 +1226,11 @@ setIsSubmitting(false);
           usermodifiedid: userId,
           datemodified: now
         }));
+        
+        logger.info('[useInsertForm] Records a insertar:', {
+          count: recordsToInsert.length,
+          records: recordsToInsert
+        });
         
         // Insertar múltiples registros
         const results = [];
@@ -1230,6 +1242,11 @@ setIsSubmitting(false);
             throw new Error(`Error al insertar dispositivo ${record.id_device}: ${result.error || 'Error desconocido'}`);
           }
         }
+        
+        logger.info('[useInsertForm] Inserciones completadas:', {
+          successCount: results.length,
+          totalCount: recordsToInsert.length
+        });
         
         setIsSubmitting(false);
         setMessage?.({ type: 'success', text: `Se crearon ${results.length} asociacion(es) correctamente` });
