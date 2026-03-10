@@ -758,9 +758,40 @@ const _getNodosConLocalizacionDashboardFallback = async (supabase, { limit, fund
 
 /**
  * Búsqueda global de localizaciones
+ * Usa RPC con DISTINCT para evitar duplicados cuando hay múltiples sensores/métricas por localización
  */
 const searchLocations = async (supabase, query) => {
   if (!query || query.length < 2) return [];
+  
+  logger.info(`[searchLocations] Iniciando búsqueda con query: "${query}"`);
+  
+  try {
+    // Usar RPC con DISTINCT para obtener solo una fila por localizacionid
+    const { data: result, error } = await supabase.rpc('search_localizaciones', {
+      search_query: query
+    });
+    
+    if (error) {
+      logger.warn(`[searchLocations] RPC no disponible, fallback a query normal:`, error);
+      return await _searchLocationsWithoutRpc(supabase, query);
+    }
+    
+    logger.info(`[searchLocations] RPC devolvió: ${(result || []).length} localizaciones`);
+    logger.debug(`[searchLocations] Resultado:`, result);
+    return result || [];
+    
+  } catch (err) {
+    logger.warn(`[searchLocations] Error en RPC, usando fallback:`, err);
+    return await _searchLocationsWithoutRpc(supabase, query);
+  }
+};
+
+/**
+ * Fallback sin RPC: búsqueda con filtrado en JavaScript
+ * Agrupa por nodoid para devolver solo un resultado por ubicación
+ */
+const _searchLocationsWithoutRpc = async (supabase, query) => {
+  logger.info(`[_searchLocationsWithoutRpc] Iniciando búsqueda fallback con query: "${query}"`);
   
   const { data: localizaciones, error: locError } = await supabase
     .schema(dbSchema)
@@ -768,7 +799,26 @@ const searchLocations = async (supabase, query) => {
     .select(`
       localizacionid,
       localizacion,
-      nodo:nodoid(
+      nodoid,
+      sensorid,
+      metricaid
+    `)
+    .eq('statusid', 1)
+    .limit(5000);
+  
+  if (locError) throw locError;
+  
+  logger.info(`[_searchLocationsWithoutRpc] Total filas obtenidas del DB: ${(localizaciones || []).length}`);
+  
+  // Obtener datos de nodos en un solo query para mejor rendimiento
+  const nodoIds = [...new Set((localizaciones || []).map(l => l.nodoid).filter(id => id != null))];
+  let nodosMap = new Map();
+  
+  if (nodoIds.length > 0) {
+    const { data: nodos } = await supabase
+      .schema(dbSchema)
+      .from('nodo')
+      .select(`
         nodoid,
         nodo,
         ubicacionid,
@@ -788,55 +838,71 @@ const searchLocations = async (supabase, query) => {
             )
           )
         )
-      )
-    `)
-    .eq('statusid', 1)
-    .limit(5000);
-  
-  if (locError) throw locError;
+      `)
+      .eq('statusid', 1)
+      .in('nodoid', nodoIds);
+    
+    (nodos || []).forEach(nodo => {
+      nodosMap.set(nodo.nodoid, nodo);
+    });
+  }
   
   const searchLower = query.toLowerCase();
   
-  return (localizaciones || []).filter(loc => {
-    const nodo = loc.nodo ? (Array.isArray(loc.nodo) ? loc.nodo[0] : loc.nodo) : null;
-    const ubicacion = nodo?.ubicacion ? (Array.isArray(nodo.ubicacion) ? nodo.ubicacion[0] : nodo.ubicacion) : null;
-    const fundo = ubicacion?.fundo ? (Array.isArray(ubicacion.fundo) ? ubicacion.fundo[0] : ubicacion.fundo) : null;
-    const empresa = fundo?.empresa ? (Array.isArray(fundo.empresa) ? fundo.empresa[0] : fundo.empresa) : null;
-    const pais = empresa?.pais ? (Array.isArray(empresa.pais) ? empresa.pais[0] : empresa.pais) : null;
+  // Agrupar por (nodoid, localizacion) para devolver solo una opción por ubicación
+  const resultMap = new Map();
+  
+  (localizaciones || []).forEach(loc => {
+    // Usar nodoid + localizacion como clave para deduplicar por ubicación
+    const key = `${loc.nodoid}|${loc.localizacion}`;
     
-    return (
-      (loc.localizacion?.toLowerCase().includes(searchLower)) ||
-      (nodo?.nodo?.toLowerCase().includes(searchLower)) ||
-      (ubicacion?.ubicacion?.toLowerCase().includes(searchLower)) ||
-      (fundo?.fundo?.toLowerCase().includes(searchLower)) ||
-      (empresa?.empresa?.toLowerCase().includes(searchLower)) ||
-      (pais?.pais?.toLowerCase().includes(searchLower))
-    );
-  }).map(loc => {
-    const nodo = loc.nodo ? (Array.isArray(loc.nodo) ? loc.nodo[0] : loc.nodo) : null;
-    const ubicacion = nodo?.ubicacion ? (Array.isArray(nodo.ubicacion) ? nodo.ubicacion[0] : nodo.ubicacion) : null;
-    const fundo = ubicacion?.fundo ? (Array.isArray(ubicacion.fundo) ? ubicacion.fundo[0] : ubicacion.fundo) : null;
-    const empresa = fundo?.empresa ? (Array.isArray(fundo.empresa) ? fundo.empresa[0] : fundo.empresa) : null;
-    const pais = empresa?.pais ? (Array.isArray(empresa.pais) ? empresa.pais[0] : empresa.pais) : null;
-    
-    const breadcrumb = [
-      pais?.pais,
-      empresa?.empresa,
-      fundo?.fundo,
-      ubicacion?.ubicacion,
-      loc.localizacion
-    ].filter(Boolean).join(' → ');
-    
-    return {
-      localizacionid: loc.localizacionid,
-      localizacion: loc.localizacion,
-      breadcrumb: breadcrumb
-    };
-  })
-  // Deduplicar por nombre de localización (queda solo el primero encontrado)
-  .filter((loc, index, self) => 
-    index === self.findIndex((t) => t.localizacion === loc.localizacion)
-  );
+    if (!resultMap.has(key)) {
+      const nodo = nodosMap.get(loc.nodoid);
+      if (!nodo) {
+        logger.warn(`[_searchLocationsWithoutRpc] No se encontró nodo para nodoid=${loc.nodoid}`);
+        return;
+      }
+      
+      const ubicacion = nodo?.ubicacion ? (Array.isArray(nodo.ubicacion) ? nodo.ubicacion[0] : nodo.ubicacion) : null;
+      const fundo = ubicacion?.fundo ? (Array.isArray(ubicacion.fundo) ? ubicacion.fundo[0] : ubicacion.fundo) : null;
+      const empresa = fundo?.empresa ? (Array.isArray(fundo.empresa) ? fundo.empresa[0] : fundo.empresa) : null;
+      const pais = empresa?.pais ? (Array.isArray(empresa.pais) ? empresa.pais[0] : empresa.pais) : null;
+      
+      const matchesSearch = (
+        (loc.localizacion?.toLowerCase().includes(searchLower)) ||
+        (nodo?.nodo?.toLowerCase().includes(searchLower)) ||
+        (ubicacion?.ubicacion?.toLowerCase().includes(searchLower)) ||
+        (fundo?.fundo?.toLowerCase().includes(searchLower)) ||
+        (empresa?.empresa?.toLowerCase().includes(searchLower)) ||
+        (pais?.pais?.toLowerCase().includes(searchLower))
+      );
+      
+      if (matchesSearch) {
+        const breadcrumb = [
+          pais?.pais,
+          empresa?.empresa,
+          fundo?.fundo,
+          ubicacion?.ubicacion,
+          loc.localizacion
+        ].filter(Boolean).join(' → ');
+        
+        logger.debug(`[_searchLocationsWithoutRpc] Agregando resultado: nodoid=${loc.nodoid}, localizacion="${loc.localizacion}", breadcrumb="${breadcrumb}"`);
+        
+        // Guardar usando nodoid como identificador, no localizacionid
+        // El frontend usará nodoid + localizacion para identificar la selección
+        resultMap.set(key, {
+          nodoid: loc.nodoid,
+          localizacionName: loc.localizacion,
+          breadcrumb: breadcrumb
+        });
+      }
+    }
+  });
+  
+  const result = Array.from(resultMap.values());
+  logger.info(`[_searchLocationsWithoutRpc] Resultados finales: ${result.length} localizaciones únicas (agrupadas por ubicación)`);
+  logger.debug(`[_searchLocationsWithoutRpc] Resultado:`, result);
+  return result;
 };
 
 /**
