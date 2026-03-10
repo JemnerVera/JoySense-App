@@ -58,54 +58,32 @@ export const AsociacionFormFields: React.FC<AsociacionFormFieldsProps> = ({
   const [isLoadingLocalizaciones, setIsLoadingLocalizaciones] = useState(false);
 
   const loadLocalizacionesRelacionadas = useCallback(async (nodoid: number, localizacionName: string) => {
-    console.log('[loadLocalizacionesRelacionadas] Iniciando con:', { nodoid, localizacionName });
-    
     if (!nodoid || !localizacionName) {
-      console.log('[loadLocalizacionesRelacionadas] nodoid o localizacionName inválidos, retornando');
       return;
     }
     
     setIsLoadingLocalizaciones(true);
-    console.log('[loadLocalizacionesRelacionadas] Estado de carga activado');
     try {
       // Obtener TODAS las localizaciones con este nombre en este nodo
       // Esto devuelve todas las combinaciones sensor-métrica para esta ubicación
-      console.log('[loadLocalizacionesRelacionadas] Llamando getLocalizacionesByName con:', localizacionName);
       const enrichedLocalizaciones = await JoySenseService.getLocalizacionesByName(localizacionName);
-      console.log('[loadLocalizacionesRelacionadas] Respuesta de getLocalizacionesByName:', enrichedLocalizaciones);
       
       // Filtrar para obtener SOLO las que pertenecen a este nodoid
-      console.log('[loadLocalizacionesRelacionadas] Filtrando resultados, enrichedLocalizaciones.length =', enrichedLocalizaciones.length);
-      console.log('[loadLocalizacionesRelacionadas] Primer elemento para verificar estructura:', enrichedLocalizaciones[0]);
-      
       const nodosLocalizaciones = enrichedLocalizaciones.filter(
-        (loc: any) => {
-          const belongs = loc.nodoid === nodoid;
-          console.log('[loadLocalizacionesRelacionadas] Filtrando loc nodoid:', loc.nodoid, 'vs nodoid buscado:', nodoid, '-> belongs:', belongs);
-          return belongs;
-        }
+        (loc: any) => loc.nodoid === nodoid
       );
-      
-      console.log('[loadLocalizacionesRelacionadas] nodosLocalizaciones después del filter:', nodosLocalizaciones.length);
-      console.log('[loadLocalizacionesRelacionadas] ENTRANDO A LA RAMA: nodosLocalizaciones.length === 0?', nodosLocalizaciones.length === 0);
       
       // Si no obtenemos suficientes datos del enriquecimiento, obtener nodos
       if (nodosLocalizaciones.length === 0) {
-        console.log('[loadLocalizacionesRelacionadas] ENTRÓ AL IF: nodosLocalizaciones.length === 0');
-        console.log('[loadLocalizacionesRelacionadas] nodosLocalizaciones está vacío, obteniendo allLocalizaciones');
         // Obtener datos de la tabla localizacion para filtrar por nodoid
         const allLocalizaciones = await JoySenseService.getTableData('localizacion', 10000);
-        console.log('[loadLocalizacionesRelacionadas] allLocalizaciones obtenidas:', allLocalizaciones.length);
         
         // Filtrar por nodoid y localizacion name
         const locsByNode = allLocalizaciones.filter(
           (loc: any) => loc.nodoid === nodoid && loc.localizacion === localizacionName
         );
         
-        console.log('[loadLocalizacionesRelacionadas] locsByNode encontradas:', locsByNode.length, locsByNode);
-        
         if (locsByNode.length === 0) {
-          console.log('[loadLocalizacionesRelacionadas] No se encontraron localizaciones para este nodo');
           setDispositivosGrid([]);
           return;
         }
@@ -133,13 +111,10 @@ export const AsociacionFormFields: React.FC<AsociacionFormFieldsProps> = ({
             activo: true
           }));
           
-          console.log('[loadLocalizacionesRelacionadas] Grid establecido con:', nuevasFilas.length, 'filas');
           setDispositivosGrid(nuevasFilas);
         } catch (enrichError) {
-          console.error('[loadLocalizacionesRelacionadas] Error enriqueciendo datos:', enrichError);
           // Fallback: usar datos básicos
-          console.log('[loadLocalizacionesRelacionadas] Usando fallback con datos básicos');
-          const nuevasFilas: DispositivoRow[] = locsByNode.map((loc, idx) => ({
+          const nuevasFilas: DispositivoRow[] = locsByNode.map((loc) => ({
             id: `loc_${loc.localizacionid}`,
             localizacionid: loc.localizacionid,
             localizacionNombre: loc.localizacion,
@@ -150,12 +125,9 @@ export const AsociacionFormFields: React.FC<AsociacionFormFieldsProps> = ({
             id_device: '',
             activo: true
           }));
-          console.log('[loadLocalizacionesRelacionadas] Grid establecido (fallback) con:', nuevasFilas.length, 'filas');
           setDispositivosGrid(nuevasFilas);
         }
       } else {
-        console.log('[loadLocalizacionesRelacionadas] nodosLocalizaciones NO está vacío! Tiene:', nodosLocalizaciones.length, 'elementos');
-        
         // Procesar los datos enriquecidos directamente
         const nuevasFilas: DispositivoRow[] = nodosLocalizaciones.map((loc) => ({
           id: `loc_${loc.localizacionid}`,
@@ -169,24 +141,17 @@ export const AsociacionFormFields: React.FC<AsociacionFormFieldsProps> = ({
           activo: true
         }));
         
-        console.log('[loadLocalizacionesRelacionadas] Grid establecido con:', nuevasFilas.length, 'filas (desde nodosLocalizaciones)');
         setDispositivosGrid(nuevasFilas);
       }
     } catch (error) {
-      console.error('[loadLocalizacionesRelacionadas] Error cargando localizaciones por nodo:', error);
+      console.error('[AsociacionFormFields] Error cargando localizaciones por nodo:', error);
     } finally {
-      console.log('[loadLocalizacionesRelacionadas] Finalizando, desactivando estado de carga');
       setIsLoadingLocalizaciones(false);
     }
   }, []);
 
   useEffect(() => {
-    console.log('[AsociacionFormFields] useEffect disparado');
-    console.log('[AsociacionFormFields] formData.localizacionid =', formData.localizacionid);
-    console.log('[AsociacionFormFields] typeof formData.localizacionid =', typeof formData.localizacionid);
-    
     if (!formData.localizacionid) {
-      console.log('[AsociacionFormFields] localizacionid es nulo/vacío, limpiando grid');
       setDispositivosGrid([]);
       setLocalizacionNombre('');
       return;
@@ -194,18 +159,14 @@ export const AsociacionFormFields: React.FC<AsociacionFormFieldsProps> = ({
 
     // formData.localizacionid ahora es "nodoid|localizacionName"
     const parts = (formData.localizacionid as string).split('|');
-    console.log('[AsociacionFormFields] parts después de split =', parts);
     
     if (parts.length !== 2) {
-      console.log('[AsociacionFormFields] parts.length !== 2, limpiando grid');
       setDispositivosGrid([]);
       return;
     }
     
     const nodoid = parseInt(parts[0]);
     const localizacionName = parts[1];
-    
-    console.log('[AsociacionFormFields] Llamando a loadLocalizacionesRelacionadas con:', { nodoid, localizacionName });
     
     // Cargar datos de la localización específica seleccionada (por nodoid + nombre)
     loadLocalizacionesRelacionadas(nodoid, localizacionName);
@@ -219,19 +180,15 @@ export const AsociacionFormFields: React.FC<AsociacionFormFieldsProps> = ({
   }, [dispositivosGrid]);
 
   const handleLocationChange = useCallback((value: string | null) => {
-    console.log('[AsociacionFormFields] handleLocationChange llamado con:', value);
     // value es "nodoid|localizacionName"
     updateField('localizacionid', value);
     
     if (!value) {
-      console.log('[AsociacionFormFields] value es nulo, limpiando');
       setDispositivosGrid([]);
       setLocalizacionNombre('');
     } else {
       const parts = value.split('|');
-      console.log('[AsociacionFormFields] parts =', parts);
       if (parts.length === 2) {
-        console.log('[AsociacionFormFields] Estableciendo localizacionNombre =', parts[1]);
         setLocalizacionNombre(parts[1]);
       }
     }
