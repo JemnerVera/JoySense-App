@@ -865,7 +865,7 @@ export class JoySenseService {
       const { data: { session } } = await supabaseAuth.auth.getSession();
       const token = session?.access_token || null;
       
-      const data = await backendAPI.get(`/dispositivos/locations/search?query=${encodeURIComponent(query)}`, token || undefined);
+      const data = await backendAPI.get(`/geografia/locations/search?query=${encodeURIComponent(query)}`, token || undefined);
       return Array.isArray(data) ? data : [];
     } catch (error) {
       console.error('Error in searchLocations:', error);
