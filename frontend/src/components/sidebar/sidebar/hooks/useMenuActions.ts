@@ -53,6 +53,25 @@ export function useMenuActions(
         return;
       }
 
+      // Verificar si el menú ya está abierto
+      const isAlreadyOpen = openSubMenus.has(tabId);
+
+      // Si ya está abierto, cerrarlo (toggle)
+      if (isAlreadyOpen) {
+        const element = subMenuRefs.current[tabId];
+        if (element) {
+          await slideUp(element);
+          setOpenSubMenus((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(tabId);
+            return newSet;
+          });
+          setOpenSubMenusLevel3(new Set());
+        }
+        return;
+      }
+
+      // Si no está abierto, abrirlo
       // CAMBIAR EL COLOR INMEDIATAMENTE antes de las animaciones
       onTabChange(tabId);
 
@@ -65,6 +84,7 @@ export function useMenuActions(
       setOpenSubMenusLevel3(new Set());
       
       for (const menuId of level1Tabs) {
+        if (menuId === tabId) continue; // No cerrar el menú que estamos abriendo
         const element = subMenuRefs.current[menuId];
         if (element) {
           const style = window.getComputedStyle(element);
