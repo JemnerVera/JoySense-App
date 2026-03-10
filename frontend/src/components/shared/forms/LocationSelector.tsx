@@ -12,6 +12,7 @@ interface LocationOption {
 interface LocationSelectorProps {
   value: number | null;
   onChange: (localizacionid: number | null) => void;
+  onNombreChange?: (nombre: string) => void;
   placeholder?: string;
   isRequired?: boolean;
   themeColor?: string;
@@ -20,6 +21,7 @@ interface LocationSelectorProps {
 export const LocationSelector: React.FC<LocationSelectorProps> = ({
   value,
   onChange,
+  onNombreChange,
   placeholder = 'BUSQUEDA',
   isRequired = false,
   themeColor = 'green'
@@ -208,6 +210,9 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
     setSelectedLabel(nombre);
     setInputValue(nombre);
     onChange(option.localizacionid);
+    if (onNombreChange) {
+      onNombreChange(nombre);
+    }
     setShowSuggestions(false);
     setSuggestions([]);
   };
@@ -217,6 +222,9 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
     setInputValue('');
     setSelectedLabel(null);
     onChange(null);
+    if (onNombreChange) {
+      onNombreChange('');
+    }
     setShowSuggestions(false);
     setSuggestions([]);
     if (inputRef.current) {
@@ -300,6 +308,9 @@ export const LocationSelector: React.FC<LocationSelectorProps> = ({
       // Guardar solo el nombre de la localización, no el breadcrumb completo
       setSelectedLabel(localizacion.localizacion);
       onChange(localizacion.localizacionid);
+      if (onNombreChange) {
+        onNombreChange(localizacion.localizacion);
+      }
       handleCloseModal();
     }
   };

@@ -473,6 +473,23 @@ export const useInsertForm = ({
         }
       }
       
+setFormErrors(errors)
+      return Object.keys(errors).length === 0
+    }
+
+    // Caso especial para asociacion: validar localizacionid y que haya dispositivos en el grid
+    if (tableName === 'asociacion') {
+      if (!formData.localizacionid) {
+        errors.localizacionid = 'Localización es requerida'
+      }
+      
+      const dispositivosGrid = formData._dispositivosGrid as Array<{id: string, id_device: string, statusid: number, activo: boolean}> | undefined
+      const dispositivosConId = dispositivosGrid?.filter(d => d.id_device && d.id_device.trim() !== '') || [];
+      
+      if (!dispositivosGrid || dispositivosConId.length === 0) {
+        errors._dispositivosGrid = 'Debe agregar al menos un dispositivo con ID'
+      }
+      
       setFormErrors(errors)
       return Object.keys(errors).length === 0
     }
@@ -492,8 +509,13 @@ export const useInsertForm = ({
         return
       }
       
-      // Para usuario_canal, no validar canalid, identificador y statusid ya que se manejan de forma especial
+// Para usuario_canal, no validar canalid, identificador y statusid ya que se manejan de forma especial
       if (tableName === 'usuario_canal' && (field.name === 'canalid' || field.name === 'identificador' || field.name === 'statusid')) {
+        return
+      }
+      
+      // Para asociacion, no validar id_device y statusid ya que se manejan de forma especial en el grid
+      if (tableName === 'asociacion' && (field.name === 'id_device' || field.name === 'statusid')) {
         return
       }
       
@@ -1156,8 +1178,61 @@ export const useInsertForm = ({
           }
         }
         
-        setIsSubmitting(false);
+setIsSubmitting(false);
         setMessage?.({ type: 'success', text: `Se asignaron ${results.length} canal(es) al usuario correctamente. Telegram se enlazará automáticamente.` });
+        resetForm();
+        return;
+      }
+      
+      // Caso especial para tabla 'asociacion': crear múltiples registros (uno por cada dispositivo en el grid)
+      if (tableName === 'asociacion' && formData._dispositivosGrid) {
+        const dispositivosGrid = formData._dispositivosGrid as Array<{id: string, id_device: string, statusid: number, activo: boolean}>;
+        const localizacionid = formData.localizacionid;
+        
+        if (!localizacionid) {
+          throw new Error('Debe seleccionar una localización');
+        }
+        
+        if (!dispositivosGrid || dispositivosGrid.length === 0) {
+          throw new Error('Debe agregar al menos un dispositivo');
+        }
+        
+        // Filtrar solo dispositivos con ID válido
+        const devicesWithId = dispositivosGrid.filter(d => d.id_device && d.id_device.trim() !== '');
+        
+        if (devicesWithId.length === 0) {
+          throw new Error('Debe ingresar al menos un ID de dispositivo válido');
+        }
+        
+        // Obtener usuarioid del usuario autenticado para campos de auditoría
+        const currentUserId = await getUsuarioidFromUser(user);
+        const userId = currentUserId || 1;
+        const now = new Date().toISOString();
+        
+        // Crear un registro por cada dispositivo
+        const recordsToInsert = devicesWithId.map(d => ({
+          localizacionid: localizacionid,
+          id_device: d.id_device.trim(),
+          statusid: d.activo ? 1 : 0,
+          usercreatedid: userId,
+          datecreated: now,
+          usermodifiedid: userId,
+          datemodified: now
+        }));
+        
+        // Insertar múltiples registros
+        const results = [];
+        for (const record of recordsToInsert) {
+          const result = await insertRow(record);
+          if (result.success) {
+            results.push(result);
+          } else {
+            throw new Error(`Error al insertar dispositivo ${record.id_device}: ${result.error || 'Error desconocido'}`);
+          }
+        }
+        
+        setIsSubmitting(false);
+        setMessage?.({ type: 'success', text: `Se crearon ${results.length} asociacion(es) correctamente` });
         resetForm();
         return;
       }

@@ -873,6 +873,20 @@ export class JoySenseService {
     }
   }
 
+  static async getLocalizacionesByName(nombre: string): Promise<any[]> {
+    try {
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      
+      const data = await backendAPI.get(`/geografia/localizaciones/by-name?nombre=${encodeURIComponent(nombre)}`, token || undefined);
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error('Error in getLocalizacionesByName:', error);
+      throw error;
+    }
+  }
+
   static async searchUsers(query: string): Promise<any[]> {
     try {
       const { supabaseAuth } = await import('./supabase-auth');
