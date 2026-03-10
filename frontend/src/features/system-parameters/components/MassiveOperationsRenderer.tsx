@@ -12,7 +12,7 @@ interface MassiveOperationsRendererProps {
     isSubmitting: boolean;
   };
   getUniqueOptionsForField: (field: string, filters?: any) => any[];
-  onApply: (data: any[]) => void;
+  onApply: (data: any[]) => Promise<{ success: boolean; error?: string }>;
   onCancel: () => void;
   paisSeleccionado?: string;
   empresaSeleccionada?: string;
