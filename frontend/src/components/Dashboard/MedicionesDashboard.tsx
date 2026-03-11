@@ -774,6 +774,11 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   const handleClearLocalizacion = useCallback(() => {
     setSelectedLocalizacion(null);
     setUbicacionSeleccionada(null);
+    setComparisonMetricId(null);
+    setComparisonMediciones([]);
+    setComparisonChartData([]);
+    setComparisonSeries([]);
+    setComparisonUnit('');
   }, [setUbicacionSeleccionada]);
 
   // Filtrar mediciones por métrica seleccionada (ya vienen filtradas del backend, pero aplicar filtro por si acaso)
@@ -1382,7 +1387,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                 <button
                   onClick={() => setIsComparisonDropdownOpen(!isComparisonDropdownOpen)}
                   disabled={availableMetrics.length <= 1}
-                  className="h-10 px-4 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono text-base flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="h-10 px-4 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-base flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span>Agregar</span>
                   <svg className={`w-4 h-4 transition-transform ${isComparisonDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1398,7 +1403,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                     style={{
                       top: `${rect.bottom + 4}px`,
                       left: `${rect.left}px`,
-                      width: `${rect.width}px`
+                      minWidth: '200px'
                     }}
                   >
                     {availableMetrics

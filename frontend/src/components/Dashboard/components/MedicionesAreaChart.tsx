@@ -178,6 +178,7 @@ function MedicionesAreaChartComponent({
         }
       },
       toolbox: {
+        right: hasComparison ? '6%' : '4%',
         feature: {
           dataZoom: {
             yAxisIndex: hasComparison ? [0, 1] as [number, number] : 'none' as const
