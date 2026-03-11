@@ -3,6 +3,7 @@ import { JoySenseService } from '../../../services/backend-api';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { useAlertasFilter } from '../../../contexts/AlertasFilterContext';
 import { ALERTAS_CONFIG } from '../../../config/alertasConfig';
+import { useSidebar } from '../../../contexts/SidebarContext';
 
 interface AlertaData {
   alertaid: string; // UUID de alerta_regla
@@ -74,6 +75,7 @@ const AlertasTable: React.FC = () => {
     setUbicacionesDisponibles,
     setLocalizacionesDisponibles
   } = useAlertasFilter();
+  const { isCollapsed, state } = useSidebar();
   
   const [alertas, setAlertas] = useState<AlertaData[]>([]);
   const [allAlertas, setAllAlertas] = useState<AlertaData[]>([]); // Todas las alertas sin filtrar
@@ -198,16 +200,38 @@ const AlertasTable: React.FC = () => {
   }, []);
 
   // Calcular posición del dropdown de localización cuando se abre
+  // Usa requestAnimationFrame para actualizar posición en cada frame (más preciso durante animación del sidebar)
   useEffect(() => {
     if (isLocalizacionDropdownOpen && localizacionDropdownRef.current) {
-      const rect = localizacionDropdownRef.current.getBoundingClientRect();
-      setLocalizacionDropdownPosition({
-        top: rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX,
-        width: rect.width
-      });
+      let animationFrameId: number;
+      let isMounted = true;
+
+      const updatePosition = () => {
+        if (!isMounted || !localizacionDropdownRef.current) return;
+        const rect = localizacionDropdownRef.current.getBoundingClientRect();
+        setLocalizacionDropdownPosition({
+          top: rect.bottom + window.scrollY,
+          left: rect.left + window.scrollX,
+          width: rect.width
+        });
+
+        // Continuar el loop mientras el dropdown esté abierto
+        if (isMounted) {
+          animationFrameId = requestAnimationFrame(updatePosition);
+        }
+      };
+
+      // Iniciar el loop de animación
+      animationFrameId = requestAnimationFrame(updatePosition);
+
+      return () => {
+        isMounted = false;
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+        }
+      };
     }
-  }, [isLocalizacionDropdownOpen]);
+  }, [isLocalizacionDropdownOpen, isCollapsed, state]);
 
   // Cerrar dropdowns al hacer click fuera
   useEffect(() => {
