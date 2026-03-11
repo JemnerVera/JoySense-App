@@ -15,6 +15,11 @@ interface MedicionesAreaChartProps {
   selectedMetricUnit: string;
   yAxisDomain: { min: number | null; max: number | null };
   colors: string[];
+  comparisonChartData?: ChartDataPoint[];
+  comparisonSeries?: string[];
+  comparisonUnit?: string;
+  comparisonYAxisDomain?: { min: number | null; max: number | null };
+  isComparisonMode?: boolean;
 }
 
 function MedicionesAreaChartComponent({
@@ -22,7 +27,12 @@ function MedicionesAreaChartComponent({
   allSeries,
   selectedMetricUnit,
   yAxisDomain,
-  colors
+  colors,
+  comparisonChartData = [],
+  comparisonSeries = [],
+  comparisonUnit = '',
+  comparisonYAxisDomain = { min: null, max: null },
+  isComparisonMode = false
 }: MedicionesAreaChartProps) {
   const option = useMemo<EChartsOption>(() => {
     const xAxisData = chartData.map(d => d.fecha);
@@ -55,6 +65,39 @@ function MedicionesAreaChartComponent({
       };
     });
 
+    // Generar series de comparación (líneas punteadas en eje Y derecho)
+    const comparisonSeriesData = comparisonSeries.map((name, idx) => {
+      const color = colors[idx % colors.length];
+      return {
+        name,
+        type: 'line' as const,
+        symbol: 'none' as const,
+        sampling: 'lttb' as const,
+        connectNulls: true,
+        yAxisIndex: 1,
+        itemStyle: {
+          color
+        },
+        lineStyle: {
+          type: 'dashed' as const,
+          width: 2
+        },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: hexToRgba(color, 0.3) },
+            { offset: 1, color: hexToRgba(color, 0.05) }
+          ])
+        },
+        data: comparisonChartData.map(d => {
+          const val = d[name];
+          return typeof val === 'number' && !isNaN(val) ? val : null;
+        })
+      };
+    });
+
+    // Combinar todas las series
+    const allSeriesCombined = [...series, ...comparisonSeriesData];
+
     let yAxisConfig: any = {
       type: 'value' as const,
       boundaryGap: [0, '100%'] as [number, string]
@@ -74,6 +117,49 @@ function MedicionesAreaChartComponent({
       yAxisConfig.interval = interval;
     }
 
+    // Configuración del segundo eje Y (derecho) para comparación
+    let comparisonYAxisConfig: any = {
+      type: 'value' as const,
+      boundaryGap: [0, '100%'] as [number, string],
+      position: 'right' as const,
+      name: comparisonUnit ? ` (${comparisonUnit})` : '',
+      nameLocation: 'end' as const,
+      nameGap: 30,
+      nameTextStyle: {
+        color: '#dcdcdc',
+        fontFamily: 'Inter, sans-serif',
+        fontSize: 14
+      },
+      splitLine: {
+        show: true,
+        lineStyle: {
+          color: 'rgba(255, 255, 255, 0.15)',
+          type: 'dashed' as const,
+          width: 1
+        }
+      },
+      axisLabel: {
+        color: '#dcdcdc',
+        fontFamily: 'Inter, sans-serif'
+      }
+    };
+
+    if (
+      comparisonYAxisDomain.min !== null && !isNaN(comparisonYAxisDomain.min) &&
+      comparisonYAxisDomain.max !== null && !isNaN(comparisonYAxisDomain.max)
+    ) {
+      const { min: niceMin, max: niceMax, interval } = calculateNiceInterval(
+        comparisonYAxisDomain.min,
+        comparisonYAxisDomain.max
+      );
+      comparisonYAxisConfig.min = niceMin;
+      comparisonYAxisConfig.max = niceMax;
+      comparisonYAxisConfig.interval = interval;
+    }
+
+    // Determinar si hay modo comparación activo
+    const hasComparison = isComparisonMode && comparisonSeries.length > 0;
+
     return {
       tooltip: {
         trigger: 'axis' as const,
@@ -84,9 +170,12 @@ function MedicionesAreaChartComponent({
           const lines: string[] = [];
           params.forEach((p: any) => {
             const val = p.value;
+            const isComparisonSeries = p.seriesIndex >= allSeries.length;
+            const unit = isComparisonSeries ? comparisonUnit : selectedMetricUnit;
             const display =
-              typeof val === 'number' && !isNaN(val) ? `${val.toFixed(2)} ${selectedMetricUnit}` : '-';
-            lines.push(`${p.marker} ${p.seriesName}: ${display}`);
+              typeof val === 'number' && !isNaN(val) ? `${val.toFixed(2)} ${unit}` : '-';
+            const style = isComparisonSeries ? 'font-style: italic;' : '';
+            lines.push(`${p.marker} <span style="${style}">${p.seriesName}: ${display}</span>`);
           });
           const date = params[0]?.axisValue || '';
           return `${date}<br/>${lines.join('<br/>')}`;
@@ -95,7 +184,7 @@ function MedicionesAreaChartComponent({
       toolbox: {
         feature: {
           dataZoom: {
-            yAxisIndex: 'none' as const
+            yAxisIndex: hasComparison ? [0, 1] as [number, number] : 'none' as const
           },
           restore: {},
           saveAsImage: {}
@@ -103,7 +192,7 @@ function MedicionesAreaChartComponent({
       },
       grid: {
         left: '3%',
-        right: '4%',
+        right: hasComparison ? '12%' : '4%',
         bottom: '60px',
         top: '10%',
         containLabel: true
@@ -220,29 +309,32 @@ function MedicionesAreaChartComponent({
           }
         }
       },
-      yAxis: {
-        ...yAxisConfig,
-        name: 'Valor',
-        nameLocation: 'end' as const,
-        nameGap: 30,
-        nameTextStyle: {
-          color: '#ffffff',
-          fontFamily: 'Inter, sans-serif',
-          fontSize: 14
-        },
-        splitLine: {
-          show: true,
-          lineStyle: {
-            color: 'rgba(255, 255, 255, 0.25)',
-            type: 'solid' as const,
-            width: 1
+      yAxis: [
+        {
+          ...yAxisConfig,
+          name: selectedMetricUnit ? `Valor (${selectedMetricUnit})` : 'Valor',
+          nameLocation: 'end' as const,
+          nameGap: 30,
+          nameTextStyle: {
+            color: '#ffffff',
+            fontFamily: 'Inter, sans-serif',
+            fontSize: 14
+          },
+          splitLine: {
+            show: true,
+            lineStyle: {
+              color: 'rgba(255, 255, 255, 0.25)',
+              type: 'solid' as const,
+              width: 1
+            }
+          },
+          axisLabel: {
+            color: '#ffffff',
+            fontFamily: 'Inter, sans-serif'
           }
         },
-        axisLabel: {
-          color: '#ffffff',
-          fontFamily: 'Inter, sans-serif'
-        }
-      },
+        hasComparison ? comparisonYAxisConfig : {}
+      ].filter(Boolean) as any[],
       dataZoom: [
         {
           type: 'inside' as const,
@@ -263,7 +355,7 @@ function MedicionesAreaChartComponent({
         }
       ],
       legend: {
-        data: allSeries,
+        data: [...allSeries, ...comparisonSeries],
         top: 0,
         textStyle: {
           color: '#ffffff',
@@ -271,7 +363,7 @@ function MedicionesAreaChartComponent({
           fontFamily: 'Inter, sans-serif'
         }
       },
-      series
+      series: allSeriesCombined
     };
   }, [
     chartData,
@@ -279,7 +371,13 @@ function MedicionesAreaChartComponent({
     selectedMetricUnit,
     yAxisDomain.min,
     yAxisDomain.max,
-    colors
+    colors,
+    comparisonChartData,
+    comparisonSeries,
+    comparisonUnit,
+    comparisonYAxisDomain.min,
+    comparisonYAxisDomain.max,
+    isComparisonMode
   ]);
 
   return (
@@ -320,6 +418,37 @@ const arePropsEqual = (prevProps: MedicionesAreaChartProps, nextProps: Medicione
   // Comparar colors por contenido
   if (prevProps.colors.length !== nextProps.colors.length) return false;
   if (prevProps.colors.some((c, i) => c !== nextProps.colors[i])) return false;
+
+  // Comparar comparisonChartData por contenido
+  const prevCompData = prevProps.comparisonChartData || [];
+  const nextCompData = nextProps.comparisonChartData || [];
+  const prevCompDataLen = prevCompData.length;
+  const nextCompDataLen = nextCompData.length;
+  if (prevCompDataLen !== nextCompDataLen) return false;
+  if (prevCompDataLen > 0) {
+    const prevCompFirst = JSON.stringify(prevCompData[0]);
+    const nextCompFirst = JSON.stringify(nextCompData[0]);
+    if (prevCompFirst !== nextCompFirst) return false;
+    const prevCompLast = JSON.stringify(prevCompData[prevCompDataLen - 1]);
+    const nextCompLast = JSON.stringify(nextCompData[nextCompDataLen - 1]);
+    if (prevCompLast !== nextCompLast) return false;
+  }
+
+  // Comparar comparisonSeries por contenido
+  const prevCompSeriesLen = prevProps.comparisonSeries?.length || 0;
+  const nextCompSeriesLen = nextProps.comparisonSeries?.length || 0;
+  if (prevCompSeriesLen !== nextCompSeriesLen) return false;
+  if (prevCompSeriesLen > 0 && prevProps.comparisonSeries?.some((s, i) => s !== nextProps.comparisonSeries?.[i])) return false;
+
+  // Comparar comparisonUnit
+  if (prevProps.comparisonUnit !== nextProps.comparisonUnit) return false;
+
+  // Comparar comparisonYAxisDomain por contenido
+  if (prevProps.comparisonYAxisDomain?.min !== nextProps.comparisonYAxisDomain?.min || 
+      prevProps.comparisonYAxisDomain?.max !== nextProps.comparisonYAxisDomain?.max) return false;
+
+  // Comparar isComparisonMode
+  if (prevProps.isComparisonMode !== nextProps.isComparisonMode) return false;
 
   // Si todo es igual, no actualizar
   return true;
