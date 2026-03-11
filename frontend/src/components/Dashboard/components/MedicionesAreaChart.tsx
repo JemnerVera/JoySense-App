@@ -122,21 +122,17 @@ function MedicionesAreaChartComponent({
       type: 'value' as const,
       boundaryGap: [0, '100%'] as [number, string],
       position: 'right' as const,
+      offset: 0,
       name: comparisonUnit ? ` (${comparisonUnit})` : '',
       nameLocation: 'end' as const,
-      nameGap: 30,
+      nameGap: 40,
       nameTextStyle: {
         color: '#dcdcdc',
         fontFamily: 'Inter, sans-serif',
         fontSize: 14
       },
       splitLine: {
-        show: true,
-        lineStyle: {
-          color: 'rgba(255, 255, 255, 0.15)',
-          type: 'dashed' as const,
-          width: 1
-        }
+        show: false
       },
       axisLabel: {
         color: '#dcdcdc',
@@ -192,7 +188,7 @@ function MedicionesAreaChartComponent({
       },
       grid: {
         left: '3%',
-        right: hasComparison ? '12%' : '4%',
+        right: '4%',
         bottom: '60px',
         top: '10%',
         containLabel: true
