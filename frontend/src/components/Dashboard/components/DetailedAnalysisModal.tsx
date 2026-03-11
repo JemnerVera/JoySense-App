@@ -618,6 +618,9 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                     </div>
                   </div>
 
+                  {/* Separador visual */}
+                  <div className="w-px h-20 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
+
 {/* Información del Nodo - Al extremo derecho (solo fullscreen) */}
                   {isFullscreenView && selectedNode?.ubicacion && (
                     <div className="flex flex-col items-center flex-shrink-0">

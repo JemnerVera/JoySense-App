@@ -332,7 +332,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
           )}
 
           {/* Combobox con searchbar */}
-        <div className="relative w-72" ref={searchDropdownRef}>
+        <div className="relative w-96" ref={searchDropdownRef}>
           <div className="relative">
             <input
               type="text"

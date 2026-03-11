@@ -100,8 +100,8 @@ export const ThresholdRecommendationsModal: React.FC<ThresholdRecommendationsMod
               const nodeRecommendations = recommendations[nodeId]
               const isMainNode = nodeId.startsWith(`node_${selectedNode?.nodoid || 'main'}`)
               const nodeName = isMainNode 
-                ? (selectedNode?.nodo || 'Nodo Principal')
-                : (comparisonNode?.nodo || 'Nodo de Comparación')
+                ? `${selectedNode?.localizacion || '--'} - ${selectedNode?.nodo || 'Nodo Principal'}`
+                : `${comparisonNode?.localizacion || '--'} - ${comparisonNode?.nodo || 'Nodo de Comparación'}`
               
               return (
                 <div key={nodeId} className="space-y-4">

@@ -958,8 +958,8 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
         
         // Recomendar umbrales basados en percentiles (5% y 95%) con un margen de seguridad
         const sorted = [...valores].sort((a, b) => a - b)
-        const p5 = sorted[Math.floor(sorted.length * 0.05)]
-        const p95 = sorted[Math.ceil(sorted.length * 0.95)]
+        const p5 = sorted[Math.max(0, Math.floor(sorted.length * 0.05))]
+        const p95 = sorted[Math.min(sorted.length - 1, Math.ceil(sorted.length * 0.95))]
         
         // Usar percentiles con un margen adicional basado en desviación estándar
         const margin = stdDev * 0.5 // Margen del 50% de la desviación estándar
