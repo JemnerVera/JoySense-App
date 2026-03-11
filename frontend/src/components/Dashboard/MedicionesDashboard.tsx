@@ -1325,19 +1325,26 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                   Sin métricas
                 </span>
               ) : (
-                availableMetrics.map(metric => (
-                  <button
-                    key={metric.id}
-                    onClick={() => setSelectedMetricId(metric.id)}
-                    className={`h-10 px-4 rounded font-mono text-base transition-colors whitespace-nowrap ${
-                      selectedMetricId === metric.id
-                        ? 'bg-blue-500 text-white'
-                        : 'bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-neutral-700'
-                    }`}
-                  >
-                    {metric.name}
-                  </button>
-                ))
+                availableMetrics.map(metric => {
+                  const isInComparison = comparisonMetricId === metric.id;
+                  return (
+                    <button
+                      key={metric.id}
+                      onClick={() => !isInComparison && setSelectedMetricId(metric.id)}
+                      disabled={isInComparison}
+                      className={`h-10 px-4 rounded font-mono text-base transition-colors whitespace-nowrap ${
+                        selectedMetricId === metric.id
+                          ? 'bg-blue-500 text-white'
+                          : isInComparison
+                            ? 'bg-gray-200 dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 text-gray-400 dark:text-neutral-500 cursor-not-allowed opacity-60'
+                            : 'bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-neutral-700'
+                      }`}
+                      title={isInComparison ? `Esta métrica está en modo comparación` : ''}
+                    >
+                      {metric.name}
+                    </button>
+                  );
+                })
               )}
             </div>
           </div>
