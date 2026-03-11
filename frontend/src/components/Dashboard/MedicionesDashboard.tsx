@@ -66,6 +66,16 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     max: null
   });
 
+  // Estados para comparación de métricas
+  const [comparisonMetricId, setComparisonMetricId] = useState<number | null>(null);
+  const [comparisonMediciones, setComparisonMediciones] = useState<any[]>([]);
+  const [comparisonChartData, setComparisonChartData] = useState<any[]>([]);
+  const [comparisonSeries, setComparisonSeries] = useState<string[]>([]);
+  const [comparisonUnit, setComparisonUnit] = useState<string>('');
+  const [comparisonYAxisDomain, setComparisonYAxisDomain] = useState<{ min: number | null; max: number | null }>({ min: null, max: null });
+  const [initialComparisonYAxisDomain, setInitialComparisonYAxisDomain] = useState<{ min: number | null; max: number | null }>({ min: null, max: null });
+  const [isComparisonDropdownOpen, setIsComparisonDropdownOpen] = useState(false);
+
   // Estados para combobox de localización con searchbar
   const [isLocalizacionDropdownOpen, setIsLocalizacionDropdownOpen] = useState(false);
   const [localizacionSearchTerm, setLocalizacionSearchTerm] = useState('');
@@ -206,6 +216,10 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
       setMediciones([]);
       setAvailableMetrics([]);
       setSelectedMetricId(null);
+      setComparisonMetricId(null);
+      setComparisonMediciones([]);
+      setComparisonChartData([]);
+      setComparisonSeries([]);
     }
   }, [paisSeleccionado, empresaSeleccionada, fundoSeleccionado, ubicacionSeleccionada]);
 
@@ -384,6 +398,282 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     loadMedicionesOptimizadas();
   }, [selectedLocalizacion?.nodoid, dateRange.start, dateRange.end, selectedMetricId, validateDateRange]);
 
+  // Función helper para obtener etiqueta de serie (para uso en comparación)
+  const getComparisonSeriesLabel = useCallback((medicion: any) => {
+    const sensorId = medicion.sensorid || medicion.localizacion?.sensorid;
+    const sensorInfo = memoizedSensores.find(s => s.sensorid === sensorId);
+    const sensorName = sensorInfo?.sensor || sensorInfo?.nombre || `Sensor ${sensorId}`;
+
+    const tipoId = medicion.tipoid || sensorInfo?.tipoid || medicion.localizacion?.sensor?.tipoid;
+    const tipoInfo = memoizedTipos.find(t => t.tipoid === tipoId);
+    const tipoName = tipoInfo?.tipo || 'Sensor';
+
+    if (sensorName && sensorName !== tipoName) {
+      return `${tipoName} - ${sensorName}`;
+    }
+    return tipoName;
+  }, [memoizedSensores, memoizedTipos]);
+
+  // Cargar datos de la métrica de comparación
+  useEffect(() => {
+    if (!selectedLocalizacion?.nodoid || !comparisonMetricId) {
+      setComparisonMediciones([]);
+      setComparisonChartData([]);
+      setComparisonSeries([]);
+      setComparisonUnit('');
+      setComparisonYAxisDomain({ min: null, max: null });
+      setInitialComparisonYAxisDomain({ min: null, max: null });
+      return;
+    }
+
+    const adjustedRange = validateDateRange(dateRange.start, dateRange.end);
+    if (adjustedRange) {
+      return;
+    }
+
+    const loadComparisonData = async () => {
+      try {
+        const data = await SupabaseRPCService.getMedicionesNodoDetallado({
+          nodoid: selectedLocalizacion.nodoid,
+          startDate: dateRange.start,
+          endDate: dateRange.end,
+          metricaid: comparisonMetricId
+        });
+
+        const comparisonData = data || [];
+        setComparisonMediciones(comparisonData);
+
+        if (comparisonData.length > 0) {
+          setComparisonUnit(
+            comparisonData[0]?.unidad ||
+            comparisonData[0]?.metrica_nombre?.unidad ||
+            ''
+          );
+        }
+      } catch (err: any) {
+        console.error('Error cargando datos de comparación:', err);
+        setComparisonMediciones([]);
+      }
+    };
+
+    loadComparisonData();
+  }, [selectedLocalizacion?.nodoid, dateRange.start, dateRange.end, comparisonMetricId, validateDateRange]);
+
+  // Filtrar mediciones de comparación por métrica (usar directamente los datos ya que RPC filtra por metricaid)
+  const comparisonFiltradasPorMetrica = useMemo(() => {
+    if (comparisonMediciones.length === 0) {
+      return [];
+    }
+    return comparisonMediciones;
+  }, [comparisonMediciones]);
+
+  // Auto-ajustar eje Y de comparación
+  useEffect(() => {
+    if (comparisonFiltradasPorMetrica.length === 0) {
+      setComparisonYAxisDomain({ min: null, max: null });
+      setInitialComparisonYAxisDomain({ min: null, max: null });
+      return;
+    }
+
+    let minValue = Infinity;
+    let maxValue = -Infinity;
+    let hasNegativeValues = false;
+
+    comparisonFiltradasPorMetrica.forEach((m: any) => {
+      const val = m.medicion;
+      if (typeof val === 'number' && !isNaN(val)) {
+        minValue = Math.min(minValue, val);
+        maxValue = Math.max(maxValue, val);
+        if (val < 0) {
+          hasNegativeValues = true;
+        }
+      }
+    });
+
+    if (minValue === Infinity || maxValue === -Infinity) {
+      setComparisonYAxisDomain({ min: null, max: null });
+      setInitialComparisonYAxisDomain({ min: null, max: null });
+      return;
+    }
+
+    const range = maxValue - minValue;
+    const padding = range * 0.1;
+
+    let calculatedMin = minValue - padding;
+    if (!hasNegativeValues && calculatedMin < 0) {
+      calculatedMin = 0;
+    }
+
+    const calculatedDomain = {
+      min: calculatedMin,
+      max: maxValue + padding
+    };
+
+    setComparisonYAxisDomain(prevDomain => {
+      if (prevDomain.min === calculatedDomain.min && prevDomain.max === calculatedDomain.max) {
+        return prevDomain;
+      }
+      return calculatedDomain;
+    });
+
+    setInitialComparisonYAxisDomain(calculatedDomain);
+  }, [comparisonFiltradasPorMetrica]);
+
+  // Preparar datos para el gráfico de comparación
+  const comparisonProcessedChartData = useMemo(() => {
+    if (comparisonFiltradasPorMetrica.length === 0) return [];
+
+    const timeSpan = new Date(dateRange.end).getTime() - new Date(dateRange.start).getTime();
+    const daysSpan = timeSpan / (1000 * 60 * 60 * 24);
+    const hoursSpan = daysSpan * 24;
+
+    const performGrouping = (granularityType: 'minutes' | 'hours' | 'days', interval?: number, hourlyInterval?: number) => {
+      const getTimeKey = (date: Date, granularityType: 'minutes' | 'hours' | 'days', interval?: number, hourlyInterval?: number): string => {
+        if (granularityType === 'minutes') {
+          const minuteInterval = interval || 15;
+          const minutes = Math.floor(date.getMinutes() / minuteInterval) * minuteInterval;
+          return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+        }
+        if (granularityType === 'hours') {
+          let hours = date.getHours();
+          if (hourlyInterval && hourlyInterval > 1) {
+            hours = Math.floor(hours / hourlyInterval) * hourlyInterval;
+          }
+          return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')} ${String(hours).padStart(2, '0')}:00`;
+        }
+        return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
+      };
+
+      const labelCache = new Map<number, string>();
+      const getOrCacheLabel = (m: any): string => {
+        const key = m.sensorid || 0;
+        if (!labelCache.has(key)) {
+          labelCache.set(key, getComparisonSeriesLabel(m));
+        }
+        return labelCache.get(key)!;
+      };
+
+      const groupedByTime = new Map<string, Map<string, { values: number[], timestamp: number }>>();
+
+      comparisonFiltradasPorMetrica.forEach((m: any) => {
+        if (m.medicion === null || m.medicion === undefined) return;
+
+        const date = new Date(m.fecha);
+        const timeKey = getTimeKey(date, granularityType, interval, hourlyInterval);
+        const label = getOrCacheLabel(m);
+
+        if (!groupedByTime.has(timeKey)) {
+          groupedByTime.set(timeKey, new Map());
+        }
+
+        const timeEntry = groupedByTime.get(timeKey)!;
+        if (!timeEntry.has(label)) {
+          timeEntry.set(label, { values: [], timestamp: date.getTime() });
+        }
+
+        timeEntry.get(label)!.values.push(parseFloat(m.medicion));
+      });
+
+      const allLabels = new Set<string>();
+      groupedByTime.forEach(timeEntry => {
+        timeEntry.forEach((_, label) => allLabels.add(label));
+      });
+      const allLabelsArray = Array.from(allLabels).sort();
+
+      const sortedTimes = Array.from(groupedByTime.entries())
+        .sort((a, b) => {
+          const aTimestamp = Math.min(...Array.from(a[1].values()).map(v => v.timestamp || 0));
+          const bTimestamp = Math.min(...Array.from(b[1].values()).map(v => v.timestamp || 0));
+          return aTimestamp - bTimestamp;
+        })
+        .map(([timeKey]) => timeKey);
+
+      const result = sortedTimes.map(timeKey => {
+        const entry: any = { fecha: timeKey };
+        allLabelsArray.forEach(label => {
+          entry[label] = undefined;
+        });
+
+        const timeEntry = groupedByTime.get(timeKey)!;
+        timeEntry.forEach(({ values }, label) => {
+          if (values.length > 0) {
+            entry[label] = values.reduce((a, b) => a + b, 0) / values.length;
+          }
+        });
+
+        return entry;
+      });
+
+      return { result, allLabelsArray, pointCount: result.length };
+    };
+
+    let granularityType: 'minutes' | 'hours' | 'days' = 'hours';
+    let minuteInterval = 30;
+    let hourlyInterval: number | undefined = undefined;
+
+    if (daysSpan <= 1) {
+      granularityType = 'minutes';
+      minuteInterval = 15;
+    } else if (daysSpan <= 7) {
+      granularityType = 'hours';
+      hourlyInterval = 1;
+    } else if (daysSpan <= 21) {
+      granularityType = 'hours';
+      hourlyInterval = 2;
+    } else if (daysSpan <= 28) {
+      granularityType = 'hours';
+      hourlyInterval = 4;
+    } else if (daysSpan <= 60) {
+      granularityType = 'hours';
+      hourlyInterval = 4;
+    } else {
+      granularityType = 'hours';
+      hourlyInterval = 6;
+    }
+
+    let { result, allLabelsArray, pointCount } = performGrouping(granularityType, minuteInterval, hourlyInterval);
+
+    const totalMediciones = comparisonFiltradasPorMetrica.length;
+    if (pointCount <= 2 && totalMediciones >= 3) {
+      if (granularityType === 'hours') {
+        ({ result, allLabelsArray, pointCount } = performGrouping('hours', undefined, 1));
+      }
+      if (pointCount <= 2) {
+        ({ result, allLabelsArray, pointCount } = performGrouping('minutes', 15, undefined));
+      }
+    }
+
+    return result;
+  }, [comparisonFiltradasPorMetrica, dateRange.start, dateRange.end, memoizedSensores, memoizedTipos]);
+
+  // Obtener todas las series de comparación
+  const comparisonAllSeries = useMemo(() => {
+    const seriesSet = new Set<string>();
+
+    comparisonFiltradasPorMetrica.forEach((m: any) => {
+      if (m.medicion !== null && m.medicion !== undefined) {
+        const label = getComparisonSeriesLabel(m);
+        seriesSet.add(label);
+      }
+    });
+
+    comparisonProcessedChartData.forEach((item: any) => {
+      Object.keys(item).forEach(key => {
+        if (key !== 'fecha' && typeof item[key] === 'number') {
+          seriesSet.add(key);
+        }
+      });
+    });
+
+    return Array.from(seriesSet).sort();
+  }, [comparisonProcessedChartData, comparisonFiltradasPorMetrica, getComparisonSeriesLabel]);
+
+  // Actualizar estados derivados cuando los datos de comparación cambien
+  useEffect(() => {
+    setComparisonChartData(comparisonProcessedChartData);
+    setComparisonSeries(comparisonAllSeries);
+  }, [comparisonProcessedChartData, comparisonAllSeries]);
+
   // YA NO es necesario actualizar availableMetrics cuando cambian mediciones
   // Porque ahora usamos allMetricsFromInitialLoad que se mantiene constante
   // Este useEffect se puede remover o dejar como es (será un no-op)
@@ -440,11 +730,20 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     }
   }, [isLocalizacionDropdownOpen, isCollapsed, state]);
 
+  // Ref para el dropdown de comparación
+  const comparisonDropdownRef = useRef<HTMLDivElement>(null);
+
   // Cerrar dropdown cuando se hace click fuera
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (localizacionDropdownRef.current && !localizacionDropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      
+      if (localizacionDropdownRef.current && !localizacionDropdownRef.current.contains(target)) {
         setIsLocalizacionDropdownOpen(false);
+      }
+      // Cerrar dropdown de comparación solo si el click fue fuera de él
+      if (comparisonDropdownRef.current && !comparisonDropdownRef.current.contains(target)) {
+        setIsComparisonDropdownOpen(false);
       }
     };
 
@@ -1046,6 +1345,78 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
           {/* Separador visual */}
           <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
 
+          {/* Comparar Métricas */}
+          <div className="flex flex-col items-center flex-shrink-0">
+            <label className="text-base font-bold text-blue-500 font-mono mb-0.5 whitespace-nowrap uppercase">
+              Comparar:
+            </label>
+            <div className="relative" ref={comparisonDropdownRef}>
+              {comparisonMetricId ? (
+                <div className="flex items-center gap-2">
+                  <button
+                    className="h-10 px-4 rounded font-mono text-base transition-colors whitespace-nowrap bg-purple-500 text-white border border-purple-600"
+                  >
+                    {availableMetrics.find(m => m.id === comparisonMetricId)?.name || 'Comparar'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setComparisonMetricId(null);
+                      setComparisonMediciones([]);
+                      setComparisonChartData([]);
+                      setComparisonSeries([]);
+                    }}
+                    className="h-10 w-8 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white rounded font-bold text-lg transition-colors"
+                    title="Quitar comparación"
+                  >
+                    ×
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setIsComparisonDropdownOpen(!isComparisonDropdownOpen)}
+                  disabled={availableMetrics.length <= 1}
+                  className="h-10 px-4 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 font-mono text-base flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span>Agregar</span>
+                  <svg className={`w-4 h-4 transition-transform ${isComparisonDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+              )}
+              {isComparisonDropdownOpen && availableMetrics.length > 1 && comparisonDropdownRef.current && (() => {
+                const rect = comparisonDropdownRef.current.getBoundingClientRect();
+                return (
+                  <div 
+                    className="fixed z-[99999] bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-y-auto"
+                    style={{
+                      top: `${rect.bottom + 4}px`,
+                      left: `${rect.left}px`,
+                      width: `${rect.width}px`
+                    }}
+                  >
+                    {availableMetrics
+                      .filter(metric => metric.id !== selectedMetricId)
+                      .map(metric => (
+                        <button
+                          key={metric.id}
+                          onClick={() => {
+                            setComparisonMetricId(metric.id);
+                            setIsComparisonDropdownOpen(false);
+                          }}
+                          className="w-full text-left px-3 py-2 text-base transition-colors font-mono tracking-wider text-gray-700 dark:text-neutral-300 hover:bg-blue-100 dark:hover:bg-blue-900 whitespace-nowrap"
+                        >
+                          {metric.name}
+                        </button>
+                      ))}
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+
+          {/* Separador visual */}
+          <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
+
           {/* Información del Nodo */}
           <div className="flex flex-col items-center flex-shrink-0">
             <label className="text-base font-bold text-blue-500 font-mono mb-0.5 whitespace-nowrap uppercase">
@@ -1104,12 +1475,17 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
             }
           `}</style>
             <MedicionesAreaChart
-              key={`${selectedLocalizacion?.localizacionid}-${selectedMetricId}`}
+              key={`${selectedLocalizacion?.localizacionid}-${selectedMetricId}-${comparisonMetricId || 'no-comp'}`}
               chartData={chartData}
               allSeries={allSeries}
               selectedMetricUnit={unitFromData}
               yAxisDomain={yAxisDomain}
               colors={COLORS}
+              comparisonChartData={comparisonChartData}
+              comparisonSeries={comparisonSeries}
+              comparisonUnit={comparisonUnit}
+              comparisonYAxisDomain={comparisonYAxisDomain}
+              isComparisonMode={!!comparisonMetricId}
             />
           </div>
         )}
