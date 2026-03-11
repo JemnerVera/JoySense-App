@@ -192,11 +192,13 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
       const isValid = lat != null && lng != null && !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0;
       return isValid;
     });
-    console.log('[InteractiveMap] Nodos con GPS:', {
-      total: result.length,
-      nodesRecibidos: nodes.length,
-      ubicacionesUnicas: Array.from(new Set(nodes.map(n => n.ubicacionid)))
-    });
+    // Solo loguear si hay datos pero ninguno tiene GPS válido
+    if (nodes.length > 0 && result.length === 0) {
+      console.warn('[InteractiveMap] Nodos sin GPS válido:', {
+        nodesRecibidos: nodes.length,
+        ubicacionesUnicas: Array.from(new Set(nodes.map(n => n.ubicacionid)))
+      });
+    }
     return result;
   }, [nodes])
   

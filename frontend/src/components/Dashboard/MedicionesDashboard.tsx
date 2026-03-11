@@ -1271,7 +1271,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                 step="0.1"
                 min="-999999"
                 max="999999"
-                value={yAxisDomain.min !== null && !isNaN(yAxisDomain.min) ? yAxisDomain.min : ''}
+                value={yAxisDomain.min !== null && !isNaN(yAxisDomain.min) ? Math.round(yAxisDomain.min * 100) / 100 : ''}
                 onChange={(e) => {
                   const inputValue = e.target.value
                   if (inputValue === '') {
@@ -1292,7 +1292,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                 step="0.1"
                 min="-999999"
                 max="999999"
-                value={yAxisDomain.max !== null && !isNaN(yAxisDomain.max) ? yAxisDomain.max : ''}
+                value={yAxisDomain.max !== null && !isNaN(yAxisDomain.max) ? Math.round(yAxisDomain.max * 100) / 100 : ''}
                 onChange={(e) => {
                   const inputValue = e.target.value
                   if (inputValue === '') {
