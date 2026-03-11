@@ -430,6 +430,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                       type="date"
                       value={tempStartDate || detailedStartDate}
                       onChange={(e) => setTempStartDate(e.target.value)}
+                      max={tempEndDate || detailedEndDate}
                       disabled={loadingDetailedData}
                       className="h-10 w-32 pl-2 pr-0 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-base disabled:opacity-50 disabled:cursor-not-allowed"
                       style={{
@@ -446,6 +447,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                       type="date"
                       value={tempEndDate || detailedEndDate}
                       onChange={(e) => setTempEndDate(e.target.value)}
+                      min={tempStartDate || detailedStartDate}
                       disabled={loadingDetailedData}
                       className="h-10 w-32 pl-2 pr-0 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-base disabled:opacity-50 disabled:cursor-not-allowed"
                       style={{
