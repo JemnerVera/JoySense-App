@@ -765,33 +765,15 @@ const searchLocations = async (supabase, query) => {
   
   logger.info(`[searchLocations] Iniciando búsqueda con query: "${query}"`);
   
-  try {
-    // Usar RPC con DISTINCT para obtener solo una fila por localizacionid
-    const { data: result, error } = await supabase.rpc('search_localizaciones', {
-      search_query: query
-    });
-    
-    if (error) {
-      logger.warn(`[searchLocations] RPC no disponible, fallback a query normal:`, error);
-      return await _searchLocationsWithoutRpc(supabase, query);
-    }
-    
-    logger.info(`[searchLocations] RPC devolvió: ${(result || []).length} localizaciones`);
-    logger.debug(`[searchLocations] Resultado:`, result);
-    return result || [];
-    
-  } catch (err) {
-    logger.warn(`[searchLocations] Error en RPC, usando fallback:`, err);
-    return await _searchLocationsWithoutRpc(supabase, query);
-  }
+  return await searchLocationsDB(supabase, query);
 };
 
 /**
- * Fallback sin RPC: búsqueda con filtrado en JavaScript
+ * Búsqueda de localizaciones en DB sin RPC
  * Agrupa por nodoid para devolver solo un resultado por ubicación
  */
-const _searchLocationsWithoutRpc = async (supabase, query) => {
-  logger.info(`[_searchLocationsWithoutRpc] Iniciando búsqueda fallback con query: "${query}"`);
+const searchLocationsDB = async (supabase, query) => {
+  logger.info(`[searchLocationsDB] Ejecutando búsqueda en DB con query: "${query}"`);
   
   const { data: localizaciones, error: locError } = await supabase
     .schema(dbSchema)
@@ -808,7 +790,7 @@ const _searchLocationsWithoutRpc = async (supabase, query) => {
   
   if (locError) throw locError;
   
-  logger.info(`[_searchLocationsWithoutRpc] Total filas obtenidas del DB: ${(localizaciones || []).length}`);
+  logger.info(`[searchLocationsDB] Total filas obtenidas del DB: ${(localizaciones || []).length}`);
   
   // Obtener datos de nodos en un solo query para mejor rendimiento
   const nodoIds = [...new Set((localizaciones || []).map(l => l.nodoid).filter(id => id != null))];
@@ -859,7 +841,7 @@ const _searchLocationsWithoutRpc = async (supabase, query) => {
     if (!resultMap.has(key)) {
       const nodo = nodosMap.get(loc.nodoid);
       if (!nodo) {
-        logger.warn(`[_searchLocationsWithoutRpc] No se encontró nodo para nodoid=${loc.nodoid}`);
+        logger.warn(`[searchLocationsDB] No se encontró nodo para nodoid=${loc.nodoid}`);
         return;
       }
       
@@ -886,8 +868,6 @@ const _searchLocationsWithoutRpc = async (supabase, query) => {
           loc.localizacion
         ].filter(Boolean).join(' → ');
         
-        logger.debug(`[_searchLocationsWithoutRpc] Agregando resultado: nodoid=${loc.nodoid}, localizacion="${loc.localizacion}", breadcrumb="${breadcrumb}"`);
-        
         // Guardar usando nodoid como identificador, no localizacionid
         // El frontend usará nodoid + localizacion para identificar la selección
         resultMap.set(key, {
@@ -900,8 +880,6 @@ const _searchLocationsWithoutRpc = async (supabase, query) => {
   });
   
   const result = Array.from(resultMap.values());
-  logger.info(`[_searchLocationsWithoutRpc] Resultados finales: ${result.length} localizaciones únicas (agrupadas por ubicación)`);
-  logger.debug(`[_searchLocationsWithoutRpc] Resultado:`, result);
   return result;
 };
 
