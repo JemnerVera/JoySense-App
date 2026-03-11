@@ -365,6 +365,7 @@ export const DetailedEChart: React.FC<DetailedEChartProps> = ({
         }
       ],
       legend: {
+        show: showLegend,
         data: filteredVisibleLines.map(line => cleanLabel(line)),
         top: 0,
         textStyle: {

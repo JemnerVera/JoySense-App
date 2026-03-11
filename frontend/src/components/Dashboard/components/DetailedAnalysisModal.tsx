@@ -617,187 +617,6 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                       )}
                     </div>
                   </div>
-                  
-                  {/* Separador visual */}
-                  <div className="w-px h-20 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
-
-                  {/* Leyenda compacta DENTRO de la barra de controles - CON CHECKBOXES */}
-                  {visibleLines.length > 0 && (
-                    <div className="flex flex-row items-start gap-3 flex-shrink-0">
-                      {(() => {
-                        // Función para ordenar líneas por número de sonda
-                        const sortBySondaNumber = (lines: string[]): string[] => {
-                          return [...lines].sort((a, b) => {
-                            const cleanLabel = (label: string): string => {
-                              let cleaned = label.replace(/^comp_/, '')
-                              cleaned = cleaned.replace(/^Punto\s+\d+\s*[(-]?\s*/, '').replace(/[)]/g, '').trim()
-                              const macetaMatch = cleaned.match(/Maceta\s+-\s+Sonda\s+\d+cm/)
-                              if (macetaMatch) {
-                                return macetaMatch[0]
-                              }
-                              const sueloMatch = cleaned.match(/Suelo\s+-\s+Sonda\s+\d+cm/)
-                              if (sueloMatch) {
-                                return sueloMatch[0]
-                              }
-                              return cleaned
-                            }
-                            
-                            const aMatch = cleanLabel(a).match(/Sonda\s+(\d+)cm/)
-                            const bMatch = cleanLabel(b).match(/Sonda\s+(\d+)cm/)
-                            
-                            if (aMatch && bMatch) {
-                              return parseInt(aMatch[1]) - parseInt(bMatch[1])
-                            }
-                            
-                            return 0
-                          })
-                        }
-                        
-                        const mainNodeLines = visibleLines.filter(line => !line.startsWith('comp_'))
-                        const comparisonNodeLines = sortBySondaNumber(visibleLines.filter(line => line.startsWith('comp_')))
-                        
-                        // Helper para limpiar label
-                        const cleanLabel = (label: string): string => {
-                          let cleaned = label.replace(/^comp_/, '')
-                          cleaned = cleaned.replace(/^Punto\s+\d+\s*[(-]?\s*/, '').replace(/[)]/g, '').trim()
-                          const macetaMatch = cleaned.match(/Maceta\s+-\s+Sonda\s+\d+cm/)
-                          if (macetaMatch) {
-                            return macetaMatch[0]
-                          }
-                          const sueloMatch = cleaned.match(/Suelo\s+-\s+Sonda\s+\d+cm/)
-                          if (sueloMatch) {
-                            return sueloMatch[0]
-                          }
-                          return cleaned
-                        }
-                        
-                        const handleToggleLine = (lineKey: string, isComparison: boolean) => {
-                          const cleanedLabel = cleanLabel(lineKey)
-                          // El formato correcto debe incluir el prefijo main: o comp:
-                          const fullKey = isComparison ? `comp:${cleanedLabel}` : `main:${cleanedLabel}`
-                          const newVisible = new Set(visibleTipos)
-                          
-                          if (newVisible.has(fullKey)) {
-                            newVisible.delete(fullKey)
-                          } else {
-                            newVisible.add(fullKey)
-                          }
-                          
-                          if (onVisibleTiposChange) {
-                            onVisibleTiposChange(newVisible)
-                          }
-                        }
-                        
-                        // Renderizar una sección de leyenda (actual o comparación)
-                        const renderLegendSection = (lines: string[], title: string, isComparison: boolean, colors: string[]) => {
-                          return (
-                            <div className="flex flex-row gap-3 items-start flex-shrink-0">
-                              {/* Primera columna - primeras 2 líneas */}
-                              <div className="flex flex-col flex-shrink-0">
-                                <label className="text-base font-bold text-blue-500 font-mono mb-2 whitespace-nowrap uppercase">{title}</label>
-                                <div className="flex flex-col gap-1">
-                                  {lines.slice(0, 2).map((lineKey, sliceIdx) => {
-                                    const realIdx = sliceIdx  // realIdx para primera columna es 0, 1
-                                    const cleanedLabel = cleanLabel(lineKey)
-                                    const fullKey = isComparison ? `comp:${cleanedLabel}` : `main:${cleanedLabel}`
-                                    const strokeColor = colors[realIdx % colors.length]
-                                    const isVisible = visibleTipos.size === 0 || visibleTipos.has(fullKey)
-                                    
-                                    return (
-                                      <div key={lineKey} className="flex items-center gap-1 h-6">
-                                        <input
-                                          type="checkbox"
-                                          checked={isVisible}
-                                          onChange={() => handleToggleLine(lineKey, isComparison)}
-                                          className="w-3 h-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer flex-shrink-0"
-                                        />
-                                        {isComparison ? (
-                                          <svg className="w-2 h-1 flex-shrink-0" viewBox="0 0 8 2" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <line x1="0" y1="1" x2="8" y2="1" stroke={strokeColor} strokeWidth="1.8" strokeDasharray="2.5 1.5" strokeLinecap="round" />
-                                          </svg>
-                                        ) : (
-                                          <div 
-                                            className="w-2 h-0.5 rounded-full flex-shrink-0" 
-                                            style={{ backgroundColor: strokeColor }}
-                                          />
-                                        )}
-                                        <span className="text-xs text-gray-600 dark:text-neutral-400 font-mono font-bold whitespace-nowrap">
-                                          {cleanedLabel}
-                                        </span>
-                                      </div>
-                                    )
-                                  })}
-                                </div>
-                              </div>
-                              
-                              {/* Segunda columna - líneas adicionales (si hay) */}
-                              {lines.length > 2 && (
-                                <div className="flex flex-col flex-shrink-0">
-                                  <label className="text-base font-bold text-transparent font-mono mb-2 whitespace-nowrap uppercase">.</label>
-                                  <div className="flex flex-col gap-1">
-                                    {lines.slice(2).map((lineKey, sliceIdx) => {
-                                      const realIdx = sliceIdx + 2  // realIdx para segunda columna es 2, 3, 4...
-                                      const cleanedLabel = cleanLabel(lineKey)
-                                      const fullKey = isComparison ? `comp:${cleanedLabel}` : `main:${cleanedLabel}`
-                                      const strokeColor = colors[realIdx % colors.length]
-                                      const isVisible = visibleTipos.size === 0 || visibleTipos.has(fullKey)
-                                      
-                                      return (
-                                        <div key={lineKey} className="flex items-center gap-1 h-6">
-                                          <input
-                                            type="checkbox"
-                                            checked={isVisible}
-                                            onChange={() => handleToggleLine(lineKey, isComparison)}
-                                            className="w-3 h-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer flex-shrink-0"
-                                          />
-                                          {isComparison ? (
-                                            <svg className="w-2 h-1 flex-shrink-0" viewBox="0 0 8 2" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                              <line x1="0" y1="1" x2="8" y2="1" stroke={strokeColor} strokeWidth="1.8" strokeDasharray="2.5 1.5" strokeLinecap="round" />
-                                            </svg>
-                                          ) : (
-                                            <div 
-                                              className="w-2 h-0.5 rounded-full flex-shrink-0" 
-                                              style={{ backgroundColor: strokeColor }}
-                                            />
-                                          )}
-                                          <span className="text-xs text-gray-600 dark:text-neutral-400 font-mono font-bold whitespace-nowrap">
-                                            {cleanedLabel}
-                                          </span>
-                                        </div>
-                                      )
-                                    })}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )
-                        }
-                        
-                        const mainColors = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16']
-                        const comparisonColors = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#14b8a6', '#06b6d4']
-                        
-                        return (
-                          <>
-                            {/* Grupo Localización Principal */}
-                            {mainNodeLines.length > 0 && renderLegendSection(mainNodeLines, 'Leyenda Loc. Actual:', false, mainColors)}
-                            
-                            {/* Separador vertical - solo cuando hay comparación */}
-                            {mainNodeLines.length > 0 && comparisonNodeLines.length > 0 && (
-                              <div className="w-px h-20 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
-                            )}
-                            
-                            {/* Grupo Localización Comparación */}
-                            {comparisonNodeLines.length > 0 && renderLegendSection(comparisonNodeLines, 'Leyenda Loc. Comparación:', true, comparisonColors)}
-                          </>
-                        )
-                      })()}
-                    </div>
-                  )}
-
-                  {/* Separador vertical entre Leyenda e Información del Nodo */}
-                  {visibleLines.length > 0 && isFullscreenView && selectedNode?.ubicacion && (
-                    <div className="w-px h-20 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
-                  )}
 
 {/* Información del Nodo - Al extremo derecho (solo fullscreen) */}
                   {isFullscreenView && selectedNode?.ubicacion && (
@@ -832,12 +651,129 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
 
               {/* Área del gráfico - flex-1 para ocupar espacio disponible */}
               <div className={`bg-gray-100 dark:bg-neutral-800 ${isFullscreenView ? 'rounded-b-xl' : 'rounded-lg'} flex flex-col flex-1 min-h-0 ${isFullscreenView ? 'p-2' : 'p-4'} shadow-sm`}>
-                {/* Título de comparación si existe */}
-                {comparisonNode && (
+                {/* Título siempre visible - con o sin comparación */}
+                {selectedNode && (
                   <div className={`text-center flex-shrink-0 ${isFullscreenView ? 'mb-1' : 'mb-2'}`}>
                     <h2 className="text-lg font-bold text-gray-800 dark:text-white font-mono">
-                      {selectedNode?.localizacion || localizacionesPorNodo?.get(selectedNode?.nodoid)?.[0] || selectedNode?.ubicacion?.ubicacion || selectedNode?.nodo} vs. {comparisonNode.localizacion || localizacionesPorNodo?.get(comparisonNode.nodoid)?.[0] || comparisonNode.ubicacion?.ubicacion || comparisonNode.nodo}
+                      {selectedNode?.localizacion || localizacionesPorNodo?.get(selectedNode?.nodoid)?.[0] || selectedNode?.ubicacion?.ubicacion || selectedNode?.nodo}
+                      {comparisonNode && ` vs. ${comparisonNode.localizacion || localizacionesPorNodo?.get(comparisonNode.nodoid)?.[0] || comparisonNode.ubicacion?.ubicacion || comparisonNode.nodo}`}
                     </h2>
+                  </div>
+                )}
+                
+                {/* Leyenda de comparación horizontal - sin checkboxes, solo clickeable */}
+                {visibleLines.length > 0 && (
+                  <div className={`flex flex-row items-center justify-center gap-4 flex-wrap flex-shrink-0 ${isFullscreenView ? 'mb-1' : 'mb-3'} px-4`}>
+                    {(() => {
+                      const sortBySondaNumber = (lines: string[]): string[] => {
+                        return [...lines].sort((a, b) => {
+                          const cleanLabel = (label: string): string => {
+                            let cleaned = label.replace(/^comp_/, '')
+                            cleaned = cleaned.replace(/^Punto\s+\d+\s*[(-]?\s*/, '').replace(/[)]/g, '').trim()
+                            const macetaMatch = cleaned.match(/Maceta\s+-\s+Sonda\s+\d+cm/)
+                            if (macetaMatch) {
+                              return macetaMatch[0]
+                            }
+                            const sueloMatch = cleaned.match(/Suelo\s+-\s+Sonda\s+\d+cm/)
+                            if (sueloMatch) {
+                              return sueloMatch[0]
+                            }
+                            return cleaned
+                          }
+                          
+                          const aMatch = cleanLabel(a).match(/Sonda\s+(\d+)cm/)
+                          const bMatch = cleanLabel(b).match(/Sonda\s+(\d+)cm/)
+                          
+                          if (aMatch && bMatch) {
+                            return parseInt(aMatch[1]) - parseInt(bMatch[1])
+                          }
+                          
+                          return 0
+                        })
+                      }
+                      
+                      const mainNodeLines = visibleLines.filter(line => !line.startsWith('comp_'))
+                      const comparisonNodeLines = sortBySondaNumber(visibleLines.filter(line => line.startsWith('comp_')))
+                      
+                      const cleanLabel = (label: string): string => {
+                        let cleaned = label.replace(/^comp_/, '')
+                        cleaned = cleaned.replace(/^Punto\s+\d+\s*[(-]?\s*/, '').replace(/[)]/g, '').trim()
+                        const macetaMatch = cleaned.match(/Maceta\s+-\s+Sonda\s+\d+cm/)
+                        if (macetaMatch) {
+                          return macetaMatch[0]
+                        }
+                        const sueloMatch = cleaned.match(/Suelo\s+-\s+Sonda\s+\d+cm/)
+                        if (sueloMatch) {
+                          return sueloMatch[0]
+                        }
+                        return cleaned
+                      }
+                      
+                      const handleToggleLine = (lineKey: string, isComparison: boolean) => {
+                        const cleanedLabel = cleanLabel(lineKey)
+                        const fullKey = isComparison ? `comp:${cleanedLabel}` : `main:${cleanedLabel}`
+                        const newVisible = new Set(visibleTipos)
+                        
+                        if (newVisible.has(fullKey)) {
+                          newVisible.delete(fullKey)
+                        } else {
+                          newVisible.add(fullKey)
+                        }
+                        
+                        if (onVisibleTiposChange) {
+                          onVisibleTiposChange(newVisible)
+                        }
+                      }
+                      
+                      const renderLegendItem = (lineKey: string, isComparison: boolean, strokeColor: string) => {
+                        const cleanedLabel = cleanLabel(lineKey)
+                        const fullKey = isComparison ? `comp:${cleanedLabel}` : `main:${cleanedLabel}`
+                        const isVisible = visibleTipos.size === 0 || visibleTipos.has(fullKey)
+                        
+                        return (
+                          <div 
+                            key={lineKey}
+                            onClick={() => handleToggleLine(lineKey, isComparison)}
+                            className="flex items-center gap-1 h-5 cursor-pointer hover:opacity-70 transition-opacity"
+                          >
+                            {isComparison ? (
+                              <svg className="w-2 h-1 flex-shrink-0" viewBox="0 0 8 2" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <line x1="0" y1="1" x2="8" y2="1" stroke={strokeColor} strokeWidth="1.8" strokeDasharray="2.5 1.5" strokeLinecap="round" opacity={isVisible ? 1 : 0.3} />
+                              </svg>
+                            ) : (
+                              <div 
+                                className="w-2 h-0.5 rounded-full flex-shrink-0" 
+                                style={{ backgroundColor: strokeColor, opacity: isVisible ? 1 : 0.3 }}
+                              />
+                            )}
+                            <span className={`text-xs font-mono font-bold whitespace-nowrap ${isVisible ? 'text-gray-600 dark:text-neutral-400' : 'text-gray-400 dark:text-neutral-500 line-through'}`}>
+                              {cleanedLabel}
+                            </span>
+                          </div>
+                        )
+                      }
+                      
+                      const mainColors = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16']
+                      const comparisonColors = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#14b8a6', '#06b6d4']
+                      
+                      return (
+                        <>
+                          {mainNodeLines.map((lineKey, idx) => {
+                            const strokeColor = mainColors[idx % mainColors.length]
+                            return renderLegendItem(lineKey, false, strokeColor)
+                          })}
+                          
+                          {mainNodeLines.length > 0 && comparisonNodeLines.length > 0 && (
+                            <div className="w-px h-4 bg-gray-300 dark:bg-neutral-600 flex-shrink-0"></div>
+                          )}
+                          
+                          {comparisonNodeLines.map((lineKey, idx) => {
+                            const strokeColor = comparisonColors[idx % comparisonColors.length]
+                            return renderLegendItem(lineKey, true, strokeColor)
+                          })}
+                        </>
+                      )
+                    })()}
                   </div>
                 )}
                 
