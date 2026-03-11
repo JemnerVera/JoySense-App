@@ -1039,7 +1039,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
       <div className="bg-gray-200 dark:bg-neutral-700 rounded-lg p-3 mb-4 mx-6 mt-6 flex-shrink-0 min-w-0 overflow-hidden">
         <div 
           ref={scrollContainerRef}
-          className={`flex items-center gap-4 flex-nowrap overflow-x-auto overflow-y-hidden w-full px-2 py-1 scrollbar-thin ${!selectedLocalizacion ? 'justify-center' : ''}`}
+          className="flex items-center gap-4 flex-nowrap overflow-x-auto overflow-y-hidden w-full px-2 py-1 scrollbar-thin"
           style={{ scrollBehavior: 'smooth' }}
         >
           {/* Selector de Localización (agrupada por Nodo) con searchbar */}
@@ -1361,7 +1361,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
               {comparisonMetricId ? (
                 <div className="flex items-center gap-2">
                   <button
-                    className="h-10 px-4 rounded font-mono text-base transition-colors whitespace-nowrap bg-purple-500 text-white border border-purple-600"
+                    className="h-10 px-4 rounded font-mono text-base transition-colors whitespace-nowrap bg-blue-500 text-white border border-blue-600"
                   >
                     {availableMetrics.find(m => m.id === comparisonMetricId)?.name || 'Comparar'}
                   </button>
