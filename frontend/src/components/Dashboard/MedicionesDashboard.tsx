@@ -72,6 +72,25 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   const localizacionDropdownRef = useRef<HTMLDivElement>(null);
   const [localizacionDropdownPosition, setLocalizacionDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
 
+  // Refs para inputs de fecha (para cerrar date pickers nativos cuando el sidebar cambia)
+  const fechaInicioInputRef = useRef<HTMLInputElement>(null);
+  const fechaFinInputRef = useRef<HTMLInputElement>(null);
+
+  // Efecto para cerrar date pickers nativos cuando el sidebar se expande/colapsa
+  useEffect(() => {
+    const closeDatePickers = () => {
+      if (fechaInicioInputRef.current) {
+        fechaInicioInputRef.current.blur();
+      }
+      if (fechaFinInputRef.current) {
+        fechaFinInputRef.current.blur();
+      }
+    };
+
+    // Cerrar date pickers cuando el sidebar cambia
+    closeDatePickers();
+  }, [isCollapsed, state]);
+
   // Evitar ejecución ganda (React StrictMode en desarrollo)
   const initialDataLoaded = useRef(false);
 
@@ -822,6 +841,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                 Fecha Inicio
               </label>
               <input
+                ref={fechaInicioInputRef}
                 type="date"
                 value={pendingDateRange.start}
                 onChange={(e) => {
@@ -860,6 +880,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                 Fecha Fin
               </label>
               <input
+                ref={fechaFinInputRef}
                 type="date"
                 value={pendingDateRange.end}
                 onChange={(e) => {
