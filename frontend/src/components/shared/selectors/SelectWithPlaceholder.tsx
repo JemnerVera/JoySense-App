@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useSidebar } from '../../../contexts/SidebarContext';
 
 interface SelectWithPlaceholderProps {
   value: string | number | null;
@@ -41,6 +42,9 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
   const previousValueRef = useRef<string | number | null>(value);
   const isUserInteractionRef = useRef(false);
   const isRevertingRef = useRef(false); // Flag para evitar loops al revertir cambios
+  
+  // Escuchar cambios del sidebar para reposicionar dropdown cuando se expande/colapsa
+  const { isCollapsed, state } = useSidebar();
   
   // Detectar cuando el value cambia desde fuera (reset)
   React.useEffect(() => {
@@ -101,27 +105,44 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, placeholder, isOpen]);
 
-  // Calcular posición del dropdown usando posicionamiento fijo (fixed) para que esté por encima del contenedor
+  // Calcular posición del dropdown usando posicionamiento fijo (fixed)
+  // Usa requestAnimationFrame para actualizar posición en cada frame (más preciso durante animación del sidebar)
   useEffect(() => {
     if (isOpen && triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect();
-      const estimatedDropdownHeight = 400;
-      const spaceBelow = window.innerHeight - rect.bottom;
-      const spaceAbove = rect.top;
-      
-      // Siempre abrir hacia abajo, pero usar posicionamiento fixed
-      setActualPlacement('bottom');
-      
-      // Calcular posición usando getBoundingClientRect (coordenadas relativas al viewport)
-      setDropdownPosition({
-        top: rect.bottom + 4, // 4px de margen
-        left: rect.left,
-        width: rect.width
-      });
+      let animationFrameId: number;
+      let isMounted = true;
+
+      const updatePosition = () => {
+        if (!isMounted || !triggerRef.current) return;
+        const rect = triggerRef.current.getBoundingClientRect();
+        
+        setActualPlacement('bottom');
+        
+        setDropdownPosition({
+          top: rect.bottom + 4,
+          left: rect.left,
+          width: rect.width
+        });
+
+        // Continuar el loop mientras el dropdown esté abierto
+        if (isMounted) {
+          animationFrameId = requestAnimationFrame(updatePosition);
+        }
+      };
+
+      // Iniciar el loop de animación
+      animationFrameId = requestAnimationFrame(updatePosition);
+
+      return () => {
+        isMounted = false;
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+        }
+      };
     } else {
       setDropdownPosition(null);
     }
-  }, [isOpen]);
+  }, [isOpen, isCollapsed, state]);
 
   // Cerrar dropdown cuando se hace clic fuera (funciona con portal)
   useEffect(() => {

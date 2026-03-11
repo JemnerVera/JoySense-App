@@ -10,6 +10,7 @@ import { filterNodesByGlobalFilters } from '../../utils/filterNodesUtils';
 import { localizacionMatchesGlobalFilters as localizacionMatchesGlobalFiltersUtil } from '../../utils/filterSync';
 import { Localizacion } from '../../types';
 import { MedicionesAreaChart } from './components/MedicionesAreaChart';
+import { useSidebar } from '../../contexts/SidebarContext';
 
 interface MedicionesDashboardProps {}
 
@@ -19,6 +20,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   const { t } = useLanguage();
   const { showError } = useToast();
   const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado, ubicacionSeleccionada, setUbicacionSeleccionada } = useFilters();
+  const { isCollapsed, state } = useSidebar();
 
   // Estados principales
   const [localizaciones, setLocalizaciones] = useState<Localizacion[]>([]);
@@ -384,18 +386,40 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   }, [uniqueLocalizaciones, localizacionSearchTerm, localizacionMatchesGlobalFilters]);
 
   // Calcular posición del dropdown de localización cuando se abre
+  // Usa requestAnimationFrame para actualizar posición en cada frame (más preciso durante animación del sidebar)
   useEffect(() => {
     if (isLocalizacionDropdownOpen && localizacionDropdownRef.current) {
-      const rect = localizacionDropdownRef.current.getBoundingClientRect();
-      setLocalizacionDropdownPosition({
-        top: rect.bottom + window.scrollY + 4,
-        left: rect.left + window.scrollX,
-        width: rect.width
-      });
+      let animationFrameId: number;
+      let isMounted = true;
+
+      const updatePosition = () => {
+        if (!isMounted || !localizacionDropdownRef.current) return;
+        const rect = localizacionDropdownRef.current.getBoundingClientRect();
+        setLocalizacionDropdownPosition({
+          top: rect.bottom + window.scrollY + 4,
+          left: rect.left + window.scrollX,
+          width: rect.width
+        });
+
+        // Continuar el loop mientras el dropdown esté abierto
+        if (isMounted) {
+          animationFrameId = requestAnimationFrame(updatePosition);
+        }
+      };
+
+      // Iniciar el loop de animación
+      animationFrameId = requestAnimationFrame(updatePosition);
+
+      return () => {
+        isMounted = false;
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+        }
+      };
     } else {
       setLocalizacionDropdownPosition(null);
     }
-  }, [isLocalizacionDropdownOpen]);
+  }, [isLocalizacionDropdownOpen, isCollapsed, state]);
 
   // Cerrar dropdown cuando se hace click fuera
   useEffect(() => {

@@ -15,6 +15,7 @@ import { useFilters } from '../../contexts/FilterContext';
 import { useFilterSync } from '../../hooks/useFilterSync';
 import { filterNodesByGlobalFilters } from '../../utils/filterNodesUtils';
 import { InteractiveMap } from './InteractiveMap';
+import { useSidebar } from '../../contexts/SidebarContext';
 
 interface NodeStatusDashboardProps {}
 
@@ -63,6 +64,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
   const { t } = useLanguage();
   const { showError } = useToast();
   const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado, ubicacionSeleccionada, setUbicacionSeleccionada, localizacionSeleccionada, setLocalizacionSeleccionada } = useFilters();
+  const { isCollapsed, state } = useSidebar();
 
   const [nodes, setNodes] = useState<NodeData[]>([]);
   const [selectedNode, setSelectedNode] = useState<NodeData | null>(null);
@@ -314,32 +316,76 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
   }, [localizacionesDisponibles, nodoSearchTerm]);
 
   // Calcular posición del dropdown de ubicación cuando se abre
+  // Usa requestAnimationFrame para actualizar posición en cada frame (más preciso durante animación del sidebar)
   useEffect(() => {
     if (isUbicacionDropdownOpen && ubicacionDropdownRef.current) {
-      const rect = ubicacionDropdownRef.current.getBoundingClientRect();
-      setUbicacionDropdownPosition({
-        top: rect.bottom + window.scrollY + 4,
-        left: rect.left + window.scrollX,
-        width: rect.width
-      });
+      let animationFrameId: number;
+      let isMounted = true;
+
+      const updatePosition = () => {
+        if (!isMounted || !ubicacionDropdownRef.current) return;
+        const rect = ubicacionDropdownRef.current.getBoundingClientRect();
+        setUbicacionDropdownPosition({
+          top: rect.bottom + window.scrollY + 4,
+          left: rect.left + window.scrollX,
+          width: rect.width
+        });
+
+        // Continuar el loop mientras el dropdown esté abierto
+        if (isMounted) {
+          animationFrameId = requestAnimationFrame(updatePosition);
+        }
+      };
+
+      // Iniciar el loop de animación
+      animationFrameId = requestAnimationFrame(updatePosition);
+
+      return () => {
+        isMounted = false;
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+        }
+      };
     } else {
       setUbicacionDropdownPosition(null);
     }
-  }, [isUbicacionDropdownOpen]);
+  }, [isUbicacionDropdownOpen, isCollapsed, state]);
 
   // Calcular posición del dropdown de nodo cuando se abre
+  // Usa requestAnimationFrame para actualizar posición en cada frame (más preciso durante animación del sidebar)
   useEffect(() => {
     if (isNodoDropdownOpen && nodoDropdownRef.current) {
-      const rect = nodoDropdownRef.current.getBoundingClientRect();
-      setNodoDropdownPosition({
-        top: rect.bottom + window.scrollY + 4,
-        left: rect.left + window.scrollX,
-        width: rect.width
-      });
+      let animationFrameId: number;
+      let isMounted = true;
+
+      const updatePosition = () => {
+        if (!isMounted || !nodoDropdownRef.current) return;
+        const rect = nodoDropdownRef.current.getBoundingClientRect();
+        setNodoDropdownPosition({
+          top: rect.bottom + window.scrollY + 4,
+          left: rect.left + window.scrollX,
+          width: rect.width
+        });
+
+        // Continuar el loop mientras el dropdown esté abierto
+        if (isMounted) {
+          animationFrameId = requestAnimationFrame(updatePosition);
+        }
+      };
+
+      // Iniciar el loop de animación
+      animationFrameId = requestAnimationFrame(updatePosition);
+
+      return () => {
+        isMounted = false;
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+        }
+      };
     } else {
       setNodoDropdownPosition(null);
     }
-  }, [isNodoDropdownOpen]);
+  }, [isNodoDropdownOpen, isCollapsed, state]);
 
   // Cerrar dropdowns cuando se hace click fuera
   useEffect(() => {
