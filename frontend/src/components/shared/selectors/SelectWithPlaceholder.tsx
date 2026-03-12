@@ -305,7 +305,7 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
                     }}
                     className={`px-3 py-2 cursor-pointer text-gray-900 dark:text-white font-mono tracking-wider transition-colors ${
                       selectedOption?.value === option.value 
-                        ? (themeColor === 'orange' ? 'bg-orange-600' : 'bg-purple-600')
+                        ? (themeColor === 'orange' ? 'bg-orange-500' : 'bg-purple-600')
                         : 'hover:bg-gray-100 dark:hover:bg-neutral-800'
                     }`}
                     style={{ 
@@ -324,7 +324,7 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
                   >
                     {labelParts ? (
                       <span>
-                        <span className={selectedOption?.value === option.value ? 'text-white' : (themeColor === 'orange' ? 'text-orange-500' : 'text-purple-500')}>{labelParts[0]}</span>
+                        <span className={selectedOption?.value === option.value ? 'text-white' : (themeColor === 'orange' ? 'text-orange-400' : 'text-purple-500')}>{labelParts[0]}</span>
                         <span> - {labelParts[1]}</span>
                       </span>
                     ) : (

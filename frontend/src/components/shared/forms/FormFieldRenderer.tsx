@@ -97,6 +97,7 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
           options={options}
           placeholder={placeholder}
           allowExternalChange={allowExternalChange}
+          themeColor="orange"
         />
       </div>
     );

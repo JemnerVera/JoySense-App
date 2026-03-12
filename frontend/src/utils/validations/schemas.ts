@@ -67,7 +67,6 @@ export const tableValidationSchemas: Record<string, ValidationRule[]> = {
   // perfilumbral ya no existe - reemplazado por regla_perfil y regla_umbral
   
   sensor: [
-    { field: 'sensorid', required: true, type: 'number', customMessage: 'El ID del sensor es obligatorio' },
     { field: 'tipoid', required: true, type: 'number', customMessage: 'Debe seleccionar un tipo' }
   ],
   
