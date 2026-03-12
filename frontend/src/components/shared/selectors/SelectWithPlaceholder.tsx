@@ -249,11 +249,12 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
       {isOpen && !disabled && dropdownPosition && createPortal(
         <div 
           data-portal-dropdown
-          className={`fixed z-[9999] ${dropdownWidth || 'w-full'} bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg shadow-lg`}
+          className={`fixed z-[9999] bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg shadow-lg`}
           style={{ 
             top: `${dropdownPosition.top}px`,
             left: `${dropdownPosition.left}px`,
-            width: `${dropdownPosition.width}px`,
+            width: dropdownWidth ? 'auto' : `${dropdownPosition.width}px`,
+            minWidth: dropdownWidth ? dropdownWidth.replace('min-w-[', '').replace(']', '') : 'auto',
             maxHeight: '500px',
             display: 'flex',
             flexDirection: 'column',
@@ -324,8 +325,17 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
                   >
                     {labelParts ? (
                       <span>
-                        <span className={selectedOption?.value === option.value ? 'text-white' : (themeColor === 'orange' ? 'text-orange-400' : 'text-purple-500')}>{labelParts[0]}</span>
-                        <span> - {labelParts[1]}</span>
+                        {labelParts.map((part, partIndex) => (
+                          <span key={`part-${partIndex}`}>
+                            {partIndex === 0 ? (
+                              <span className={selectedOption?.value === option.value ? 'text-white' : (themeColor === 'orange' ? 'text-orange-400' : 'text-purple-500')}>
+                                {part}
+                              </span>
+                            ) : (
+                              <span> - {part}</span>
+                            )}
+                          </span>
+                        ))}
                       </span>
                     ) : (
                       <span style={{ width: '100%', display: 'block' }}>{option.label.toUpperCase()}</span>
