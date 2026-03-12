@@ -27,7 +27,7 @@ export const filterColumnsByTable = (
     'entidad_localizacion': ['entidadid', 'localizacionid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'metrica': ['metrica', 'unidad', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'tipo': ['tipo', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
-    'localizacion': ['localizacionid', 'nodoid', 'sensorid', 'metricaid', 'localizacion', 'latitud', 'longitud', 'referencia', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
+    'localizacion': ['localizacionid', 'nodoid', 'sensorid', 'metricaid', 'latitud', 'longitud', 'referencia', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'sensor': ['sensor', 'tipoid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'metricasensor': ['sensorid', 'metricaid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'umbral': ['umbralid', 'umbral', 'metricaid', 'minimo', 'maximo', 'estandar', 'operador', 'inversion', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
@@ -201,12 +201,11 @@ export const reorderColumns = (
     reordered.push(...otherColumns.filter(col => ['fundoid'].includes(col.columnName)));
     reordered.push(...otherColumns.filter(col => ['ubicacion'].includes(col.columnName)));
   } else if (tableName === 'localizacion') {
-    // Orden para tablas: localizacionid, nodoid, sensorid, metricaid, localizacion, latitud, longitud, referencia
+    // Orden para tablas: localizacionid, nodoid, sensorid, metricaid, latitud, longitud, referencia
     reordered.push(...otherColumns.filter(col => ['localizacionid'].includes(col.columnName)));
     reordered.push(...otherColumns.filter(col => ['nodoid'].includes(col.columnName)));
     reordered.push(...otherColumns.filter(col => ['sensorid'].includes(col.columnName)));
     reordered.push(...otherColumns.filter(col => ['metricaid'].includes(col.columnName)));
-    reordered.push(...otherColumns.filter(col => ['localizacion'].includes(col.columnName)));
     reordered.push(...otherColumns.filter(col => ['latitud'].includes(col.columnName)));
     reordered.push(...otherColumns.filter(col => ['longitud'].includes(col.columnName)));
     reordered.push(...otherColumns.filter(col => ['referencia'].includes(col.columnName)));

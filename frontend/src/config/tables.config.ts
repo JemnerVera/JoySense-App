@@ -337,11 +337,10 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     allowMassive: true,
     sortField: 'localizacion',
     fields: [
-      { name: 'localizacionid', label: 'ID', type: 'number', hidden: true, readonly: true },
+      { name: 'localizacionid', label: 'Localización', type: 'number', hidden: false, readonly: true },
       { name: 'nodoid', label: 'Nodo', type: 'select', required: true, foreignKey: { table: 'nodo', valueField: 'nodoid', labelField: 'nodo' } },
       { name: 'sensorid', label: 'Sensor', type: 'select', required: true, foreignKey: { table: 'sensor', valueField: 'sensorid', labelField: 'sensor' } },
       { name: 'metricaid', label: 'Métrica', type: 'select', required: true, foreignKey: { table: 'metrica', valueField: 'metricaid', labelField: 'metrica' } },
-      { name: 'localizacion', label: 'Nombre', type: 'text', required: true },
       { name: 'statusid', label: 'Estado', type: 'number', defaultValue: 1, hidden: false }
     ]
   },
