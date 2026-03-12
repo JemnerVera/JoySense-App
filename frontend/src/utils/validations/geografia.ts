@@ -715,25 +715,6 @@ export const validateLocalizacionData = async (
   
   // latitud y longitud son opcionales según el schema
   
-  // 2. Validar duplicados si hay datos existentes
-  // Según el schema, la PK es localizacionid (auto-increment)
-  // No hay constraint único explícito, pero validamos combinación nodoid + sensorid + metricaid
-  if (existingData && existingData.length > 0 && formData.nodoid && formData.sensorid && formData.metricaid) {
-    const localizacionExists = existingData.some(item => 
-      item.nodoid && item.nodoid.toString() === formData.nodoid?.toString() &&
-      item.sensorid && item.sensorid.toString() === formData.sensorid?.toString() &&
-      item.metricaid && item.metricaid.toString() === formData.metricaid?.toString()
-    );
-    
-    if (localizacionExists) {
-      errors.push({
-        field: 'composite',
-        message: 'Ya existe una localización para esta combinación de nodo, sensor y métrica',
-        type: 'duplicate'
-      });
-    }
-  }
-  
   // 3. Generar mensaje amigable
   const userFriendlyMessage = generateUserFriendlyMessage(errors);
   
@@ -787,28 +768,6 @@ export const validateLocalizacionUpdate = async (
   }
   
   // latitud y longitud son opcionales según el schema
-  
-  // 2. Validar duplicados (excluyendo el registro actual)
-  if (formData.nodoid && formData.sensorid && formData.metricaid) {
-    const localizacionExists = existingData.some(item => 
-      item.localizacionid !== originalData.localizacionid &&
-      item.nodoid && item.nodoid.toString() === formData.nodoid?.toString() &&
-      item.sensorid && item.sensorid.toString() === formData.sensorid?.toString() &&
-      item.metricaid && item.metricaid.toString() === formData.metricaid?.toString()
-    );
-    
-    if (localizacionExists) {
-      errors.push({
-        field: 'composite',
-        message: 'Ya existe una localización para esta combinación de nodo, sensor y métrica',
-        type: 'duplicate'
-      });
-    }
-  }
-  
-  // Validar restricción único_nodo_activo (solo si se está activando)
-  // No existe constraint único explícito para nodo activo
-  // Se valida que no haya duplicados de nodoid + sensorid + metricaid
   
   // 4. Generar mensaje amigable para actualización
   const userFriendlyMessage = generateUpdateUserFriendlyMessage(errors);
