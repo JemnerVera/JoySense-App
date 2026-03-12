@@ -485,8 +485,8 @@ export const useTableDataManagement = () => {
         return sortedData;
       });
 
-      // Cargar datos de sensores si estamos en el contexto de metricasensor o umbral
-      if (selectedTable === 'metricasensor' || selectedTable === 'umbral') {
+      // Cargar datos de sensores si estamos en el contexto de metricasensor, umbral, localizacion, sensor o nodo
+      if (selectedTable === 'metricasensor' || selectedTable === 'umbral' || selectedTable === 'localizacion' || selectedTable === 'sensor' || selectedTable === 'nodo') {
         try {
           const sensorResponse = await JoySenseService.getTableData('sensor', 1000);
           const sensorData = Array.isArray(sensorResponse) ? sensorResponse : ((sensorResponse as any)?.data || []);
