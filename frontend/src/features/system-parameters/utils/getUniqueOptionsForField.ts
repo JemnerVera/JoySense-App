@@ -54,6 +54,27 @@ export const getUniqueOptionsForField = ({
       });
   }
 
+  // Caso especial para ubicacionid en tabla nodo: mostrar "FUNDO - UBICACION"
+  if (columnName === 'ubicacionid' && selectedTable === 'nodo') {
+    const ubicaciones = relatedDataForStatus.ubicacionesData || [];
+    const fundos = relatedDataForStatus.fundosData || [];
+    
+    const fundosMap = new Map(fundos.map((f: any) => [f.fundoid, f.fundo]));
+    
+    return ubicaciones
+      .filter((u: any) => u.statusid === 1)
+      .map((item: any) => {
+        const fundoName = fundosMap.get(item.fundoid) || '';
+        const ubicacionName = item.ubicacion || '';
+        const label = fundoName ? `${fundoName} - ${ubicacionName}` : ubicacionName || `ID: ${item.ubicacionid}`;
+        return {
+          value: item.ubicacionid,
+          label: label
+        };
+      })
+      .sort((a: any, b: any) => a.label.localeCompare(b.label));
+  }
+
   // Caso especial para sensorid en tabla metricasensor: mostrar "sensor - tipo"
   if (columnName === 'sensorid' && selectedTable === 'metricasensor') {
     const sensors = relatedDataForStatus.sensorsData || [];
