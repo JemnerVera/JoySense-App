@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { JoySenseService } from '../../services/backend-api';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useFilters } from '../../contexts/FilterContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell } from 'recharts';
 
 interface UmbralesPorLoteProps {}
@@ -14,6 +15,7 @@ interface LoteUmbralData {
 
 const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
   const { t } = useLanguage();
+  const { setShowDetailedAnalysis } = useFilters();
   const [metricas, setMetricas] = useState<any[]>([]);
   const [fundos, setFundos] = useState<any[]>([]);
   const [localizaciones, setLocalizaciones] = useState<any[]>([]);
@@ -58,6 +60,11 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
 
     loadInitialData();
   }, []);
+
+  // Resetear el estado de análisis detallado cuando el dashboard se monta
+  useEffect(() => {
+    setShowDetailedAnalysis(false);
+  }, [setShowDetailedAnalysis]);
 
   // Cargar localizaciones cuando se seleccionan fundos
   useEffect(() => {

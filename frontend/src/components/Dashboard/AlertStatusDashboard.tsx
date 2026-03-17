@@ -59,7 +59,7 @@ interface MedicionConAlerta {
 export function AlertStatusDashboard(_props: AlertStatusDashboardProps) {
   const { t } = useLanguage();
   const { showError } = useToast();
-  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters();
+  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado, showDetailedAnalysis, setShowDetailedAnalysis } = useFilters();
   
   const [nodesWithAlerts, setNodesWithAlerts] = useState<NodeData[]>([]);
   const [selectedNode, setSelectedNode] = useState<NodeData | null>(null);
@@ -67,7 +67,6 @@ export function AlertStatusDashboard(_props: AlertStatusDashboardProps) {
   const [alertas, setAlertas] = useState<AlertaData[]>([]);
   const [mediciones, setMediciones] = useState<MedicionConAlerta[]>([]);
   const [metricas, setMetricas] = useState<any[]>([]);
-  const [showDetailedAnalysis, setShowDetailedAnalysis] = useState(false);
   const [selectedMetrica, setSelectedMetrica] = useState<number | null>(null);
 
   // Cargar nodos con alertas activas
@@ -116,6 +115,11 @@ export function AlertStatusDashboard(_props: AlertStatusDashboardProps) {
 
     loadNodesWithAlerts();
   }, [showError, paisSeleccionado, empresaSeleccionada, fundoSeleccionado]);
+
+  // Resetear el estado de análisis detallado cuando el dashboard se monta
+  useEffect(() => {
+    setShowDetailedAnalysis(false);
+  }, [setShowDetailedAnalysis]);
 
   // Cargar datos cuando se selecciona un nodo
   useEffect(() => {

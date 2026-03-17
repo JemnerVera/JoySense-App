@@ -566,6 +566,11 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
     ]
   }, [filters.startDate, filters.endDate, selectedNode?.nodoid, filters.ubicacionId, selectedNode])
 
+  // Resetear el estado de análisis detallado cuando el dashboard se monta
+  useEffect(() => {
+    setShowDetailedAnalysis(false);
+  }, [setShowDetailedAnalysis]);
+
   // Cargar datos de mediciones con debouncing y cancelación mejorada
   useEffect(() => {
     // Si hay un nodo seleccionado, no requerir filtros (podemos usar nodoid directamente)

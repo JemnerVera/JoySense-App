@@ -63,7 +63,7 @@ const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
   const { t } = useLanguage();
   const { showError } = useToast();
-  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado, ubicacionSeleccionada, setUbicacionSeleccionada, localizacionSeleccionada, setLocalizacionSeleccionada } = useFilters();
+  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado, ubicacionSeleccionada, setUbicacionSeleccionada, localizacionSeleccionada, setLocalizacionSeleccionada, setShowDetailedAnalysis } = useFilters();
   const { isCollapsed, state } = useSidebar();
 
   const [nodes, setNodes] = useState<NodeData[]>([]);
@@ -201,6 +201,11 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
     };
     loadInitialData();
   }, []);
+
+  // Resetear el estado de análisis detallado cuando el dashboard se monta
+  useEffect(() => {
+    setShowDetailedAnalysis(false);
+  }, [setShowDetailedAnalysis]);
 
   // Cargar nodos disponibles (con filtros globales para que el mapa muestre todos los del fundo/empresa/país)
   useEffect(() => {

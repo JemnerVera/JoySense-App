@@ -19,7 +19,7 @@ interface LoteMetricaData {
 
 const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
   const { t } = useLanguage();
-  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters();
+  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado, setShowDetailedAnalysis } = useFilters();
   const [metricas, setMetricas] = useState<any[]>([]);
   const [empresas, setEmpresas] = useState<any[]>([]);
   const [fundos, setFundos] = useState<any[]>([]);
@@ -89,6 +89,11 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
 
     loadInitialData();
   }, []);
+
+  // Resetear el estado de análisis detallado cuando el dashboard se monta
+  useEffect(() => {
+    setShowDetailedAnalysis(false);
+  }, [setShowDetailedAnalysis]);
 
   // Normalizar ID (backend puede devolver number o string)
   const toId = (v: any): number => (v === '' || v === null || v === undefined ? NaN : Number(v));

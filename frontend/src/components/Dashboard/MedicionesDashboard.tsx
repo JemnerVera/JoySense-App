@@ -19,7 +19,7 @@ const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'
 export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   const { t } = useLanguage();
   const { showError } = useToast();
-  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado, ubicacionSeleccionada, setUbicacionSeleccionada, localizacionSeleccionada } = useFilters();
+  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado, ubicacionSeleccionada, setUbicacionSeleccionada, localizacionSeleccionada, setShowDetailedAnalysis } = useFilters();
   const { isCollapsed, state } = useSidebar();
 
   // Estados principales
@@ -104,6 +104,11 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     // Cerrar date pickers cuando el sidebar cambia
     closeDatePickers();
   }, [isCollapsed, state]);
+
+  // Resetear el estado de análisis detallado cuando el dashboard se monta
+  useEffect(() => {
+    setShowDetailedAnalysis(false);
+  }, [setShowDetailedAnalysis]);
 
   // Evitar ejecución ganda (React StrictMode en desarrollo)
   const initialDataLoaded = useRef(false);
