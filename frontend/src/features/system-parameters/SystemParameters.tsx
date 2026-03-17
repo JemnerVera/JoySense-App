@@ -82,7 +82,7 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
 }, ref) => {
   const { t } = useLanguage();
   const { user } = useAuth();
-  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters();
+  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado, ubicacionSeleccionada, localizacionSeleccionada } = useFilters();
   const sidebar = useSidebar();
 
   // Estado local
@@ -589,9 +589,14 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     return getUniqueOptionsForField({
       columnName,
       selectedTable,
-      relatedDataForStatus
+      relatedDataForStatus,
+      paisSeleccionado,
+      empresaSeleccionada,
+      fundoSeleccionado,
+      ubicacionSeleccionada,
+      localizacionSeleccionada
     });
-  }, [selectedTable, relatedDataForStatus]);
+  }, [selectedTable, relatedDataForStatus, paisSeleccionado, empresaSeleccionada, fundoSeleccionado, ubicacionSeleccionada, localizacionSeleccionada]);
 
   // Handlers de navegación
   // IMPORTANTE: Este handler NO debe validar cambios si viene de ProtectedParameterButton

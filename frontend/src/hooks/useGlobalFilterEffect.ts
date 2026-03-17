@@ -1,145 +1,187 @@
 import { useMemo } from 'react';
 import { useFilters } from '../contexts/FilterContext';
 
+interface RelatedData {
+  paisesData?: any[];
+  empresasData?: any[];
+  fundosData?: any[];
+  ubicacionesData?: any[];
+  localizacionesData?: any[];
+  nodosData?: any[];
+  [key: string]: any[] | undefined;
+}
+
 interface GlobalFilterEffectOptions {
   tableName: string;
   data: any[];
+  relatedData?: RelatedData;
 }
 
-export const useGlobalFilterEffect = ({ tableName, data }: GlobalFilterEffectOptions) => {
-  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado } = useFilters();
+export const useGlobalFilterEffect = ({ tableName, data, relatedData }: GlobalFilterEffectOptions) => {
+  const { 
+    paisSeleccionado, 
+    empresaSeleccionada, 
+    fundoSeleccionado,
+    ubicacionSeleccionada,
+    localizacionSeleccionada
+  } = useFilters();
 
   const filteredData = useMemo(() => {
     if (!data || data.length === 0) return data;
 
-    // Lógica específica para cada tabla según los requerimientos:
-    // - País: Sin filtros (mostrar todos)
-    // - Empresa: Filtrar por País seleccionado
-    // - Fundo: Filtrar por Empresa seleccionada
+    const hasAnyFilter = paisSeleccionado || empresaSeleccionada || fundoSeleccionado || ubicacionSeleccionada || localizacionSeleccionada;
+    if (!hasAnyFilter) return data;
 
-    // Para la tabla 'pais', siempre mostrar todos los registros sin filtros
+    const empresas = relatedData?.empresasData || [];
+    const fundos = relatedData?.fundosData || [];
+    const ubicaciones = relatedData?.ubicacionesData || [];
+    const localizaciones = relatedData?.localizacionesData || [];
+    const nodos = relatedData?.nodosData || [];
+
+    const empresasPorPais = new Map(empresas.map(e => [e.paisid?.toString(), e.empresaid?.toString()]));
+    const fundosPorEmpresa = new Map(fundos.map(f => [f.empresaid?.toString(), f.fundoid?.toString()]));
+    const ubicacionesPorFundo = new Map(ubicaciones.map(u => [u.fundoid?.toString(), u.ubicacionid?.toString()]));
+    const nodosPorUbicacion = new Map(nodos.map(n => [n.ubicacionid?.toString(), n.nodoid?.toString()]));
+    const localizacionesPorNodo = new Map(localizaciones.map(l => [l.nodoid?.toString(), l.localizacionid?.toString()]));
+    const localizacionesPorUbicacion = new Map(localizaciones.map(l => [l.ubicacionid?.toString(), l.localizacionid?.toString()]));
+
+    const getEmpresasIdsPorPais = (paisId: string): string[] => {
+      return empresas.filter(e => e.paisid?.toString() === paisId).map(e => e.empresaid?.toString());
+    };
+
+    const getFundosIdsPorEmpresa = (empresaId: string): string[] => {
+      return fundos.filter(f => f.empresaid?.toString() === empresaId).map(f => f.fundoid?.toString());
+    };
+
+    const getUbicacionesIdsPorFundo = (fundoId: string): string[] => {
+      return ubicaciones.filter(u => u.fundoid?.toString() === fundoId).map(u => u.ubicacionid?.toString());
+    };
+
+    const getNodosIdsPorUbicacion = (ubicacionId: string): string[] => {
+      return nodos.filter(n => n.ubicacionid?.toString() === ubicacionId).map(n => n.nodoid?.toString());
+    };
+
+    const getLocalizacionesIdsPorNodo = (nodoId: string): string[] => {
+      return localizaciones.filter(l => l.nodoid?.toString() === nodoId).map(l => l.localizacionid?.toString());
+    };
+
+    const getLocalizacionesIdsPorUbicacion = (ubicacionId: string): string[] => {
+      return localizaciones.filter(l => l.ubicacionid?.toString() === ubicacionId).map(l => l.localizacionid?.toString());
+    };
+
     if (tableName === 'pais') {
       return data;
     }
 
-    // Para la tabla 'empresa', filtrar solo por país si está seleccionado
     if (tableName === 'empresa') {
-      if (!paisSeleccionado) {
-        return data;
-      }
-      
-      const filtered = data.filter(row => {
-        return row.paisid && row.paisid.toString() === paisSeleccionado;
-      });
-      
-      console.log('🏢 Tabla Empresa: Filtradas por país', {
-        paisSeleccionado,
-        totalEmpresas: data.length,
-        empresasFiltradas: filtered.length
-      });
-      
+      if (!paisSeleccionado) return data;
+      const filtered = data.filter(row => row.paisid?.toString() === paisSeleccionado);
       return filtered;
     }
 
-    // Para la tabla 'fundo', filtrar solo por empresa si está seleccionada
     if (tableName === 'fundo') {
-      if (!empresaSeleccionada) {
-        return data;
+      if (fundoSeleccionado) {
+        return data.filter(row => row.fundoid?.toString() === fundoSeleccionado);
       }
-      
-      const filtered = data.filter(row => {
-        return row.empresaid && row.empresaid.toString() === empresaSeleccionada;
-      });
-      
-      console.log('🏭 Tabla Fundo: Filtrados por empresa', {
-        empresaSeleccionada,
-        totalFundos: data.length,
-        fundosFiltrados: filtered.length
-      });
-      
-      return filtered;
-    }
-
-    // Para otras tablas, aplicar la lógica original de filtros jerárquicos
-    // Si no hay filtros activos, devolver todos los datos
-    if (!paisSeleccionado && !empresaSeleccionada && !fundoSeleccionado) {
+      if (empresaSeleccionada) {
+        return data.filter(row => row.empresaid?.toString() === empresaSeleccionada);
+      }
       return data;
     }
 
-    console.log('🔍 Aplicando filtros globales para tabla:', {
-      tableName,
-      paisSeleccionado,
-      empresaSeleccionada,
-      fundoSeleccionado,
-      totalData: data.length
-    });
+    if (tableName === 'ubicacion') {
+      if (ubicacionSeleccionada) {
+        const ubiId = ubicacionSeleccionada.ubicacionid?.toString() || ubicacionSeleccionada.toString();
+        return data.filter(row => row.ubicacionid?.toString() === ubiId);
+      }
+      if (fundoSeleccionado) {
+        return data.filter(row => row.fundoid?.toString() === fundoSeleccionado);
+      }
+      if (empresaSeleccionada) {
+        const fundoIds = getFundosIdsPorEmpresa(empresaSeleccionada);
+        return data.filter(row => row.fundoid && fundoIds.includes(row.fundoid.toString()));
+      }
+      if (paisSeleccionado) {
+        const empresaIds = getEmpresasIdsPorPais(paisSeleccionado);
+        const fundoIds = empresaIds.flatMap(eid => getFundosIdsPorEmpresa(eid));
+        return data.filter(row => row.fundoid && fundoIds.includes(row.fundoid.toString()));
+      }
+      return data;
+    }
+
+    if (tableName === 'nodo') {
+      if (ubicacionSeleccionada) {
+        const ubiId = ubicacionSeleccionada.ubicacionid?.toString() || ubicacionSeleccionada.toString();
+        return data.filter(row => row.ubicacionid?.toString() === ubiId);
+      }
+      if (fundoSeleccionado) {
+        const ubiIds = getUbicacionesIdsPorFundo(fundoSeleccionado);
+        return data.filter(row => row.ubicacionid && ubiIds.includes(row.ubicacionid.toString()));
+      }
+      if (empresaSeleccionada) {
+        const fundoIds = getFundosIdsPorEmpresa(empresaSeleccionada);
+        const ubiIds = fundoIds.flatMap(fid => getUbicacionesIdsPorFundo(fid));
+        return data.filter(row => row.ubicacionid && ubiIds.includes(row.ubicacionid.toString()));
+      }
+      if (paisSeleccionado) {
+        const empresaIds = getEmpresasIdsPorPais(paisSeleccionado);
+        const fundoIds = empresaIds.flatMap(eid => getFundosIdsPorEmpresa(eid));
+        const ubiIds = fundoIds.flatMap(fid => getUbicacionesIdsPorFundo(fid));
+        return data.filter(row => row.ubicacionid && ubiIds.includes(row.ubicacionid.toString()));
+      }
+      return data;
+    }
+
+    if (tableName === 'localizacion') {
+      if (localizacionSeleccionada) {
+        const locId = localizacionSeleccionada.localizacionid?.toString() || localizacionSeleccionada.toString();
+        return data.filter(row => row.localizacionid?.toString() === locId);
+      }
+      if (ubicacionSeleccionada) {
+        const ubiId = ubicacionSeleccionada.ubicacionid?.toString() || ubicacionSeleccionada.toString();
+        return data.filter(row => row.ubicacionid?.toString() === ubiId);
+      }
+      if (fundoSeleccionado) {
+        const ubiIds = getUbicacionesIdsPorFundo(fundoSeleccionado);
+        return data.filter(row => row.ubicacionid && ubiIds.includes(row.ubicacionid.toString()));
+      }
+      if (empresaSeleccionada) {
+        const fundoIds = getFundosIdsPorEmpresa(empresaSeleccionada);
+        const ubiIds = fundoIds.flatMap(fid => getUbicacionesIdsPorFundo(fid));
+        return data.filter(row => row.ubicacionid && ubiIds.includes(row.ubicacionid.toString()));
+      }
+      if (paisSeleccionado) {
+        const empresaIds = getEmpresasIdsPorPais(paisSeleccionado);
+        const fundoIds = empresaIds.flatMap(eid => getFundosIdsPorEmpresa(eid));
+        const ubiIds = fundoIds.flatMap(fid => getUbicacionesIdsPorFundo(fid));
+        return data.filter(row => row.ubicacionid && ubiIds.includes(row.ubicacionid.toString()));
+      }
+      return data;
+    }
 
     return data.filter(row => {
       let matches = true;
-
-      // Aplicar filtro por país si está seleccionado
       if (paisSeleccionado && row.paisid) {
         matches = matches && row.paisid.toString() === paisSeleccionado;
       }
-
-      // Aplicar filtro por empresa si está seleccionado
       if (empresaSeleccionada && row.empresaid) {
         matches = matches && row.empresaid.toString() === empresaSeleccionada;
       }
-
-      // Aplicar filtro por fundo si está seleccionado
       if (fundoSeleccionado && row.fundoid) {
         matches = matches && row.fundoid.toString() === fundoSeleccionado;
       }
-
-      // Para tablas que no tienen estos campos directamente, buscar en relaciones
-      if (tableName === 'nodo' && (empresaSeleccionada || fundoSeleccionado)) {
-        // Los nodos están relacionados con ubicaciones a través de localizacion
-        // Si hay filtros de empresa/fundo, se verifican las ubicaciones relacionadas
-        // Si no hay campos directos, no se filtra
-        // TODO: Implementar lógica de relaciones si es necesario
-      }
-
-      if (tableName === 'sensor' && (empresaSeleccionada || fundoSeleccionado)) {
-        // Los sensores están relacionados con nodos, que pueden estar relacionados con ubicaciones
-        // Por ahora, si no hay campos directos, no filtrar
-        // TODO: Implementar lógica de relaciones si es necesario
-      }
-
-      if (tableName === 'metricasensor' && (empresaSeleccionada || fundoSeleccionado)) {
-        // Similar a sensor
-        // TODO: Implementar lógica de relaciones si es necesario
-      }
-
-      // Para tablas que tienen relaciones directas con entidad
-      if (tableName === 'tipo' && fundoSeleccionado) {
-        // Los tipos están relacionados con entidades, que pueden estar relacionadas con fundos
-        if (row.entidadid) {
-          // Verificar si la entidad pertenece al fundo seleccionado
-          // Esto requeriría datos adicionales de entidades
-        }
-      }
-
-      // Para tablas que tienen relaciones directas con ubicación
-      if (tableName === 'localizacion' && fundoSeleccionado) {
-        // Las localizaciones están relacionadas con ubicaciones, que pertenecen a fundos
-        if (row.ubicacionid) {
-          // Verificar si la ubicación pertenece al fundo seleccionado
-          // Esto requeriría datos adicionales de ubicaciones
-        }
-      }
-
       return matches;
     });
-  }, [data, paisSeleccionado, empresaSeleccionada, fundoSeleccionado, tableName]);
+  }, [data, paisSeleccionado, empresaSeleccionada, fundoSeleccionado, ubicacionSeleccionada, localizacionSeleccionada, tableName, relatedData]);
 
-  // Solo hacer log si hay cambios significativos
-  if (filteredData.length !== data.length) {
+  const hasAnyFilter = paisSeleccionado || empresaSeleccionada || fundoSeleccionado || ubicacionSeleccionada || localizacionSeleccionada;
+  if (filteredData.length !== data.length || hasAnyFilter) {
     console.log('📊 Resultado del filtrado global:', {
       tableName,
       originalCount: data.length,
       filteredCount: filteredData.length,
-      hasFilters: !!(paisSeleccionado || empresaSeleccionada || fundoSeleccionado)
+      hasFilters: hasAnyFilter,
+      filtros: { paisSeleccionado, empresaSeleccionada, fundoSeleccionado }
     });
   }
 

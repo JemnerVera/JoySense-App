@@ -21,6 +21,7 @@ interface RelatedData {
   canalesData?: any[];
   contactosData?: any[];
   umbralesData?: any[];
+  reglasData?: any[];
   [key: string]: any[] | undefined;
 }
 
@@ -28,13 +29,119 @@ interface GetUniqueOptionsForFieldParams {
   columnName: string;
   selectedTable: string;
   relatedDataForStatus: RelatedData;
+  paisSeleccionado?: string;
+  empresaSeleccionada?: string;
+  fundoSeleccionado?: string;
+  ubicacionSeleccionada?: any | null;
+  localizacionSeleccionada?: any | null;
 }
 
 export const getUniqueOptionsForField = ({
   columnName,
   selectedTable,
-  relatedDataForStatus
+  relatedDataForStatus,
+  paisSeleccionado,
+  empresaSeleccionada,
+  fundoSeleccionado,
+  ubicacionSeleccionada,
+  localizacionSeleccionada
 }: GetUniqueOptionsForFieldParams): Array<{ value: any; label: string }> => {
+  
+  const empresas = relatedDataForStatus.empresasData || [];
+  const fundos = relatedDataForStatus.fundosData || [];
+  const ubicaciones = relatedDataForStatus.ubicacionesData || [];
+  const nodos = relatedDataForStatus.nodosData || [];
+  const localizaciones = relatedDataForStatus.localizacionesData || [];
+
+  const getEmpresasIdsPorPais = (paisId: string): string[] => 
+    empresas.filter(e => e.paisid?.toString() === paisId).map(e => e.empresaid?.toString());
+
+  const getFundosIdsPorEmpresa = (empresaId: string): string[] => 
+    fundos.filter(f => f.empresaid?.toString() === empresaId).map(f => f.fundoid?.toString());
+
+  const getUbicacionesIdsPorFundo = (fundoId: string): string[] => 
+    ubicaciones.filter(u => u.fundoid?.toString() === fundoId).map(u => u.ubicacionid?.toString());
+
+  const getNodosIdsPorUbicacion = (ubicacionId: string): string[] => 
+    nodos.filter(n => n.ubicacionid?.toString() === ubicacionId).map(n => n.nodoid?.toString());
+
+  const getLocalizacionesIdsPorNodo = (nodoId: string): string[] => 
+    localizaciones.filter(l => l.nodoid?.toString() === nodoId).map(l => l.localizacionid?.toString());
+
+  const getLocalizacionesIdsPorUbicacion = (ubicacionId: string): string[] => 
+    localizaciones.filter(l => l.ubicacionid?.toString() === ubicacionId).map(l => l.localizacionid?.toString());
+
+  // Función helper para filtrar datos según filtros globales
+  const filterDataByGlobalFilters = (data: any[], idField: string): any[] => {
+    if (!data) return [];
+    
+    return data.filter((item: any) => {
+      const idValue = item[idField]?.toString();
+      if (!idValue) return false;
+
+      if (columnName === 'empresaid' && paisSeleccionado) {
+        return item.paisid?.toString() === paisSeleccionado;
+      }
+      if (columnName === 'fundoid' && empresaSeleccionada) {
+        return item.empresaid?.toString() === empresaSeleccionada;
+      }
+      if (columnName === 'fundoid' && paisSeleccionado && !empresaSeleccionada) {
+        const empresaIds = getEmpresasIdsPorPais(paisSeleccionado);
+        return empresaIds.includes(item.empresaid?.toString());
+      }
+      if (columnName === 'ubicacionid' && fundoSeleccionado) {
+        return item.fundoid?.toString() === fundoSeleccionado;
+      }
+      if (columnName === 'ubicacionid' && empresaSeleccionada && !fundoSeleccionado) {
+        const fundoIds = getFundosIdsPorEmpresa(empresaSeleccionada);
+        return fundoIds.includes(item.fundoid?.toString());
+      }
+      if (columnName === 'ubicacionid' && paisSeleccionado && !empresaSeleccionada) {
+        const empresaIds = getEmpresasIdsPorPais(paisSeleccionado);
+        const fundoIds = empresaIds.flatMap(eid => getFundosIdsPorEmpresa(eid));
+        return fundoIds.includes(item.fundoid?.toString());
+      }
+      if (columnName === 'nodoid' && ubicacionSeleccionada) {
+        const ubiId = ubicacionSeleccionada.ubicacionid?.toString() || ubicacionSeleccionada.toString();
+        return item.ubicacionid?.toString() === ubiId;
+      }
+      if (columnName === 'nodoid' && fundoSeleccionado && !ubicacionSeleccionada) {
+        const ubiIds = getUbicacionesIdsPorFundo(fundoSeleccionado);
+        return ubiIds.includes(item.ubicacionid?.toString());
+      }
+      if (columnName === 'nodoid' && empresaSeleccionada && !fundoSeleccionado) {
+        const fundoIds = getFundosIdsPorEmpresa(empresaSeleccionada);
+        const ubiIds = fundoIds.flatMap(fid => getUbicacionesIdsPorFundo(fid));
+        return ubiIds.includes(item.ubicacionid?.toString());
+      }
+      if (columnName === 'localizacionid' && selectedTable === 'localizacion') {
+        if (localizacionSeleccionada) {
+          const locId = localizacionSeleccionada.localizacionid?.toString() || localizacionSeleccionada.toString();
+          return item.localizacionid?.toString() === locId;
+        }
+        if (ubicacionSeleccionada) {
+          const ubiId = ubicacionSeleccionada.ubicacionid?.toString() || ubicacionSeleccionada.toString();
+          return item.ubicacionid?.toString() === ubiId;
+        }
+        if (fundoSeleccionado) {
+          const ubiIds = getUbicacionesIdsPorFundo(fundoSeleccionado);
+          return ubiIds.includes(item.ubicacionid?.toString());
+        }
+        if (empresaSeleccionada) {
+          const fundoIds = getFundosIdsPorEmpresa(empresaSeleccionada);
+          const ubiIds = fundoIds.flatMap(fid => getUbicacionesIdsPorFundo(fid));
+          return ubiIds.includes(item.ubicacionid?.toString());
+        }
+        if (paisSeleccionado) {
+          const empresaIds = getEmpresasIdsPorPais(paisSeleccionado);
+          const fundoIds = empresaIds.flatMap(eid => getFundosIdsPorEmpresa(eid));
+          const ubiIds = fundoIds.flatMap(fid => getUbicacionesIdsPorFundo(fid));
+          return ubiIds.includes(item.ubicacionid?.toString());
+        }
+      }
+      return true;
+    });
+  };
   
   // Caso especial para jefeid en tabla perfil: mostrar "nivel - perfil"
   if (columnName === 'jefeid' && selectedTable === 'perfil') {
@@ -239,7 +346,7 @@ export const getUniqueOptionsForField = ({
 
   // Filtrar por statusid = 1 (activos) para campos de selección
   // Esto asegura que solo se muestren opciones activas en los dropdowns
-  const activeData = data.filter((item: any) => {
+  let filteredByStatus = data.filter((item: any) => {
     // Para campos que tienen statusid, solo mostrar activos
     if (item.statusid !== undefined) {
       return item.statusid === 1;
@@ -248,10 +355,16 @@ export const getUniqueOptionsForField = ({
     return true;
   });
 
+  // Aplicar filtros globales para campos de jerarquía geográfica
+  const fieldsWithGlobalFilter = ['empresaid', 'fundoid', 'ubicacionid', 'nodoid', 'localizacionid'];
+  if (fieldsWithGlobalFilter.includes(columnName)) {
+    filteredByStatus = filterDataByGlobalFilters(filteredByStatus, mapping.key);
+  }
+
   // Mapear a opciones y eliminar duplicados por value
   const optionsMap = new Map<any, { value: any; label: string }>();
   
-  activeData.forEach((item: any) => {
+  filteredByStatus.forEach((item: any) => {
     let label = '';
     if (Array.isArray(mapping.label)) {
       // Para otros campos con múltiples labels, concatenar con espacio
