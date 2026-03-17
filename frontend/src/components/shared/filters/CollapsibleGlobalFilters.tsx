@@ -147,13 +147,29 @@ const CollapsibleGlobalFilters: React.FC<CollapsibleGlobalFiltersProps> = ({
 
 return (
     <div className="space-y-1 relative z-40">
+      {/* Banner de advertencia cuando filtros están deshabilitados */}
+      {isDisabled && (
+        <div className="px-3 py-2 pr-10 bg-yellow-500/20 border border-yellow-500/50 rounded mb-2 flex items-start gap-2">
+          <svg className="w-4 h-4 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
+          <div className="text-xs text-yellow-700 dark:text-yellow-300 font-mono flex-1">
+            <div className="font-bold">Filtros inactivos, regresa al mapa para activar</div>
+          </div>
+        </div>
+      )}
+
 {/* Botón para limpiar filtros - esquina superior derecha */}
       {hasActiveFilters && (
         <button
           onClick={handleClearFilters}
           disabled={isDisabled}
-          className="absolute top-0 right-0 p-2 text-gray-400 hover:text-red-400 transition-colors rounded-lg hover:bg-red-900/20 z-50"
-          title="Limpiar todos los filtros"
+          className={`absolute top-2 right-2 p-2 transition-colors rounded-lg z-50 ${
+            isDisabled 
+              ? 'text-gray-400 cursor-not-allowed opacity-50' 
+              : 'text-gray-400 hover:text-red-400 hover:bg-red-900/20'
+          }`}
+          title={isDisabled ? "Filtros deshabilitados - cierra el análisis detallado" : "Limpiar todos los filtros"}
           aria-label="Limpiar filtros"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -167,11 +183,13 @@ return (
           onClick={handlePaisClick}
           disabled={isDisabled}
           className={`flex items-center w-full h-12 px-5 transition-all duration-200 ${
-            isDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+            isDisabled 
+              ? 'cursor-not-allowed opacity-50 border-l-2 border-yellow-500/50' 
+              : 'cursor-pointer'
           }`}
           style={{
-            color: paisSeleccionado ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor,
-            backgroundColor: !isDisabled && openLevel === 'pais' ? TEMPLATE_COLORS.secondaryBgColor : 'transparent',
+            color: isDisabled ? '#8b7355' : (paisSeleccionado ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor),
+            backgroundColor: !isDisabled && openLevel === 'pais' ? TEMPLATE_COLORS.secondaryBgColor : (isDisabled ? 'rgba(234, 179, 8, 0.05)' : 'transparent'),
             pointerEvents: isDisabled ? 'none' : 'auto'
           }}
           onMouseEnter={(e) => {
@@ -187,14 +205,12 @@ return (
           <span style={{ fontSize: '0.85rem', fontWeight: 500 }}>
             {selectedPaisName || 'PAÍS'}
           </span>
+          {isDisabled && (
+            <svg className="w-4 h-4 ml-2 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+          )}
         </button>
-        
-        {/* Tooltip cuando está deshabilitado */}
-        {isDisabled && (
-          <div className="absolute bottom-full left-0 mb-2 px-2 py-1 text-xs bg-gray-900 text-yellow-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
-            Volver al Mapa primero.
-          </div>
-        )}
 
         {openLevel === 'pais' && (
           <div className="ml-4 space-y-1">
@@ -231,12 +247,14 @@ return (
             onClick={handleEmpresaClick}
             disabled={isDisabled}
             className={`flex items-center w-full h-12 px-5 transition-all duration-200 ${
-              isDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+              isDisabled 
+                ? 'cursor-not-allowed opacity-50 border-l-2 border-yellow-500/50' 
+                : 'cursor-pointer'
             }`}
             style={{
-              color: empresaSeleccionada ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor,
-              backgroundColor: !isDisabled && openLevel === 'empresa' ? TEMPLATE_COLORS.secondaryBgColor : 'transparent',
-              borderLeft: `2px solid ${TEMPLATE_COLORS.borderColor}`,
+              color: isDisabled ? '#8b7355' : (empresaSeleccionada ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor),
+              backgroundColor: !isDisabled && openLevel === 'empresa' ? TEMPLATE_COLORS.secondaryBgColor : (isDisabled ? 'rgba(234, 179, 8, 0.05)' : 'transparent'),
+              borderLeft: isDisabled ? undefined : `2px solid ${TEMPLATE_COLORS.borderColor}`,
               pointerEvents: isDisabled ? 'none' : 'auto'
             }}
             onMouseEnter={(e) => {
@@ -252,14 +270,12 @@ return (
             <span style={{ fontSize: '0.85rem', fontWeight: 500 }}>
               {selectedEmpresaName || 'EMPRESA'}
             </span>
+            {isDisabled && (
+              <svg className="w-4 h-4 ml-2 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            )}
           </button>
-          
-          {/* Tooltip cuando está deshabilitado */}
-          {isDisabled && (
-            <div className="absolute bottom-full left-0 mb-2 px-2 py-1 text-xs bg-gray-900 text-yellow-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
-              Volver al Mapa primero.
-            </div>
-          )}
 
           {openLevel === 'empresa' && (
             <div className="ml-4 space-y-1">
@@ -297,12 +313,14 @@ return (
             onClick={handleFundoClick}
             disabled={isDisabled}
             className={`flex items-center w-full h-12 px-5 transition-all duration-200 ${
-              isDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+              isDisabled 
+                ? 'cursor-not-allowed opacity-50 border-l-2 border-yellow-500/50' 
+                : 'cursor-pointer'
             }`}
             style={{
-              color: fundoSeleccionado ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor,
-              backgroundColor: !isDisabled && openLevel === 'fundo' ? TEMPLATE_COLORS.secondaryBgColor : 'transparent',
-              borderLeft: `2px solid ${TEMPLATE_COLORS.borderColor}`,
+              color: isDisabled ? '#8b7355' : (fundoSeleccionado ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor),
+              backgroundColor: !isDisabled && openLevel === 'fundo' ? TEMPLATE_COLORS.secondaryBgColor : (isDisabled ? 'rgba(234, 179, 8, 0.05)' : 'transparent'),
+              borderLeft: isDisabled ? undefined : `2px solid ${TEMPLATE_COLORS.borderColor}`,
               pointerEvents: isDisabled ? 'none' : 'auto'
             }}
             onMouseEnter={(e) => {
@@ -318,14 +336,12 @@ return (
             <span style={{ fontSize: '0.85rem', fontWeight: 500 }}>
               {selectedFundoName || 'FUNDO'}
             </span>
+            {isDisabled && (
+              <svg className="w-4 h-4 ml-2 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            )}
           </button>
-          
-          {/* Tooltip cuando está deshabilitado */}
-          {isDisabled && (
-            <div className="absolute bottom-full left-0 mb-2 px-2 py-1 text-xs bg-gray-900 text-yellow-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
-              Volver al Mapa primero.
-            </div>
-          )}
 
           {openLevel === 'fundo' && (
             <div className="ml-4 space-y-1">
@@ -363,12 +379,14 @@ return (
             onClick={handleUbicacionClick}
             disabled={isDisabled}
             className={`flex items-center w-full h-12 px-5 transition-all duration-200 ${
-              isDisabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+              isDisabled 
+                ? 'cursor-not-allowed opacity-50 border-l-2 border-yellow-500/50' 
+                : 'cursor-pointer'
             }`}
             style={{
-              color: ubicacionSeleccionada ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor,
-              backgroundColor: !isDisabled && openLevel === 'ubicacion' ? TEMPLATE_COLORS.secondaryBgColor : 'transparent',
-              borderLeft: `2px solid ${TEMPLATE_COLORS.borderColor}`,
+              color: isDisabled ? '#8b7355' : (ubicacionSeleccionada ? TEMPLATE_COLORS.secondaryTextColor : TEMPLATE_COLORS.textColor),
+              backgroundColor: !isDisabled && openLevel === 'ubicacion' ? TEMPLATE_COLORS.secondaryBgColor : (isDisabled ? 'rgba(234, 179, 8, 0.05)' : 'transparent'),
+              borderLeft: isDisabled ? undefined : `2px solid ${TEMPLATE_COLORS.borderColor}`,
               pointerEvents: isDisabled ? 'none' : 'auto'
             }}
             onMouseEnter={(e) => {
@@ -384,14 +402,12 @@ return (
             <span style={{ fontSize: '0.85rem', fontWeight: 500 }}>
               {selectedUbicacionName || 'UBICACIÓN'}
             </span>
+            {isDisabled && (
+              <svg className="w-4 h-4 ml-2 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            )}
           </button>
-          
-          {/* Tooltip cuando está deshabilitado */}
-          {isDisabled && (
-            <div className="absolute bottom-full left-0 mb-2 px-2 py-1 text-xs bg-gray-900 text-yellow-300 rounded whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
-              Volver al Mapa primero.
-            </div>
-          )}
 
           {openLevel === 'ubicacion' && (
             <div className="ml-4 space-y-1">

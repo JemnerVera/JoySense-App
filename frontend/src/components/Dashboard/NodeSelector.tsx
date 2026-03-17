@@ -52,7 +52,9 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     setPaisSeleccionado, 
     setEmpresaSeleccionada, 
     setFundoSeleccionado,
-    setUbicacionSeleccionada
+    setUbicacionSeleccionada,
+    setLocalizacionSeleccionada,
+    showDetailedAnalysis
   } = useFilters()
 
   const loadNodes = async () => {
@@ -185,6 +187,13 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
 
   // Función para sincronizar todos los filtros cuando se selecciona un nodo
   const syncAllFilters = (node: NodeData) => {
+    // GUARD: No sincronizar filtros cuando el análisis detallado está abierto
+    // para evitar problemas de sincronización y cambios involuntarios de datos
+    if (showDetailedAnalysis) {
+      console.warn('[NodeSelector] Filtros bloqueados: análisis detallado abierto. Selección de nodo ignorada.')
+      return
+    }
+
     // 1. Actualizar filtros del sidebar (país, empresa, fundo)
     if (node.ubicacion.fundo.empresa.pais.paisid) {
       setPaisSeleccionado(node.ubicacion.fundo.empresa.pais.paisid.toString())
@@ -205,9 +214,24 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
       ubicacionabrev: node.ubicacion.ubicacionabrev,
       fundoid: node.ubicacion.fundoid
     })
+
+    // 3. Actualizar localización para que MEDICIONES y STATUS DE NODOS la tengan preseleccionada
+    setLocalizacionSeleccionada({
+      nodoid: node.nodoid,
+      localizacion: node.localizacion ?? node.nodo,
+      nodo: node.nodo,
+      localizacionid: (node as any).localizacionid ?? undefined
+    })
   }
 
   const handleNodeSelect = (node: NodeData) => {
+    // GUARD: Prevenir selección de nodo durante análisis detallado
+    // para evitar cambios de estado conflictivos
+    if (showDetailedAnalysis) {
+      console.warn('[NodeSelector] Selección de nodo bloqueada: análisis detallado abierto');
+      return;
+    }
+
     setSelectedNode(node)
     onNodeSelect(node)
     setIsSearchDropdownOpen(false)

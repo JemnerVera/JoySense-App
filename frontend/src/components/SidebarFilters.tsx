@@ -1,6 +1,7 @@
 import React from 'react';
 import { useFilterData } from '../hooks/useFilterData';
 import { useCascadingFilters } from '../hooks/useCascadingFilters';
+import { useFilters } from '../contexts/FilterContext';
 import CollapsibleGlobalFilters from './shared/filters/CollapsibleGlobalFilters';
 
 interface SidebarFiltersProps {
@@ -9,6 +10,7 @@ interface SidebarFiltersProps {
 
 const SidebarFilters: React.FC<SidebarFiltersProps> = ({ authToken }) => {
   const { paises, empresas, fundos, ubicaciones, loading, error } = useFilterData(authToken);
+  const { showDetailedAnalysis } = useFilters();
   const {
     paisSeleccionado,
     empresaSeleccionada,
@@ -85,6 +87,7 @@ const SidebarFilters: React.FC<SidebarFiltersProps> = ({ authToken }) => {
       empresasOptions={empresasOptions}
       fundosOptions={fundosOptions}
       ubicacionesOptions={ubicacionesOptions}
+      isDisabled={showDetailedAnalysis}
       onClearFilters={resetAllFilters}
     />
   );

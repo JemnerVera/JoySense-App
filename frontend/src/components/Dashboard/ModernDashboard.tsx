@@ -104,7 +104,13 @@ function transformBackendMetricaToConfig(metrica: any, t: any): MetricConfig {
 export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }: ModernDashboardProps) {
   const { t } = useLanguage()
   const { showWarning, showError } = useToast()
-  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado, setShowDetailedAnalysis: setContextShowDetailedAnalysis } = useFilters()
+  const { 
+    paisSeleccionado, 
+    empresaSeleccionada, 
+    fundoSeleccionado,
+    showDetailedAnalysis,
+    setShowDetailedAnalysis
+  } = useFilters()
   
   // Estados para datos del sistema
   const [metricas, setMetricas] = useState<any[]>([])
@@ -119,9 +125,7 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
   const [error, setError] = useState<string | null>(null)
   
   // Estados para UI
-  const [showDetailedAnalysis, setShowDetailedAnalysis] = useState(false)
   const [isModalExpanded, setIsModalExpanded] = useState(false)
-  const [showReturnToMapModal, setShowReturnToMapModal] = useState(false)  // ← Nuevo
   const [selectedMetrica, setSelectedMetrica] = useState<number | null>(null)
   const [selectedMetricForAnalysis, setSelectedMetricForAnalysis] = useState<MetricConfig | null>(null)
   const [selectedDetailedMetric, setSelectedDetailedMetric] = useState<string>('temperatura')
@@ -130,11 +134,6 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
   const [tempStartDate, setTempStartDate] = useState<string>('') // Estado temporal para evitar carga automática
   const [tempEndDate, setTempEndDate] = useState<string>('') // Estado temporal para evitar carga automática
   const [selectedNode, setSelectedNode] = useState<any>(null)
-  
-  // Sincronizar showDetailedAnalysis con el contexto de filtros
-  useEffect(() => {
-    setContextShowDetailedAnalysis(showDetailedAnalysis);
-  }, [showDetailedAnalysis]);
   
   // Generar métricas dinámicamente desde los datos cargados del backend
   // Si no hay métricas cargadas, usar un conjunto mínimo por defecto
@@ -1050,11 +1049,9 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
 
   const handleNodeClear = useCallback(() => {
     setSelectedNode(null);
-    // Si está abierto el gráfico detallado, mostrar modal para volver al mapa
+    // Si está abierto el gráfico detallado, cerrar sin mostrar modal
+    // El NodeSelector seleccionará automáticamente un nodo válido según los filtros globales
     if (showDetailedAnalysis) {
-      setShowReturnToMapModal(true);
-    } else {
-      // Si no está en gráfico detallado, cerrar directamente
       setShowDetailedAnalysis(false);
     }
   }, [showDetailedAnalysis])
@@ -1760,14 +1757,13 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
     setTempStartDate('')
     setTempEndDate('')
     
-    // IMPORTANTE: Establecer fechas ANTES de abrir el modal para que el useEffect se dispare correctamente
+    // CRÍTICO: Activar bloqueo de filtros globales INMEDIATAMENTE
+    // Esto evita que cambios de filtros interfieran con los datos del análisis detallado
+    setShowDetailedAnalysis(true)
+    
+    // IMPORTANTE: Establecer fechas ANTES de cargar datos para coherencia
     setDetailedStartDate(startDateStr)
     setDetailedEndDate(endDateStr)
-    
-    // Abrir el modal
-    setTimeout(() => {
-      setShowDetailedAnalysis(true)
-    }, 0)
   }
 
   // chartData se calcula por métrica individualmente
@@ -1944,7 +1940,11 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
   }, [])
 
   const handleDetailedAnalysisClose = useCallback(() => {
+    // CRÍTICO: Desactivar bloqueo de filtros INMEDIATAMENTE
+    // Esto permite que el usuario vuelva a cambiar filtros globales
     setShowDetailedAnalysis(false)
+    
+    // Limpiar el estado del modal
     setSelectedMetricForAnalysis(null)
     setComparisonNode(null)
     setComparisonMediciones([])
@@ -2049,40 +2049,6 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
         </>
         )}
 
-        {/* Modal: Volver al Mapa */}
-        {showReturnToMapModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-xl max-w-md w-full p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold text-blue-500 font-mono uppercase">
-                  ⚠️ Filtros Globales Cambiad
-os
-                </h2>
-              </div>
-              
-              <div className="mb-6">
-                <p className="text-gray-700 dark:text-gray-300 text-sm font-mono mb-2">
-                  Los filtros globales han cambiado. El nodo seleccionado ya no es válido para el nuevo filtro.
-                </p>
-                <p className="text-gray-600 dark:text-gray-400 text-sm font-mono">
-                  Por favor, vuelve al mapa para seleccionar un nodo válido.
-                </p>
-              </div>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={() => {
-                    setShowReturnToMapModal(false);
-                    setShowDetailedAnalysis(false);
-                  }}
-                  className="flex-1 h-10 bg-blue-500 hover:bg-blue-600 text-white rounded font-mono text-sm font-bold transition-colors"
-                >
-                  Volver al Mapa
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Modal de Recomendaciones de Umbrales */}
         <ThresholdRecommendationsModal
