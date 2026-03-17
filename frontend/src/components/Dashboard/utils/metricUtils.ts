@@ -95,6 +95,29 @@ export function getMetricIdFromDataKey(dataKey: string): number {
   return METRIC_ID_MAP[dataKey] || 1;
 }
 
+/**
+ * Crea un mapeo dinámico de dataKey a metricaid basado en las métricas del backend
+ * Esta función permite que nuevas métricas se agreguen sin modificar el código
+ * @param metricas - Array de métricas cargadas del backend
+ * @returns Mapeo de dataKey normalizado a metricaid
+ */
+export function createMetricIdMapFromMetricas(metricas: any[]): { [key: string]: number } {
+  const map: { [key: string]: number } = {}
+  
+  if (!Array.isArray(metricas)) {
+    return map
+  }
+  
+  metricas.forEach(m => {
+    if (m.metricaid && m.metrica) {
+      const normalized = normalizeMetricDataKey(m.metrica)
+      map[normalized] = m.metricaid
+    }
+  })
+  
+  return map
+}
+
 export function getMetricInfoFromId(metricaid: number): { nombre: string; unidad: string } {
   const metricMap: { [key: number]: { nombre: string; unidad: string } } = {
     1: { nombre: 'temperatura', unidad: '°C' },
