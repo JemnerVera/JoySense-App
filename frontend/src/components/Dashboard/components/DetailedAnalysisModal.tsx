@@ -14,6 +14,7 @@
  */
 
 import React, { useState, useEffect, useMemo } from "react"
+import { flushSync } from "react-dom"
 import { useLanguage } from "../../../contexts/LanguageContext"
 import type { MedicionData, MetricConfig } from "../types"
 import type { Nodo, Tipo } from "../../../types"
@@ -343,7 +344,11 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                   availableMetrics.map((metric) => (
                     <button
                       key={metric.id}
-                      onClick={() => onMetricChange(metric.dataKey)}
+                      onClick={() => {
+                        flushSync(() => {
+                          onMetricChange(metric.dataKey)
+                        })
+                      }}
                       disabled={loadingDetailedData}
                       className={`relative px-4 py-2 font-mono font-bold tracking-wider transition-all duration-200 text-base uppercase ${
                         selectedDetailedMetric === metric.dataKey
@@ -371,7 +376,11 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                 availableMetrics.map((metric) => (
                   <button
                     key={metric.id}
-                    onClick={() => onMetricChange(metric.dataKey)}
+                    onClick={() => {
+                      flushSync(() => {
+                        onMetricChange(metric.dataKey)
+                      })
+                    }}
                     disabled={loadingDetailedData}
                     className={`relative px-4 py-3 font-mono tracking-wider transition-all duration-200 text-base text-left ${
                       selectedDetailedMetric === metric.dataKey
@@ -463,9 +472,11 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                       <label className="text-base font-bold text-gray-700 dark:text-neutral-300 font-mono mb-1 whitespace-nowrap invisible">Aplicar:</label>
                       <button
                         onClick={() => {
-                          onDateRangeChange(tempStartDate || detailedStartDate, tempEndDate || detailedEndDate)
-                          setTempStartDate('')
-                          setTempEndDate('')
+                          flushSync(() => {
+                            onDateRangeChange(tempStartDate || detailedStartDate, tempEndDate || detailedEndDate)
+                            setTempStartDate('')
+                            setTempEndDate('')
+                          })
                         }}
                         className="h-10 px-3 bg-red-500 hover:bg-red-600 text-white rounded text-base font-mono transition-colors whitespace-nowrap"
                       >
@@ -574,16 +585,18 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                       <select
                         value={comparisonNode?.nodoid || ''}
                         onChange={(e) => {
-                          const nodeId = parseInt(e.target.value)
-                          if (nodeId && nodeId !== selectedNode?.nodoid) {
-                            const node = availableNodes.find(n => n.nodoid === nodeId)
-                            if (node) {
-                              onComparisonNodeChange(node)
-                              onLoadComparisonData(node)
+                          flushSync(() => {
+                            const nodeId = parseInt(e.target.value)
+                            if (nodeId && nodeId !== selectedNode?.nodoid) {
+                              const node = availableNodes.find(n => n.nodoid === nodeId)
+                              if (node) {
+                                onComparisonNodeChange(node)
+                                onLoadComparisonData(node)
+                              }
+                            } else {
+                              onComparisonNodeChange(null)
                             }
-                          } else {
-                            onComparisonNodeChange(null)
-                          }
+                          })
                         }}
                         disabled={loadingComparisonData}
                         className="h-10 px-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 dark:text-white font-mono text-base min-w-[200px] disabled:opacity-50 hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors"
