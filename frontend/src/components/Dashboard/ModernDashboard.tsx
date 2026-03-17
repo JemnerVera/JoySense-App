@@ -109,6 +109,7 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
   const [metricas, setMetricas] = useState<any[]>([])
   const [tipos, setTipos] = useState<any[]>([])
   const [sensores, setSensores] = useState<any[]>([])
+  const [nodeMetricIds, setNodeMetricIds] = useState<Set<number>>(new Set())
   
   // Estados para mediciones
   const [mediciones, setMediciones] = useState<MedicionData[]>([])
@@ -757,6 +758,37 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
     }
 
     loadLocalizaciones()
+  }, [selectedNode?.nodoid])
+
+  // Cargar metricIds únicos del nodo seleccionado
+  useEffect(() => {
+    const loadNodeMetricIds = async () => {
+      if (!selectedNode?.nodoid) {
+        console.log('[ModernDashboard] No selectedNode, clearing nodeMetricIds')
+        setNodeMetricIds(new Set())
+        return
+      }
+
+      try {
+        console.log(`[ModernDashboard] Loading metricIds for node ${selectedNode.nodoid}`)
+        const localizaciones = await JoySenseService.getLocalizacionesByNodo(selectedNode.nodoid)
+        console.log('[ModernDashboard] Localizaciones loaded:', localizaciones)
+        
+        // Extraer metricaid únicos que tiene configurado el nodo
+        const metricIds = new Set<number>(
+          localizaciones
+            .map((loc: any) => loc.metricaid)
+            .filter((id: number) => id != null && id > 0)
+        )
+        console.log('[ModernDashboard] MetricIds extracted:', Array.from(metricIds))
+        setNodeMetricIds(metricIds)
+      } catch (error) {
+        console.error('Error cargando metricIds del nodo:', error)
+        setNodeMetricIds(new Set())
+      }
+    }
+
+    loadNodeMetricIds()
   }, [selectedNode?.nodoid])
 
   // Cargar nodos disponibles cuando se abre el modal de análisis detallado
@@ -1785,54 +1817,91 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
   }, [mediciones])
 
   const availableMetrics = useMemo(() => {
+    console.log('[availableMetrics] Computing...', {
+      selectedNode: selectedNode?.nodoid,
+      medicionesLength: mediciones.length,
+      nodeMetricIdsSize: nodeMetricIds.size,
+      nodeMetricIdsArray: Array.from(nodeMetricIds),
+      getTranslatedMetricsLength: getTranslatedMetrics.length
+    })
+    
     if (!selectedNode) {
+      console.log('[availableMetrics] No selectedNode, returning []')
       return []
     }
     
-    // Solo usar mediciones normales (no detailedMediciones) para availableMetrics
-    // detailedMediciones es para el modal de análisis, no para los minigráficos
-    if (mediciones.length === 0) {
-      return getTranslatedMetrics
-    }
-    
-    // Obtener métricas únicas del nodo
-    const nodeMediciones = mediciones.filter(m => Number(m.nodoid) === Number(selectedNode.nodoid))
-    const uniqueMetricIds = new Set<number>()
-    
-    nodeMediciones.forEach(m => {
-      if (m.metricaid) {
-        uniqueMetricIds.add(Number(m.metricaid))
-      }
-    })
-    
-    if (uniqueMetricIds.size === 0) {
-      return getTranslatedMetrics
-    }
-
-    // Filtrar las métricas traducidas para mostrar solo las que tienen datos
-    const filtered = getTranslatedMetrics.filter(metric => {
-      // Buscar si hay alguna medición con una métrica que coincida con el nombre
-      return Array.from(uniqueMetricIds).some(metricaId => {
-        const medicion = nodeMediciones.find(m => Number(m.metricaid) === Number(metricaId))
-        if (!medicion) return false
+    // Si hay mediciones del nodo, construir métricas dinámicamente a partir de ellas
+    if (mediciones.length > 0) {
+      const nodeMediciones = mediciones.filter(m => Number(m.nodoid) === Number(selectedNode.nodoid))
+      console.log('[availableMetrics] Found mediciones for node:', nodeMediciones.length)
+      
+      if (nodeMediciones.length > 0) {
+        // Agrupar por metricaid para obtener información única de cada métrica
+        const metricsByid = new Map<number, { metricaid: number; metricName: string; unit: string }>()
         
-        const rawMetricName = medicion.localizacion?.metrica?.metrica || ''
-        return matchesMetricId(rawMetricName, metric.id)
-      })
-    })
+        nodeMediciones.forEach(m => {
+          if (m.metricaid && !metricsByid.has(m.metricaid)) {
+            metricsByid.set(m.metricaid, {
+              metricaid: m.metricaid,
+              metricName: m.localizacion?.metrica?.metrica || 'Métrica Desconocida',
+              unit: m.localizacion?.metrica?.unidad || ''
+            })
+          }
+        })
+        
+        // Convertir a MetricConfig solo para métricas que existen realmente en el nodo
+        const metricsFromNode: MetricConfig[] = Array.from(metricsByid.values()).map(metric => {
+          const dataKey = normalizeMetricDataKey(metric.metricName)
+          return {
+            id: dataKey,
+            title: metric.metricName,
+            color: getMetricColor(metric.metricName),
+            unit: metric.unit,
+            dataKey: dataKey,
+            description: `Medición de ${metric.metricName}`,
+            ranges: getMetricRanges(metric.metricName)
+          }
+        })
+        
+        console.log('[availableMetrics] Using metricsFromNode:', metricsFromNode.length)
+        return metricsFromNode
+      }
+    }
     
-    return filtered
-  }, [getTranslatedMetrics, mediciones.length, selectedNode?.nodoid])
+    // Fallback: Si no hay mediciones del nodo, usar las métricas configuradas para el nodo
+    // según las localizaciones que tiene el nodo
+    if (nodeMetricIds.size > 0) {
+      console.log('[availableMetrics] Using fallback with nodeMetricIds:', Array.from(nodeMetricIds))
+      const filtered = getTranslatedMetrics.filter(metric => {
+        const metricId = getMetricIdFromDataKey(metric.dataKey)
+        console.log(`[availableMetrics] Checking metric ${metric.dataKey} (id=${metricId}): ${nodeMetricIds.has(metricId)}`)
+        return nodeMetricIds.has(metricId)
+      })
+      console.log('[availableMetrics] Filtered metrics:', filtered.length)
+      return filtered
+    }
+    
+    // Si no hay mediciones ni metricIds configurados, no mostrar nada
+    // (esperando a que carguen los datos del nodo)
+    console.log('[availableMetrics] No mediciones, no nodeMetricIds, returning []')
+    return []
+  }, [mediciones, selectedNode?.nodoid, nodeMetricIds, getTranslatedMetrics])
 
   // ========== OPTIMIZACIONES DE RENDERIZADO ==========
   
   // 1. Cachear datos de minigráficos usando hook optimizado
   // El hook detecta cambios reales en mediciones/nodo para evitar recálculos innecesarios
+  // Usar dataKeys dinámicos basados en las métricas disponibles del nodo
+  const metricDataKeys = useMemo(() => 
+    availableMetrics.map(m => m.dataKey),
+    [availableMetrics]
+  )
+  
   const memoizedChartData = useOptimizedChartData(
     mediciones,
     selectedNode?.nodoid ?? null,
     (dataKey: string) => processChartData(dataKey, false),
-    ['temperatura', 'humedad', 'conductividad']
+    metricDataKeys
   )
 
   // 2. Cachear datos del gráfico detallado - evitar recálculos múltiples

@@ -50,7 +50,8 @@ export const METRIC_RANGES_MAP: { [key: string]: { min: number; max: number; opt
 export const METRIC_ID_MAP: { [key: string]: number } = {
   'temperatura': 1,
   'humedad': 2,
-  'conductividad': 3
+  'conductividad': 3,
+  'brix': 4
 };
 
 // Mapeo de métrica a normalización
