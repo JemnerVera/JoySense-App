@@ -270,8 +270,8 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     return null;
   }, [showError]);
 
-  // Cargar métricas y mediciones cuando cambia localización o rango de fechas
-  // CONSOLIDADO: Una sola llamada para ambos datos, evitando renders duplicados
+  // Cargar métricas disponibles cuando cambia localización o rango de fechas
+  // Este efecto SOLO detecta qué métricas hay disponibles, sin mostrar loading
   useEffect(() => {
     if (!selectedLocalizacion?.nodoid) {
       setAvailableMetrics([]);
@@ -288,10 +288,8 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
       return;
     }
 
-    const loadData = async () => {
+    const loadMetricsAvailable = async () => {
       try {
-        setLoading(true);
-        
         // Cargar datos de TODAS las métricas en una sola petición
         const data = await SupabaseRPCService.getMedicionesNodoDetallado({
           nodoid: selectedLocalizacion.nodoid,
@@ -300,7 +298,6 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
         });
 
         const medicionesData = data || [];
-        setMediciones(medicionesData);
         
         // CRÍTICO: Detectar todas las métricas en la carga inicial y guardarlas
         const uniqueMetricIds = new Set<number>();
@@ -358,32 +355,29 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
         
         // Seleccionar primera métrica si no hay seleccionada
         if (allMetricsDetected.length > 0 && !selectedMetricId) {
-          setSelectedMetricId(allMetricsDetected[0].id);
+          flushSync(() => {
+            setSelectedMetricId(allMetricsDetected[0].id);
+          });
         }
       } catch (err: any) {
-        console.error('Error cargando datos:', err);
+        console.error('Error detectando métricas:', err);
         if (err.message && err.message.includes('90 días')) {
           showError('Error', err.message);
-        } else {
-          showError('Error', 'Error al cargar datos');
         }
-        setMediciones([]);
         setAllMetricsFromInitialLoad([]);
         setAvailableMetrics([]);
         setSelectedMetricId(null);
-      } finally {
-        setLoading(false);
       }
     };
 
-    loadData();
-  }, [selectedLocalizacion, dateRange.start, dateRange.end, showError, validateDateRange]);
+    loadMetricsAvailable();
+  }, [selectedLocalizacion?.nodoid, dateRange.start, dateRange.end, showError, validateDateRange, selectedMetricId]);
 
-  // OPTIMIZACIÓN: Cargar datos SOLO de la métrica seleccionada cuando se cambia
-  // Esto evita alcanzar el límite de filas de Supabase cuando hay múltiples métricas
+  // Cargar datos de la métrica seleccionada
   // Se ejecuta DESPUÉS de que ya tenemos la lista de métricas disponibles
   useEffect(() => {
     if (!selectedLocalizacion?.nodoid || !selectedMetricId) {
+      setMediciones([]);
       return;
     }
 
@@ -393,34 +387,29 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
       return;
     }
 
-    const loadMedicionesOptimizadas = async () => {
+    const loadMedicionesMetricaSeleccionada = async () => {
       try {
-        // Solo establecer loading si es la primera carga de datos
-        // Para cambios de métrica, permitir que se mantenga visible el gráfico anterior
-        if (mediciones.length === 0) {
-          setLoading(true);
-        }
+        setLoading(true);
 
-        // OPTIMIZACIÓN: Cargar datos SOLO de la métrica seleccionada
+        // Cargar datos SOLO de la métrica seleccionada
         const data = await SupabaseRPCService.getMedicionesNodoDetallado({
           nodoid: selectedLocalizacion.nodoid,
           startDate: dateRange.start,
           endDate: dateRange.end,
-          metricaid: selectedMetricId  // Pasar la métrica seleccionada para filtrar en la BD
+          metricaid: selectedMetricId
         });
 
         const medicionesData = data || [];
-
         setMediciones(medicionesData);
       } catch (err: any) {
-        console.error('Error cargando mediciones optimizadas:', err);
-        // No mostrar error, solo loguear
+        console.error('Error cargando datos de métrica seleccionada:', err);
+        setMediciones([]);
       } finally {
         setLoading(false);
       }
     };
 
-    loadMedicionesOptimizadas();
+    loadMedicionesMetricaSeleccionada();
   }, [selectedLocalizacion?.nodoid, dateRange.start, dateRange.end, selectedMetricId, validateDateRange]);
 
   // Función helper para obtener etiqueta de serie (para uso en comparación)
@@ -1486,9 +1475,12 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
 
       {/* Gráfico */}
       <div className="flex-1 min-h-0 flex flex-col mx-6 mb-6" style={{ maxHeight: 'calc(100vh - 220px)' }}>
-        {loading ? (
+        {loading || isLoadingInitialData ? (
           <div className="flex items-center justify-center flex-1 bg-white dark:bg-neutral-800 rounded-lg p-6">
-            <p className="text-gray-600 dark:text-gray-400">Cargando...</p>
+            <div className="flex flex-col items-center gap-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+              <p className="text-gray-600 dark:text-gray-400">Cargando datos...</p>
+            </div>
           </div>
         ) : chartData.length === 0 ? (
           <div className="flex items-center justify-center flex-1 bg-white dark:bg-neutral-800 rounded-lg p-6">
@@ -1513,7 +1505,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
             }
           `}</style>
             <MedicionesAreaChart
-              key={`${selectedLocalizacion?.localizacionid}-${selectedMetricId}-${comparisonMetricId || 'no-comp'}`}
+              key={`chart-${selectedLocalizacion?.nodoid || 'empty'}`}
               chartData={chartData}
               allSeries={allSeries}
               selectedMetricUnit={unitFromData}
