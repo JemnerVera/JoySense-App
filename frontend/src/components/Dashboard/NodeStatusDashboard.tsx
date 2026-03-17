@@ -1331,7 +1331,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
             </button>
           )}
           
-          <div className="flex items-center justify-start gap-4 flex-nowrap overflow-x-auto dashboard-scrollbar-blue w-full">
+          <div className="flex items-center justify-evenly gap-4 flex-nowrap overflow-x-auto dashboard-scrollbar-blue w-full">
             {/* Selector de Ubicación */}
             <div className="flex flex-col items-center flex-shrink-0" ref={ubicacionDropdownRef}>
               <label className="text-base font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
@@ -1406,7 +1406,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
             </div>
 
             {/* Separador visual */}
-            <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch"></div>
+            <div className="w-px h-20 bg-gray-400 dark:bg-neutral-600"></div>
 
             {/* Selector de Localización */}
             <div className="flex flex-col items-center flex-shrink-0" ref={nodoDropdownRef}>
@@ -1517,7 +1517,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
             </div>
 
             {/* Separador visual */}
-            <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch"></div>
+            <div className="w-px h-20 bg-gray-400 dark:bg-neutral-600"></div>
 
             {/* Botón Nodo en Mapa */}
             <div className="flex flex-col items-center flex-shrink-0">
@@ -1534,7 +1534,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
             </div>
 
             {/* Separador visual después de Mapa */}
-            <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch"></div>
+            <div className="w-px h-20 bg-gray-400 dark:bg-neutral-600"></div>
 
             {/* Intervalo de Fechas - Siempre visible pero deshabilitado hasta seleccionar nodo */}
             <div className="flex flex-col items-center flex-shrink-0">
@@ -1666,7 +1666,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
             )}
 
             {/* Separador visual */}
-            <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch"></div>
+            <div className="w-px h-20 bg-gray-400 dark:bg-neutral-600"></div>
 
             {/* Información del Nodo - Siempre visible pero sin info hasta seleccionar nodo */}
             <div className="flex flex-col items-center flex-shrink-0">
