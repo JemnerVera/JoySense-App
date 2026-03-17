@@ -193,21 +193,24 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
   // ============================================================================
 
   // Función para obtener el nombre de un país por ID
-  const getPaisName = (paisId: string) => {
+  // Retorna null si no encuentra (indicando que está cargando)
+  const getPaisName = (paisId: string): string | null => {
     const pais = paisesData?.find(p => p.paisid.toString() === paisId);
-    return pais ? pais.pais : `País ${paisId}`;
+    return pais ? pais.pais : null;
   };
 
   // Función para obtener el nombre de una empresa por ID
-  const getEmpresaName = (empresaId: string) => {
+  // Retorna null si no encuentra (indicando que está cargando)
+  const getEmpresaName = (empresaId: string): string | null => {
     const empresa = empresasData?.find(e => e.empresaid.toString() === empresaId);
-    return empresa ? empresa.empresa : `Empresa ${empresaId}`;
+    return empresa ? empresa.empresa : null;
   };
 
   // Función para obtener el nombre de un fundo por ID
-  const getFundoName = (fundoId: string) => {
+  // Retorna null si no encuentra (indicando que está cargando)
+  const getFundoName = (fundoId: string): string | null => {
     const fundo = fundosData?.find(f => f.fundoid.toString() === fundoId);
-    return fundo ? fundo.fundo : `Fundo ${fundoId}`;
+    return fundo ? fundo.fundo : null;
   };
 
   // Función para determinar si un campo es obligatorio

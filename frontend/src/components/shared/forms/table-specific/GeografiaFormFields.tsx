@@ -20,9 +20,9 @@ interface GeografiaFormFieldsProps {
   paisSeleccionado?: string;
   empresaSeleccionada?: string;
   fundoSeleccionado?: string;
-  getPaisName: (paisId: string) => string;
-  getEmpresaName: (empresaId: string) => string;
-  getFundoName: (fundoId: string) => string;
+  getPaisName: (paisId: string) => string | null;
+  getEmpresaName: (empresaId: string) => string | null;
+  getFundoName: (fundoId: string) => string | null;
   renderContextualRow: (fields: string[]) => React.ReactNode | null;
 }
 
@@ -136,13 +136,21 @@ export const GeografiaFormFields: React.FC<GeografiaFormFieldsProps> = ({
     const renderPaisField = () => {
       if (paisSeleccionado && paisOptions.length > 0) {
         const selectedPais = paisOptions.find(p => p.value === paisSeleccionado);
+        const paisName = selectedPais ? selectedPais.label : getPaisName(paisSeleccionado);
+        const isLoading = paisName === null;
+        
         return (
           <div>
             <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
               {t('create.country')}*
             </label>
-            <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75">
-              {selectedPais ? selectedPais.label : getPaisName(paisSeleccionado)}
+            <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed opacity-75 flex justify-between items-center">
+              <span className={isLoading ? 'text-gray-400' : 'text-white'}>
+                {isLoading ? `${t('buttons.select')} ${t('fields.country')}` : paisName}
+              </span>
+              {isLoading && (
+                <div className="animate-spin h-4 w-4 border-2 border-orange-500 border-t-transparent rounded-full"></div>
+              )}
             </div>
           </div>
         );
