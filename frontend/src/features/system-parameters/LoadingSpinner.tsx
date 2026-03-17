@@ -29,8 +29,8 @@ export function LoadingSpinner({
         className={`animate-spin rounded-full border-b-2 ${sizeClasses[size]} ${colorClasses[color]} mx-auto`}
         aria-hidden="true"
       ></div>
-      <p className="text-gray-400 mt-2 sr-only">{message}</p>
-      <p className="text-gray-400 mt-2" aria-hidden="true">{message}</p>
+      <p className="text-gray-400 mt-2 font-mono sr-only">{message}</p>
+      <p className="text-gray-400 mt-2 font-mono" aria-hidden="true">{message}</p>
     </div>
   );
 }
