@@ -104,6 +104,7 @@ export function calculateXAxisInterval(dateRangeDays: number): {
 
 /**
  * Función para calcular un intervalo limpio para el eje Y
+ * Incluye redondeo para evitar errores de precisión de punto flotante en JavaScript
  */
 export function calculateNiceInterval(min: number, max: number): { min: number; max: number; interval: number } {
   if (min === null || max === null || min === undefined || max === undefined) {
@@ -134,9 +135,15 @@ export function calculateNiceInterval(min: number, max: number): { min: number; 
 
   const roundedMax = Math.ceil(max / interval) * interval;
 
+  // Redondear valores para evitar errores de precisión de punto flotante
+  // Usamos toFixed(10) para mantener precisión mientras eliminamos errores binarios
+  const cleanMin = parseFloat(roundedMin.toFixed(10));
+  const cleanMax = parseFloat(roundedMax.toFixed(10));
+  const cleanInterval = parseFloat(interval.toFixed(10));
+
   return {
-    min: roundedMin,
-    max: roundedMax,
-    interval
+    min: cleanMin,
+    max: cleanMax,
+    interval: cleanInterval
   };
 }
