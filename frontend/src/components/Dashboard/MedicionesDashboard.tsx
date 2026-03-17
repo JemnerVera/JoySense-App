@@ -19,7 +19,7 @@ const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'
 export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   const { t } = useLanguage();
   const { showError } = useToast();
-  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado, ubicacionSeleccionada, setUbicacionSeleccionada } = useFilters();
+  const { paisSeleccionado, empresaSeleccionada, fundoSeleccionado, ubicacionSeleccionada, setUbicacionSeleccionada, localizacionSeleccionada } = useFilters();
   const { isCollapsed, state } = useSidebar();
 
   // Estados principales
@@ -85,6 +85,10 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   // Refs para inputs de fecha (para cerrar date pickers nativos cuando el sidebar cambia)
   const fechaInicioInputRef = useRef<HTMLInputElement>(null);
   const fechaFinInputRef = useRef<HTMLInputElement>(null);
+
+  // Ref para rastrear si acaba de hacerse una selección en el dropdown de localización
+  // Evita que el useEffect de sincronización global limpie selectedLocalizacion prematuramente
+  const justSelectedLocalizacionRef = useRef<boolean>(false);
 
   // Efecto para cerrar date pickers nativos cuando el sidebar se expande/colapsa
   useEffect(() => {
@@ -222,6 +226,27 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
       setComparisonSeries([]);
     }
   }, [paisSeleccionado, empresaSeleccionada, fundoSeleccionado, ubicacionSeleccionada]);
+
+  // Sincronizar la localización desde el contexto global
+  // Permite que cuando se selecciona un nodo en otro dashboard (MAPEO DE NODOS, STATUS DE NODOS),
+  // al regresar a MEDICIONES ya esté pre-seleccionada la localización
+  useEffect(() => {
+    if (localizacionSeleccionada) {
+      if (!selectedLocalizacion || selectedLocalizacion.nodoid !== localizacionSeleccionada.nodoid) {
+        setSelectedLocalizacion(localizacionSeleccionada);
+      }
+    } else if (selectedLocalizacion && !localizacionSeleccionada) {
+      // Solo limpiar selectedLocalizacion si no acabamos de hacer una selección en el dropdown
+      if (!justSelectedLocalizacionRef.current) {
+        setSelectedLocalizacion(null);
+      }
+    }
+    
+    // Resetear la flag después de procesar
+    if (justSelectedLocalizacionRef.current) {
+      justSelectedLocalizacionRef.current = false;
+    }
+  }, [localizacionSeleccionada]);
 
   // Validar rango máximo de 90 días
   const validateDateRange = useCallback((start: string, end: string): { start: string; end: string } | null => {
@@ -1097,6 +1122,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                           key={nodo.localizacionid}
                           onClick={() => {
                             flushSync(() => {
+                              justSelectedLocalizacionRef.current = true;
                               setSelectedLocalizacion(nodo);
                               setIsLocalizacionDropdownOpen(false);
                               setLocalizacionSearchTerm('');
