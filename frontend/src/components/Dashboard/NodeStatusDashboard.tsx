@@ -234,22 +234,12 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
       fundoSeleccionado
     );
     
-    console.log('[NodeStatusDashboard FILTEREDNODES] Nodos después de filtros globales:', {
-      total: filtered.length,
-      pais: paisSeleccionado,
-      empresa: empresaSeleccionada,
-      fundo: fundoSeleccionado,
-      ubicacionSeleccionada: selectedUbicacion?.ubicacionid
-    });
-    
     // Luego filtrar por ubicación seleccionada (filtro cascade)
     if (!selectedUbicacion) {
-      console.log('[NodeStatusDashboard FILTEREDNODES] ✓ Sin filtro de ubicación, retornando', filtered.length, 'nodos');
       return filtered;
     }
     
     const result = filtered.filter(node => node.ubicacionid === selectedUbicacion.ubicacionid);
-    console.log('[NodeStatusDashboard FILTEREDNODES] ✓ Con filtro de ubicación', selectedUbicacion.ubicacionid, '→', result.length, 'nodos');
     if (result.length === 0 && filtered.length > 0) {
       console.warn('[NodeStatusDashboard FILTEREDNODES] ⚠️ ADVERTENCIA: Filtro de ubicación resultó en 0 nodos');
       console.log('Ubicaciones en nodos filtrados:', Array.from(new Set(filtered.map(n => n.ubicacionid))));
@@ -442,37 +432,19 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
 
   // Sincronizar el filtro global de ubicación y localización con el estado local
   useEffect(() => {
-    console.log('[NodeStatusDashboard SYNC EFFECT] ubicacionSeleccionada:', ubicacionSeleccionada);
-    console.log('[NodeStatusDashboard SYNC EFFECT] localizacionSeleccionada:', localizacionSeleccionada);
-    console.log('[NodeStatusDashboard SYNC EFFECT] selectedUbicacion:', selectedUbicacion);
-    console.log('[NodeStatusDashboard SYNC EFFECT] selectedLocalizacion:', selectedLocalizacion);
-    
     if (ubicacionSeleccionada) {
       // Si la ubicación seleccionada es diferente por ID, actualizar el estado local
       if (!selectedUbicacion || selectedUbicacion.ubicacionid !== ubicacionSeleccionada.ubicacionid) {
-        console.log('[NodeStatusDashboard] ✓ SINCRONIZANDO ubicación global:', {
-          id: ubicacionSeleccionada.ubicacionid,
-          nombre: ubicacionSeleccionada.ubicacion
-        });
         setSelectedUbicacion(ubicacionSeleccionada);
-      } else {
-        console.log('[NodeStatusDashboard] - Ubicación ya sincronizada');
       }
     } else if (selectedUbicacion) {
       // Si se limpió el filtro global, limpiar el estado local
-      console.log('[NodeStatusDashboard] ✓ LIMPIANDO ubicación seleccionada');
       setSelectedUbicacion(null);
-    } else {
-      console.log('[NodeStatusDashboard] - Sin ubicación en contexto ni local');
     }
 
     // Sincronizar la localización desde el contexto global
     if (localizacionSeleccionada) {
       if (!selectedLocalizacion || selectedLocalizacion.nodoid !== localizacionSeleccionada.nodoid) {
-        console.log('[NodeStatusDashboard] ✓ SINCRONIZANDO localización global:', {
-          localizacion: localizacionSeleccionada.localizacion,
-          nodoid: localizacionSeleccionada.nodoid
-        });
         setSelectedLocalizacion(localizacionSeleccionada);
         // Si también existe un nodo correspondiente, seleccionarlo
         const nodoCorrespondiente = filteredNodes.find((n: any) => 
@@ -480,14 +452,10 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
           n.localizacion === localizacionSeleccionada.localizacion
         );
         if (nodoCorrespondiente) {
-          console.log('[NodeStatusDashboard] ✓ SELECCIONANDO nodo correspondiente a la localización');
           setSelectedNode(nodoCorrespondiente);
         }
-      } else {
-        console.log('[NodeStatusDashboard] - Localización ya sincronizada');
       }
     } else if (selectedLocalizacion && !localizacionSeleccionada) {
-      console.log('[NodeStatusDashboard] ✓ LIMPIANDO localización seleccionada');
       setSelectedLocalizacion(null);
     }
   }, [ubicacionSeleccionada, localizacionSeleccionada, filteredNodes]);
