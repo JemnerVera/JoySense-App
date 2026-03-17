@@ -296,8 +296,10 @@ function MedicionesAreaChartComponent({
               if (hourMatch) {
                 const hour = parseInt(hourMatch[1], 10);
                 
-                if (dateRangeDays <= 7) {
+                if (dateRangeDays >= 6) {
                   if (hour % 6 === 0) return currentTime;
+                } else if (dateRangeDays >= 3) {
+                  if (hour % 8 === 0) return currentTime;
                 }
               }
             }
