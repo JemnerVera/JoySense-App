@@ -21,6 +21,8 @@ interface FormFieldRendererProps {
   isFieldRequired: (columnName: string) => boolean;
   isFieldEnabled: (columnName: string) => boolean;
   paisSeleccionado?: string;
+  fundoSeleccionado?: string;
+  ubicacionSeleccionada?: string;
 }
 
 export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
@@ -33,7 +35,9 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
   getUniqueOptionsForField,
   isFieldRequired,
   isFieldEnabled,
-  paisSeleccionado
+  paisSeleccionado,
+  fundoSeleccionado,
+  ubicacionSeleccionada
 }) => {
   const { t } = useLanguage();
 
@@ -128,13 +132,20 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
   // Campos de relación para nodo
   if (col.columnName === 'ubicacionid' && selectedTable === 'nodo') {
     const options = getUniqueOptionsForField(col.columnName);
+    let finalValue = value;
+    
+    // Si hay ubicación seleccionada en filtros globales y el campo está vacío, pre-seleccionar
+    if (ubicacionSeleccionada && !value) {
+      finalValue = parseInt(ubicacionSeleccionada, 10);
+    }
+    
     return (
       <div key={col.columnName} className="mb-4">
         <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
           {displayName.toUpperCase()}{isRequired ? '*' : ''}
         </label>
         <SelectWithPlaceholder
-          value={value}
+          value={finalValue}
           onChange={(newValue) => {
             setFormData({
               ...formData,

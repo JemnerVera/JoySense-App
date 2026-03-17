@@ -49,6 +49,7 @@ interface NormalInsertFormProps {
   paisSeleccionado?: string;
   empresaSeleccionada?: string;
   fundoSeleccionado?: string;
+  ubicacionSeleccionada?: string;
   // Datos para mostrar nombres en lugar de IDs
   paisesData?: any[];
   empresasData?: any[];
@@ -95,6 +96,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
   paisSeleccionado,
   empresaSeleccionada,
   fundoSeleccionado,
+  ubicacionSeleccionada,
   paisesData,
   empresasData,
   fundosData,
@@ -644,6 +646,8 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
         isFieldRequired={isFieldRequired}
         isFieldEnabled={isFieldEnabled}
         paisSeleccionado={paisSeleccionado}
+        fundoSeleccionado={fundoSeleccionado}
+        ubicacionSeleccionada={ubicacionSeleccionada}
       />
     );
   };

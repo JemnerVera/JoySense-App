@@ -192,8 +192,16 @@ export const getUniqueOptionsForField = ({
     
     const fundosMap = new Map(fundos.map((f: any) => [f.fundoid, f.fundo]));
     
-    return ubicaciones
-      .filter((u: any) => u.statusid === 1)
+    let filteredUbicaciones = ubicaciones.filter((u: any) => u.statusid === 1);
+    
+    // Si hay fundo seleccionado en filtros globales, filtrar solo ubicaciones de ese fundo
+    if (fundoSeleccionado) {
+      filteredUbicaciones = filteredUbicaciones.filter((u: any) => 
+        u.fundoid?.toString() === fundoSeleccionado
+      );
+    }
+    
+    return filteredUbicaciones
       .map((item: any) => {
         const fundoName = fundosMap.get(item.fundoid) || '';
         const ubicacionName = item.ubicacion || '';
