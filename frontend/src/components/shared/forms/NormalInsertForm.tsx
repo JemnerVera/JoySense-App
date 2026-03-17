@@ -334,6 +334,11 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
     return getUniqueOptionsForField('paisid');
   }, [getUniqueOptionsForField]);
 
+  // Memoizar getUniqueOptionsForField para evitar re-renders innecesarios en componentes hijos
+  const memoizedGetUniqueOptionsForField = useCallback((columnName: string) => {
+    return getUniqueOptionsForField(columnName);
+  }, [getUniqueOptionsForField]);
+
   // Referencia para evitar loops infinitos en el auto-selección de país
   const autoSelectedPaisRef = useRef(false);
   const previousFormDataRef = useRef<string>('');
@@ -422,66 +427,43 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   useEffect(() => {
-    // Limpiar timeout anterior si existe
-    if (syncTimeoutRef.current) {
-      clearTimeout(syncTimeoutRef.current);
-    }
-    
     // CRÍTICO: Si estamos en medio de un reset, NO ejecutar este efecto
     if (isResettingRef.current) {
       return;
     }
     
-      // Debounce: esperar un poco antes de sincronizar para evitar ejecuciones múltiples
-      syncTimeoutRef.current = setTimeout(() => {
-        // VERIFICAR NUEVAMENTE después del timeout si estamos en medio de un reset
-        if (isResettingRef.current) {
-          return;
-        }
-        
-        const hasGlobalFilter = paisSeleccionado && paisSeleccionado.trim() !== '';
-        const shouldSync = hasGlobalFilter && (selectedTable === 'empresa' || selectedTable === 'fundo');
-        
-        // Verificar si formData.paisid está vacío/null (formulario reseteado)
-        const isPaisidEmpty = !formData.paisid || formData.paisid === '' || formData.paisid === null || formData.paisid === undefined;
-        const currentPaisid = formData.paisid;
-        
-        // CRÍTICO: Si no hay filtro global Y el paisid está vacío, NO hacer nada
-        // Esto previene restauraciones no deseadas después de un reset
-        // IMPORTANTE: NO limpiar el paisid si el usuario ya lo seleccionó (no está vacío)
-        if (!hasGlobalFilter) {
-          // Si no hay filtro global, solo resetear el ref pero NO tocar el valor del formulario
-          // El usuario puede haber seleccionado un país manualmente
-          if (isPaisidEmpty) {
-            lastProcessedPaisRef.current = null;
-          }
-          // NO hacer nada más - no limpiar el paisid si el usuario lo seleccionó
-          return;
-        }
-        
-        // Evitar ejecuciones múltiples del mismo valor
-        const currentPaisValue = paisSeleccionado || '';
-        if (lastProcessedPaisRef.current === currentPaisValue && !isPaisidEmpty) {
-          return; // Ya procesamos este valor, no hacer nada
-        }
-        
-        // Solo sincronizar cuando hay filtro global activo Y el formulario está vacío
-        if (shouldSync && isPaisidEmpty) {
-          if (updateFormField) {
-            updateFormField('paisid', paisSeleccionado);
-          } else {
-            setFormData((prev: any) => ({ ...prev, paisid: paisSeleccionado }));
-          }
-          lastProcessedPaisRef.current = currentPaisValue;
-        }
-      }, 250); // Aumentar debounce a 250ms para dar más tiempo al reset
+    const hasGlobalFilter = paisSeleccionado && paisSeleccionado.trim() !== '';
+    const shouldSync = hasGlobalFilter && (selectedTable === 'empresa' || selectedTable === 'fundo');
     
-    // Cleanup
-    return () => {
-      if (syncTimeoutRef.current) {
-        clearTimeout(syncTimeoutRef.current);
+    // Verificar si formData.paisid está vacío/null (formulario reseteado)
+    const isPaisidEmpty = !formData.paisid || formData.paisid === '' || formData.paisid === null || formData.paisid === undefined;
+    const currentPaisid = formData.paisid;
+    
+    // CRÍTICO: Si no hay filtro global Y el paisid está vacío, NO hacer nada
+    if (!hasGlobalFilter) {
+      if (isPaisidEmpty) {
+        lastProcessedPaisRef.current = null;
       }
-    };
+      return;
+    }
+    
+    // Evitar ejecuciones múltiples del mismo valor
+    const currentPaisValue = paisSeleccionado || '';
+    if (lastProcessedPaisRef.current === currentPaisValue && !isPaisidEmpty) {
+      return;
+    }
+    
+    // Solo sincronizar cuando hay filtro global activo Y el formulario está vacío
+    if (shouldSync && isPaisidEmpty) {
+      // Convertir a número ya que las opciones del combobox tienen valores numéricos
+      const paisIdValue = paisSeleccionado ? parseInt(paisSeleccionado, 10) : null;
+      if (updateFormField) {
+        updateFormField('paisid', paisIdValue);
+      } else {
+        setFormData((prev: any) => ({ ...prev, paisid: paisIdValue }));
+      }
+      lastProcessedPaisRef.current = currentPaisValue;
+    }
     // Removido formData.paisid de dependencias - solo reaccionar a cambios en filtros o tabla
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paisSeleccionado, selectedTable]);
@@ -523,10 +505,12 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
       // Solo sincronizar cuando hay filtro global activo Y el formulario está vacío
       // NO limpiar si el usuario ya seleccionó una empresa manualmente
       if (shouldSync && isEmpresaidEmpty) {
+        // Convertir a número ya que las opciones del combobox tienen valores numéricos
+        const empresaIdValue = empresaSeleccionada ? parseInt(empresaSeleccionada, 10) : null;
         if (updateFormField) {
-          updateFormField('empresaid', empresaSeleccionada);
+          updateFormField('empresaid', empresaIdValue);
         } else {
-          setFormData((prev: any) => ({ ...prev, empresaid: empresaSeleccionada }));
+          setFormData((prev: any) => ({ ...prev, empresaid: empresaIdValue }));
         }
         lastProcessedEmpresaRef.current = currentEmpresaValue;
       } else if (!hasGlobalFilter) {
@@ -584,10 +568,12 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
       // Solo sincronizar cuando hay filtro global activo Y el formulario está vacío
       // NO limpiar si el usuario ya seleccionó un fundo manualmente
       if (shouldSync && isFundoidEmpty) {
+        // Convertir a número ya que las opciones del combobox tienen valores numéricos
+        const fundoIdValue = fundoSeleccionado ? parseInt(fundoSeleccionado, 10) : null;
         if (updateFormField) {
-          updateFormField('fundoid', fundoSeleccionado);
+          updateFormField('fundoid', fundoIdValue);
         } else {
-          setFormData((prev: any) => ({ ...prev, fundoid: fundoSeleccionado }));
+          setFormData((prev: any) => ({ ...prev, fundoid: fundoIdValue }));
         }
         lastProcessedFundoRef.current = currentFundoValue;
       } else if (!hasGlobalFilter) {
@@ -651,9 +637,10 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
         setFormData={setFormData}
         updateField={updateField}
         getThemeColor={getThemeColor}
-        getUniqueOptionsForField={getUniqueOptionsForField}
+        getUniqueOptionsForField={memoizedGetUniqueOptionsForField}
         isFieldRequired={isFieldRequired}
         isFieldEnabled={isFieldEnabled}
+        paisSeleccionado={paisSeleccionado}
       />
     );
   };
@@ -683,7 +670,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
             updateField={updateField}
             renderField={renderField}
             getThemeColor={getThemeColor}
-            getUniqueOptionsForField={getUniqueOptionsForField}
+            getUniqueOptionsForField={memoizedGetUniqueOptionsForField}
             paisOptions={paisOptions}
             paisSeleccionado={paisSeleccionado}
             empresaSeleccionada={empresaSeleccionada}
@@ -702,7 +689,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
             updateField={updateField}
             renderField={renderField}
             getThemeColor={getThemeColor}
-            getUniqueOptionsForField={getUniqueOptionsForField}
+            getUniqueOptionsForField={memoizedGetUniqueOptionsForField}
             paisOptions={paisOptions}
             paisSeleccionado={paisSeleccionado}
             empresaSeleccionada={empresaSeleccionada}
@@ -721,7 +708,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
             updateField={updateField}
             renderField={renderField}
             getThemeColor={getThemeColor}
-            getUniqueOptionsForField={getUniqueOptionsForField}
+            getUniqueOptionsForField={memoizedGetUniqueOptionsForField}
             paisOptions={paisOptions}
             paisSeleccionado={paisSeleccionado}
             empresaSeleccionada={empresaSeleccionada}
@@ -740,7 +727,7 @@ const NormalInsertForm: React.FC<NormalInsertFormProps> = memo(({
             updateField={updateField}
             renderField={renderField}
             getThemeColor={getThemeColor}
-            getUniqueOptionsForField={getUniqueOptionsForField}
+            getUniqueOptionsForField={memoizedGetUniqueOptionsForField}
             paisOptions={paisOptions}
             paisSeleccionado={paisSeleccionado}
             empresaSeleccionada={empresaSeleccionada}

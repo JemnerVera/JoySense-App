@@ -174,35 +174,8 @@ export const GeografiaFormFields: React.FC<GeografiaFormFieldsProps> = ({
                                            String(normalizedNewValue || '') !== String(normalizedCurrentValue || '');
                 
                 if (valuesAreDifferent) {
-                  // Si el valor actual está vacío y estamos tratando de establecer un valor no vacío,
-                  // podría ser una restauración después de reset. Verificar si pasó poco tiempo desde el último cambio.
-                  const isSettingValueAfterEmpty = !normalizedCurrentValue && normalizedNewValue;
-                  
-                  if (isSettingValueAfterEmpty) {
-                    console.warn('[GeografiaFormFields] ⚠️ Intento de establecer paisid después de estar vacío - puede ser restauración después de reset', {
-                      newValue,
-                      currentValue: paisValue,
-                      normalizedNewValue,
-                      normalizedCurrentValue
-                    });
-                  }
-                  
-                  console.log('[GeografiaFormFields] onChange paisid ejecutado:', {
-                    newValue,
-                    currentValue: paisValue,
-                    normalizedNewValue,
-                    normalizedCurrentValue,
-                    valuesAreDifferent,
-                    isSettingValueAfterEmpty
-                  });
-                  
                   // Llamar a updateField - la protección real está en useTableCRUD
                   updateField('paisid', newValue ? parseInt(newValue.toString()) : null);
-                } else {
-                  console.log('[GeografiaFormFields] onChange paisid ignorado - valor no cambió', {
-                    newValue,
-                    currentValue: paisValue
-                  });
                 }
               }}
               options={paisOptionsManual}
@@ -218,6 +191,22 @@ export const GeografiaFormFields: React.FC<GeografiaFormFieldsProps> = ({
       if (empresaSeleccionada && empresaField) {
         // Si hay empresa seleccionada en filtros globales, mostrar como disabled
         const empresaOptions = getUniqueOptionsForField('empresaid');
+        
+        // Si las opciones están cargando (vacías), mostrar spinner
+        if (empresaOptions.length === 0) {
+          return (
+            <div>
+              <label className={`block text-lg font-bold mb-2 font-mono tracking-wider ${getThemeColor('text')}`}>
+                {t('create.company')}*
+              </label>
+              <div className="w-full px-3 py-2 bg-neutral-700 border border-neutral-600 rounded-lg text-white text-base font-mono cursor-not-allowed flex justify-between items-center">
+                <span className="text-gray-400">{t('buttons.select')} {t('fields.company')}</span>
+                <div className="animate-spin h-4 w-4 border-2 border-orange-500 border-t-transparent rounded-full"></div>
+              </div>
+            </div>
+          );
+        }
+        
         const selectedEmpresa = empresaOptions.find(e => e.value.toString() === empresaSeleccionada.toString());
         return (
           <div>

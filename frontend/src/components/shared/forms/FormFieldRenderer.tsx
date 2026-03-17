@@ -20,6 +20,7 @@ interface FormFieldRendererProps {
   getUniqueOptionsForField: (columnName: string) => Array<{value: any, label: string}>;
   isFieldRequired: (columnName: string) => boolean;
   isFieldEnabled: (columnName: string) => boolean;
+  paisSeleccionado?: string;
 }
 
 export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
@@ -31,14 +32,20 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
   getThemeColor,
   getUniqueOptionsForField,
   isFieldRequired,
-  isFieldEnabled
+  isFieldEnabled,
+  paisSeleccionado
 }) => {
   const { t } = useLanguage();
 
   const displayName = getColumnDisplayNameTranslated(col.columnName, t);
   if (!displayName) return null;
   
-  const value = formData[col.columnName] || '';
+  // Para paisid en empresa, usar el filtro global directamente si hay valor y formData está vacío
+  // Convertir a número ya que las opciones del combobox tienen valores numéricos
+  let value = formData[col.columnName] || '';
+  if (col.columnName === 'paisid' && selectedTable === 'empresa' && paisSeleccionado && !value) {
+    value = parseInt(paisSeleccionado, 10);
+  }
   const isRequired = isFieldRequired(col.columnName);
   
   // Campos automáticos - NO mostrar en formulario

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useSidebar } from '../../../contexts/SidebarContext';
 
@@ -105,12 +105,12 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, placeholder, isOpen]);
 
-  // Calcular posición del dropdown usando posicionamiento fijo (fixed)
-  // Usa requestAnimationFrame para actualizar posición en cada frame (más preciso durante animación del sidebar)
+  // Calcular posición del dropdown una sola vez al abrir
+  // Reposicionar solo cuando: sidebar cambia, ventana se redimensiona, o props cambian
   useEffect(() => {
     if (isOpen && triggerRef.current) {
-      let animationFrameId: number;
       let isMounted = true;
+      let resizeObserver: ResizeObserver | null = null;
 
       const updatePosition = () => {
         if (!isMounted || !triggerRef.current) return;
@@ -123,20 +123,33 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
           left: rect.left,
           width: rect.width
         });
+      };
 
-        // Continuar el loop mientras el dropdown esté abierto
+      // Calcular posición inicial
+      updatePosition();
+
+      // Reposicionar solo en cambios importantes (no en cada frame)
+      const handleResize = () => {
         if (isMounted) {
-          animationFrameId = requestAnimationFrame(updatePosition);
+          updatePosition();
         }
       };
 
-      // Iniciar el loop de animación
-      animationFrameId = requestAnimationFrame(updatePosition);
+      // Usar ResizeObserver para detectar cambios en el contenedor del trigger
+      try {
+        resizeObserver = new ResizeObserver(handleResize);
+        resizeObserver.observe(triggerRef.current);
+      } catch (e) {
+        // Fallback si ResizeObserver no está disponible
+        window.addEventListener('resize', handleResize);
+      }
 
       return () => {
         isMounted = false;
-        if (animationFrameId) {
-          cancelAnimationFrame(animationFrameId);
+        if (resizeObserver) {
+          resizeObserver.disconnect();
+        } else {
+          window.removeEventListener('resize', handleResize);
         }
       };
     } else {
@@ -200,36 +213,72 @@ const SelectWithPlaceholder: React.FC<SelectWithPlaceholderProps> = ({
     }, 500);
   };
 
-  const selectedOption = options.find(option => {
-    // Manejar comparación de valores, incluyendo strings 'true' y 'false'
-    if (value === null || value === undefined) {
+  // Memoizar la búsqueda de la opción seleccionada para evitar búsquedas innecesarias
+  // DEBE estar aquí, antes de cualquier return condicional
+  const selectedOption = useMemo(() => {
+    return options.find(option => {
+      // Manejar comparación de valores, incluyendo strings 'true' y 'false'
+      if (value === null || value === undefined) {
+        return false;
+      }
+      // Comparar directamente
+      if (option.value === value) {
+        return true;
+      }
+      // Comparar como strings
+      if (String(option.value) === String(value)) {
+        return true;
+      }
+      // Comparar valores booleanos convertidos a strings
+      // value es string | number | null, nunca boolean
+      const optionStr = String(option.value);
+      const valueStr = String(value);
+      if ((optionStr === 'true' || option.value === true) && (valueStr === 'true' || value === 1 || valueStr === '1')) {
+        return true;
+      }
+      if ((optionStr === 'false' || option.value === false) && (valueStr === 'false' || value === 0 || valueStr === '0')) {
+        return true;
+      }
       return false;
-    }
-    // Comparar directamente
-    if (option.value === value) {
-      return true;
-    }
-    // Comparar como strings
-    if (String(option.value) === String(value)) {
-      return true;
-    }
-    // Comparar valores booleanos convertidos a strings
-    // value es string | number | null, nunca boolean
-    const optionStr = String(option.value);
-    const valueStr = String(value);
-    if ((optionStr === 'true' || option.value === true) && (valueStr === 'true' || value === 1 || valueStr === '1')) {
-      return true;
-    }
-    if ((optionStr === 'false' || option.value === false) && (valueStr === 'false' || value === 0 || valueStr === '0')) {
-      return true;
-    }
-    return false;
-  });
+    });
+  }, [options, value]);
 
-  // Filtrar opciones basado en el término de búsqueda
-  const filteredOptions = options.filter(option =>
-    option.label.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Memoizar opciones filtradas para evitar re-filtrar en cada render
+  // DEBE estar aquí, antes de cualquier return condicional
+  const filteredOptions = useMemo(() => {
+    return options.filter(option =>
+      option.label.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [options, searchTerm]);
+
+  // Si no hay opciones, mostrar estado de carga
+  if (options.length === 0) {
+    // Si hay un valor (filtro global) pero no hay opciones, mostrar spinner sin texto
+    // Si NO hay valor, mostrar el placeholder normal (sin spinner, sin esperar carga)
+    if (!value || value === 0) {
+      return (
+        <div className="relative">
+          <div
+            className={`${finalClassName} flex justify-between items-center`}
+          >
+            <span className="text-gray-400 font-mono">{placeholder.toUpperCase()}</span>
+          </div>
+        </div>
+      );
+    }
+    
+    // Hay filtro global pero las opciones aún cargan - mostrar placeholder + spinner
+    return (
+      <div className="relative">
+        <div
+          className={`${finalClassName} flex justify-between items-center`}
+        >
+          <span className="text-gray-400 font-mono">{placeholder.toUpperCase()}</span>
+          <div className="animate-spin h-4 w-4 border-2 border-orange-500 border-t-transparent rounded-full"></div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative" ref={dropdownRef}>
