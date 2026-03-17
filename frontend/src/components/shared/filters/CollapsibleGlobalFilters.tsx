@@ -141,8 +141,8 @@ const CollapsibleGlobalFilters: React.FC<CollapsibleGlobalFiltersProps> = ({
     }
   };
 
-return (
-    <div className="space-y-1 relative z-40">
+  return (
+    <div className="space-y-1 relative z-40 pt-4">
       {/* Banner de advertencia cuando filtros están deshabilitados */}
       {isDisabled && (
         <div className="px-3 py-2 pr-10 bg-yellow-500/20 border border-yellow-500/50 rounded mb-2 flex items-start gap-2">
@@ -160,15 +160,15 @@ return (
         <button
           onClick={handleClearFilters}
           disabled={isDisabled}
-          className={`absolute top-2 right-2 p-2 transition-colors rounded-lg z-50 ${
+          className={`absolute top-0 right-0 p-1 transition-colors rounded z-50 ${
             isDisabled 
-              ? 'text-gray-400 cursor-not-allowed opacity-50' 
-              : 'text-gray-400 hover:text-red-400 hover:bg-red-900/20'
+              ? 'text-red-800 cursor-not-allowed opacity-50' 
+              : 'text-red-500 bg-red-900/30 hover:bg-red-900/50'
           }`}
           title={isDisabled ? "Filtros deshabilitados - cierra el análisis detallado" : "Limpiar todos los filtros"}
           aria-label="Limpiar filtros"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
