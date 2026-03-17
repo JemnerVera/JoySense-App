@@ -64,14 +64,10 @@ export const useCascadingFilters = () => {
   const handleUbicacionChange = useCallback((ubicacionId: string) => {
     // GUARD: Bloquear cambios de filtros cuando el análisis detallado está abierto
     if (showDetailedAnalysis) {
-      console.warn('[useCascadingFilters] Cambio de ubicación bloqueado: análisis detallado abierto');
       return;
     }
     
-    console.log('[useCascadingFilters] handleUbicacionChange recibido:', ubicacionId);
-    
     if (!ubicacionId || ubicacionId === '') {
-      console.log('[useCascadingFilters] Limpiando ubicación');
       setUbicacionSeleccionada(null);
       return;
     }
@@ -80,17 +76,9 @@ export const useCascadingFilters = () => {
     const id = parseInt(ubicacionId, 10);
     const ubicacionObj = ubicaciones.find(u => u.ubicacionid === id);
     
-    console.log('[useCascadingFilters] Búsqueda de ubicación:', {
-      idBuscado: id,
-      ubicacionesDisponibles: ubicaciones.length,
-      ubicacionEncontrada: ubicacionObj
-    });
-    
     if (ubicacionObj) {
-      console.log('[useCascadingFilters] ✓ Estableciendo ubicación:', ubicacionObj);
       setUbicacionSeleccionada(ubicacionObj);
     } else {
-      console.warn('[useCascadingFilters] ⚠️ No se encontró ubicación con ID:', id);
       setUbicacionSeleccionada(null);
     }
   }, [setUbicacionSeleccionada, ubicaciones, showDetailedAnalysis]);

@@ -128,10 +128,6 @@ const CollapsibleGlobalFilters: React.FC<CollapsibleGlobalFiltersProps> = ({
 
   const handleSelectUbicacion = (ubicacionId: string) => {
     if (isDisabled) return;
-    console.log('[CollapsibleGlobalFilters] Seleccionando ubicación:', {
-      ubicacionId,
-      ubicacionesOptions: ubicacionesOptions.find(u => u.id.toString() === ubicacionId)
-    });
     onUbicacionChange(ubicacionId);
     setOpenLevel(null);
   };
