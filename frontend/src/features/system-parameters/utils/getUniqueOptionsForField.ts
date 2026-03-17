@@ -54,22 +54,30 @@ export const getUniqueOptionsForField = ({
   const localizaciones = relatedDataForStatus.localizacionesData || [];
 
   const getEmpresasIdsPorPais = (paisId: string): string[] => 
-    empresas.filter(e => e.paisid?.toString() === paisId).map(e => e.empresaid?.toString());
+    empresas.filter(e => e.paisid?.toString() === paisId).map(e => e.empresaid?.toString()).filter(Boolean);
 
   const getFundosIdsPorEmpresa = (empresaId: string): string[] => 
-    fundos.filter(f => f.empresaid?.toString() === empresaId).map(f => f.fundoid?.toString());
+    fundos.filter(f => f.empresaid?.toString() === empresaId).map(f => f.fundoid?.toString()).filter(Boolean);
 
   const getUbicacionesIdsPorFundo = (fundoId: string): string[] => 
-    ubicaciones.filter(u => u.fundoid?.toString() === fundoId).map(u => u.ubicacionid?.toString());
+    ubicaciones.filter(u => u.fundoid?.toString() === fundoId).map(u => u.ubicacionid?.toString()).filter(Boolean);
 
   const getNodosIdsPorUbicacion = (ubicacionId: string): string[] => 
-    nodos.filter(n => n.ubicacionid?.toString() === ubicacionId).map(n => n.nodoid?.toString());
+    nodos.filter(n => n.ubicacionid?.toString() === ubicacionId).map(n => n.nodoid?.toString()).filter(Boolean);
 
   const getLocalizacionesIdsPorNodo = (nodoId: string): string[] => 
-    localizaciones.filter(l => l.nodoid?.toString() === nodoId).map(l => l.localizacionid?.toString());
+    localizaciones.filter(l => l.nodoid?.toString() === nodoId).map(l => l.localizacionid?.toString()).filter(Boolean);
 
   const getLocalizacionesIdsPorUbicacion = (ubicacionId: string): string[] => 
-    localizaciones.filter(l => l.ubicacionid?.toString() === ubicacionId).map(l => l.localizacionid?.toString());
+    localizaciones.filter(l => l.ubicacionid?.toString() === ubicacionId).map(l => l.localizacionid?.toString()).filter(Boolean);
+
+  // Función helper para obtener nodos válidos según ubicaciones
+  const getNodosIdsPorUbicaciones = (ubicacionIds: string[]): string[] => {
+    return nodos
+      .filter(n => n.ubicacionid && ubicacionIds.includes(n.ubicacionid.toString()))
+      .map(n => n.nodoid?.toString())
+      .filter(Boolean);
+  };
 
   // Función helper para filtrar datos según filtros globales
   const filterDataByGlobalFilters = (data: any[], idField: string): any[] => {
@@ -114,7 +122,39 @@ export const getUniqueOptionsForField = ({
         const ubiIds = fundoIds.flatMap(fid => getUbicacionesIdsPorFundo(fid));
         return ubiIds.includes(item.ubicacionid?.toString());
       }
+      // Para la tabla localizacion: el campo es nodoid, no ubicacionid
       if (columnName === 'localizacionid' && selectedTable === 'localizacion') {
+        // La tabla localizacion tiene nodoid, no ubicacionid
+        // Necesitamos obtener los nodos válidos y luego filtrar por nodoid
+        
+        if (localizacionSeleccionada) {
+          const locId = localizacionSeleccionada.localizacionid?.toString() || localizacionSeleccionada.toString();
+          return item.localizacionid?.toString() === locId;
+        }
+        if (ubicacionSeleccionada) {
+          const ubiId = ubicacionSeleccionada.ubicacionid?.toString() || ubicacionSeleccionada.toString();
+          const nodoIds = getNodosIdsPorUbicaciones([ubiId]);
+          return item.nodoid && nodoIds.includes(item.nodoid.toString());
+        }
+        if (fundoSeleccionado) {
+          const ubiIds = getUbicacionesIdsPorFundo(fundoSeleccionado).filter(Boolean);
+          const nodoIds = getNodosIdsPorUbicaciones(ubiIds);
+          return item.nodoid && nodoIds.includes(item.nodoid.toString());
+        }
+        if (empresaSeleccionada) {
+          const fundoIds = getFundosIdsPorEmpresa(empresaSeleccionada).filter(Boolean);
+          const ubiIds = fundoIds.flatMap(fid => getUbicacionesIdsPorFundo(fid)).filter(Boolean);
+          const nodoIds = getNodosIdsPorUbicaciones(ubiIds);
+          return item.nodoid && nodoIds.includes(item.nodoid.toString());
+        }
+        if (paisSeleccionado) {
+          const empresaIds = getEmpresasIdsPorPais(paisSeleccionado).filter(Boolean);
+          const fundoIds = empresaIds.flatMap(eid => getFundosIdsPorEmpresa(eid)).filter(Boolean);
+          const ubiIds = fundoIds.flatMap(fid => getUbicacionesIdsPorFundo(fid)).filter(Boolean);
+          const nodoIds = getNodosIdsPorUbicaciones(ubiIds);
+          return item.nodoid && nodoIds.includes(item.nodoid.toString());
+        }
+      }
         if (localizacionSeleccionada) {
           const locId = localizacionSeleccionada.localizacionid?.toString() || localizacionSeleccionada.toString();
           return item.localizacionid?.toString() === locId;
@@ -123,22 +163,6 @@ export const getUniqueOptionsForField = ({
           const ubiId = ubicacionSeleccionada.ubicacionid?.toString() || ubicacionSeleccionada.toString();
           return item.ubicacionid?.toString() === ubiId;
         }
-        if (fundoSeleccionado) {
-          const ubiIds = getUbicacionesIdsPorFundo(fundoSeleccionado);
-          return ubiIds.includes(item.ubicacionid?.toString());
-        }
-        if (empresaSeleccionada) {
-          const fundoIds = getFundosIdsPorEmpresa(empresaSeleccionada);
-          const ubiIds = fundoIds.flatMap(fid => getUbicacionesIdsPorFundo(fid));
-          return ubiIds.includes(item.ubicacionid?.toString());
-        }
-        if (paisSeleccionado) {
-          const empresaIds = getEmpresasIdsPorPais(paisSeleccionado);
-          const fundoIds = empresaIds.flatMap(eid => getFundosIdsPorEmpresa(eid));
-          const ubiIds = fundoIds.flatMap(fid => getUbicacionesIdsPorFundo(fid));
-          return ubiIds.includes(item.ubicacionid?.toString());
-        }
-      }
       return true;
     });
   };

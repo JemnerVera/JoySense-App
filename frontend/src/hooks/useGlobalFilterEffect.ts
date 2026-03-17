@@ -46,27 +46,27 @@ export const useGlobalFilterEffect = ({ tableName, data, relatedData }: GlobalFi
     const localizacionesPorUbicacion = new Map(localizaciones.map(l => [l.ubicacionid?.toString(), l.localizacionid?.toString()]));
 
     const getEmpresasIdsPorPais = (paisId: string): string[] => {
-      return empresas.filter(e => e.paisid?.toString() === paisId).map(e => e.empresaid?.toString());
+      return empresas.filter(e => e.paisid?.toString() === paisId).map(e => e.empresaid?.toString()).filter(Boolean);
     };
 
     const getFundosIdsPorEmpresa = (empresaId: string): string[] => {
-      return fundos.filter(f => f.empresaid?.toString() === empresaId).map(f => f.fundoid?.toString());
+      return fundos.filter(f => f.empresaid?.toString() === empresaId).map(f => f.fundoid?.toString()).filter(Boolean);
     };
 
     const getUbicacionesIdsPorFundo = (fundoId: string): string[] => {
-      return ubicaciones.filter(u => u.fundoid?.toString() === fundoId).map(u => u.ubicacionid?.toString());
+      return ubicaciones.filter(u => u.fundoid?.toString() === fundoId).map(u => u.ubicacionid?.toString()).filter(Boolean);
     };
 
     const getNodosIdsPorUbicacion = (ubicacionId: string): string[] => {
-      return nodos.filter(n => n.ubicacionid?.toString() === ubicacionId).map(n => n.nodoid?.toString());
+      return nodos.filter(n => n.ubicacionid?.toString() === ubicacionId).map(n => n.nodoid?.toString()).filter(Boolean);
     };
 
     const getLocalizacionesIdsPorNodo = (nodoId: string): string[] => {
-      return localizaciones.filter(l => l.nodoid?.toString() === nodoId).map(l => l.localizacionid?.toString());
+      return localizaciones.filter(l => l.nodoid?.toString() === nodoId).map(l => l.localizacionid?.toString()).filter(Boolean);
     };
 
     const getLocalizacionesIdsPorUbicacion = (ubicacionId: string): string[] => {
-      return localizaciones.filter(l => l.ubicacionid?.toString() === ubicacionId).map(l => l.localizacionid?.toString());
+      return localizaciones.filter(l => l.ubicacionid?.toString() === ubicacionId).map(l => l.localizacionid?.toString()).filter(Boolean);
     };
 
     if (tableName === 'pais') {
@@ -133,29 +133,48 @@ export const useGlobalFilterEffect = ({ tableName, data, relatedData }: GlobalFi
     }
 
     if (tableName === 'localizacion') {
+      // La tabla localizacion tiene nodoid (no ubicacionid directamente)
+      // La jerarquía es: localizacion -> nodo -> ubicacion -> fundo -> empresa -> pais
+      
       if (localizacionSeleccionada) {
         const locId = localizacionSeleccionada.localizacionid?.toString() || localizacionSeleccionada.toString();
         return data.filter(row => row.localizacionid?.toString() === locId);
       }
+      
+      // Función helper para obtener nodos válidos según ubicaciones
+      const getNodosIdsPorUbicaciones = (ubicacionIds: string[]): string[] => {
+        return nodos
+          .filter(n => n.ubicacionid && ubicacionIds.includes(n.ubicacionid.toString()))
+          .map(n => n.nodoid?.toString());
+      };
+
       if (ubicacionSeleccionada) {
         const ubiId = ubicacionSeleccionada.ubicacionid?.toString() || ubicacionSeleccionada.toString();
-        return data.filter(row => row.ubicacionid?.toString() === ubiId);
+        const nodoIds = getNodosIdsPorUbicaciones([ubiId]);
+        return data.filter(row => row.nodoid && nodoIds.includes(row.nodoid.toString()));
       }
+      
       if (fundoSeleccionado) {
-        const ubiIds = getUbicacionesIdsPorFundo(fundoSeleccionado);
-        return data.filter(row => row.ubicacionid && ubiIds.includes(row.ubicacionid.toString()));
+        const ubiIds = getUbicacionesIdsPorFundo(fundoSeleccionado).filter(Boolean);
+        const nodoIds = getNodosIdsPorUbicaciones(ubiIds);
+        return data.filter(row => row.nodoid && nodoIds.includes(row.nodoid.toString()));
       }
+      
       if (empresaSeleccionada) {
-        const fundoIds = getFundosIdsPorEmpresa(empresaSeleccionada);
-        const ubiIds = fundoIds.flatMap(fid => getUbicacionesIdsPorFundo(fid));
-        return data.filter(row => row.ubicacionid && ubiIds.includes(row.ubicacionid.toString()));
+        const fundoIds = getFundosIdsPorEmpresa(empresaSeleccionada).filter(Boolean);
+        const ubiIds = fundoIds.flatMap(fid => getUbicacionesIdsPorFundo(fid)).filter(Boolean);
+        const nodoIds = getNodosIdsPorUbicaciones(ubiIds);
+        return data.filter(row => row.nodoid && nodoIds.includes(row.nodoid.toString()));
       }
+      
       if (paisSeleccionado) {
-        const empresaIds = getEmpresasIdsPorPais(paisSeleccionado);
-        const fundoIds = empresaIds.flatMap(eid => getFundosIdsPorEmpresa(eid));
-        const ubiIds = fundoIds.flatMap(fid => getUbicacionesIdsPorFundo(fid));
-        return data.filter(row => row.ubicacionid && ubiIds.includes(row.ubicacionid.toString()));
+        const empresaIds = getEmpresasIdsPorPais(paisSeleccionado).filter(Boolean);
+        const fundoIds = empresaIds.flatMap(eid => getFundosIdsPorEmpresa(eid)).filter(Boolean);
+        const ubiIds = fundoIds.flatMap(fid => getUbicacionesIdsPorFundo(fid)).filter(Boolean);
+        const nodoIds = getNodosIdsPorUbicaciones(ubiIds);
+        return data.filter(row => row.nodoid && nodoIds.includes(row.nodoid.toString()));
       }
+      
       return data;
     }
 

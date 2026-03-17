@@ -53,7 +53,14 @@ export const useUpdateTable = ({
   // Aplicar filtros globales (país, empresa, fundo)
   const filteredTableData = useGlobalFilterEffect({
     tableName,
-    data: tableData
+    data: tableData,
+    relatedData: {
+      empresasData: relatedData?.empresasData,
+      fundosData: relatedData?.fundosData,
+      ubicacionesData: relatedData?.ubicacionesData,
+      localizacionesData: relatedData?.localizacionesData,
+      nodosData: relatedData?.nodosData
+    }
   });
 
   // Hook de búsqueda y filtrado
