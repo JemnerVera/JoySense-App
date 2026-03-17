@@ -147,6 +147,10 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
   const [ubicacionDropdownPosition, setUbicacionDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
   const [nodoDropdownPosition, setNodoDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
   
+  // Ref para rastrear si acaba de hacerse una selección en el dropdown de localización
+  // Evita que el useEffect de sincronización global limpie selectedLocalizacion prematuramente
+  const justSelectedLocalizacionRef = useRef<boolean>(false);
+  
   // Cache de información de fundos (para validar nodos contra filtros globales)
   const [fundosInfo, setFundosInfo] = useState<Map<number, any>>(new Map());
   const { syncDashboardSelectionToGlobal } = useFilterSync(fundosInfo);
@@ -456,7 +460,17 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
         }
       }
     } else if (selectedLocalizacion && !localizacionSeleccionada) {
-      setSelectedLocalizacion(null);
+      // Solo limpiar selectedLocalizacion si no acabamos de hacer una selección en el dropdown
+      // Si justSelectedLocalizacionRef es true, significa que el estado global se está actualizando
+      // y no debemos limpiar el estado local que acabamos de establecer
+      if (!justSelectedLocalizacionRef.current) {
+        setSelectedLocalizacion(null);
+      }
+    }
+    
+    // Resetear la flag después de procesar
+    if (justSelectedLocalizacionRef.current) {
+      justSelectedLocalizacionRef.current = false;
     }
   }, [ubicacionSeleccionada, localizacionSeleccionada, filteredNodes]);
 
@@ -1312,7 +1326,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
             </button>
           )}
           
-          <div className="flex items-center justify-center gap-4 flex-nowrap overflow-x-auto dashboard-scrollbar-blue w-full">
+          <div className="flex items-center justify-start gap-4 flex-nowrap overflow-x-auto dashboard-scrollbar-blue w-full">
             {/* Selector de Ubicación */}
             <div className="flex flex-col items-center flex-shrink-0" ref={ubicacionDropdownRef}>
               <label className="text-base font-bold text-blue-500 font-mono mb-1 whitespace-nowrap uppercase">
@@ -1443,7 +1457,23 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                               key={`${loc.localizacion}__${loc.nodoid}`}
                               onClick={() => {
                                 if (nodoConLocalizacion) {
+                                  // Crear objeto de localización con estructura consistente
+                                  const localizacionObj = {
+                                    localizacion: nodoConLocalizacion.localizacion,
+                                    nodoid: nodoConLocalizacion.nodoid,
+                                    nodo: nodoConLocalizacion.nodo
+                                  };
+                                  
+                                  // IMPORTANTE: Marcar que acabamos de hacer una selección
+                                  // Esto evita que el useEffect de sincronización limpie el estado prematuraamente
+                                  justSelectedLocalizacionRef.current = true;
+                                  
+                                  // Actualizar estado local de localización primero
+                                  setSelectedLocalizacion(localizacionObj);
+                                  
+                                  // Luego actualizar el nodo
                                   setSelectedNode(nodoConLocalizacion);
+                                  
                                   // Establecer automáticamente la ubicación del nodo seleccionado
                                   if (nodoConLocalizacion.ubicacionid) {
                                     const ubicacionCorrespondiente = ubicaciones.find((u: any) => u.ubicacionid === nodoConLocalizacion.ubicacionid);
@@ -1452,8 +1482,9 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                                       syncDashboardSelectionToGlobal(ubicacionCorrespondiente, 'ubicacion');
                                     }
                                   }
+                                  
                                   // Sincronizar la localización con el contexto global
-                                  syncDashboardSelectionToGlobal(nodoConLocalizacion, 'localizacion');
+                                  syncDashboardSelectionToGlobal(localizacionObj, 'localizacion');
                                 }
                                 setIsNodoDropdownOpen(false);
                                 setNodoSearchTerm('');
