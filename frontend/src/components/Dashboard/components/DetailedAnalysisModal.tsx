@@ -679,7 +679,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                 
                 {/* Leyenda de comparación horizontal - sin checkboxes, solo clickeable */}
                 {visibleLines.length > 0 && (
-                  <div className={`flex flex-row items-center justify-center gap-4 flex-wrap flex-shrink-0 ${isFullscreenView ? 'mb-1' : 'mb-3'} px-4`}>
+                  <div className={`flex flex-row items-center justify-center gap-5 flex-wrap flex-shrink-0 ${isFullscreenView ? 'mb-1' : 'mb-3'} px-4`}>
                     {(() => {
                       const sortBySondaNumber = (lines: string[]): string[] => {
                         return [...lines].sort((a, b) => {
@@ -750,19 +750,19 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                           <div 
                             key={lineKey}
                             onClick={() => handleToggleLine(lineKey, isComparison)}
-                            className="flex items-center gap-1 h-5 cursor-pointer hover:opacity-70 transition-opacity"
+                            className="flex items-center gap-1.5 h-6 cursor-pointer hover:opacity-70 transition-opacity"
                           >
                             {isComparison ? (
-                              <svg className="w-2 h-1 flex-shrink-0" viewBox="0 0 8 2" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <svg className="w-2.5 h-1.5 flex-shrink-0" viewBox="0 0 8 2" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <line x1="0" y1="1" x2="8" y2="1" stroke={strokeColor} strokeWidth="1.8" strokeDasharray="2.5 1.5" strokeLinecap="round" opacity={isVisible ? 1 : 0.3} />
                               </svg>
                             ) : (
                               <div 
-                                className="w-2 h-0.5 rounded-full flex-shrink-0" 
+                                className="w-2.5 h-0.5 rounded-full flex-shrink-0" 
                                 style={{ backgroundColor: strokeColor, opacity: isVisible ? 1 : 0.3 }}
                               />
                             )}
-                            <span className={`text-xs font-mono font-bold whitespace-nowrap ${isVisible ? 'text-gray-600 dark:text-neutral-400' : 'text-gray-400 dark:text-neutral-500 line-through'}`}>
+                            <span className={`text-sm font-mono font-bold whitespace-nowrap ${isVisible ? 'text-gray-600 dark:text-neutral-400' : 'text-gray-400 dark:text-neutral-500 line-through'}`}>
                               {cleanedLabel}
                             </span>
                           </div>
@@ -780,7 +780,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                           })}
                           
                           {mainNodeLines.length > 0 && comparisonNodeLines.length > 0 && (
-                            <div className="w-px h-4 bg-gray-300 dark:bg-neutral-600 flex-shrink-0"></div>
+                            <div className="w-px h-5 bg-gray-300 dark:bg-neutral-600 flex-shrink-0"></div>
                           )}
                           
                           {comparisonNodeLines.map((lineKey, idx) => {
