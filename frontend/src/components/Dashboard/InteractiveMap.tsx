@@ -26,6 +26,7 @@ interface InteractiveMapProps {
   loading?: boolean
   nodeMediciones?: { [nodeId: number]: number } // Mapa de nodoId -> cantidad de mediciones
   nodesWithAlerts?: number[] // Array de nodoIds que tienen alertas activas
+  defaultNodeColor?: string // Color para nodos no seleccionados (por defecto azul)
 }
 
 // Componente para centrar el mapa en el nodo seleccionado con animación en dos pasos
@@ -153,13 +154,14 @@ function MapController({ selectedNode, onAnimationComplete }: { selectedNode: No
 }
 
 // Icono personalizado para nodos
-const createNodeIcon = (isSelected: boolean, hasAlert: boolean = false) => {
+const createNodeIcon = (isSelected: boolean, hasAlert: boolean = false, defaultColor: string = '#3b82f6') => {
   const alertClass = hasAlert ? 'alert' : '';
   const alertColor = hasAlert ? 'background-color: #ef4444;' : '';
+  const nodeColor = isSelected ? '#f59e0b' : defaultColor;
   return L.divIcon({
     className: 'custom-node-icon',
     html: `
-      <div class="node-marker ${isSelected ? 'selected' : ''} ${alertClass}" style="${alertColor}">
+      <div class="node-marker ${isSelected ? 'selected' : ''} ${alertClass}" style="background-color: ${nodeColor}; ${alertColor}">
         <div class="node-icon">
           📡
         </div>
@@ -178,7 +180,8 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   onNodeSelect,
   loading = false,
   nodeMediciones = {},
-  nodesWithAlerts = []
+  nodesWithAlerts = [],
+  defaultNodeColor = '#3b82f6'
 }) => {
   const { t } = useLanguage();
   const [mapCenter, setMapCenter] = useState<[number, number]>([-13.745915, -76.122351]) // Centro por defecto en Perú
@@ -456,7 +459,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
               }
             }}
             position={[lat, lng]}
-            icon={createNodeIcon(selectedNode?.nodoid === node.nodoid, nodesWithAlerts.includes(node.nodoid))}
+            icon={createNodeIcon(selectedNode?.nodoid === node.nodoid, nodesWithAlerts.includes(node.nodoid), defaultNodeColor)}
             eventHandlers={{
               click: (e: any) => {
                 e.originalEvent.stopPropagation();

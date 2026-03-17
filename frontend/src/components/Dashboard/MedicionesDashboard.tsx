@@ -10,6 +10,7 @@ import { filterNodesByGlobalFilters } from '../../utils/filterNodesUtils';
 import { localizacionMatchesGlobalFilters as localizacionMatchesGlobalFiltersUtil } from '../../utils/filterSync';
 import { Localizacion } from '../../types';
 import { MedicionesAreaChart } from './components/MedicionesAreaChart';
+import { InteractiveMap } from './InteractiveMap';
 import { useSidebar } from '../../contexts/SidebarContext';
 
 interface MedicionesDashboardProps {}
@@ -81,6 +82,11 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   const [localizacionSearchTerm, setLocalizacionSearchTerm] = useState('');
   const localizacionDropdownRef = useRef<HTMLDivElement>(null);
   const [localizacionDropdownPosition, setLocalizacionDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
+
+  // Estados para el modal de mapa
+  const [showMapModal, setShowMapModal] = useState(false);
+  const [mapNodes, setMapNodes] = useState<any[]>([]);
+  const [loadingMapNodes, setLoadingMapNodes] = useState(false);
 
   // Refs para inputs de fecha (para cerrar date pickers nativos cuando el sidebar cambia)
   const fechaInicioInputRef = useRef<HTMLInputElement>(null);
@@ -178,6 +184,31 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
 
     loadInitialData();
   }, [showError, paisSeleccionado, empresaSeleccionada, fundoSeleccionado]);
+
+  // Función para cargar nodos con GPS para el modal de mapa
+  const loadMapNodes = async () => {
+    if (mapNodes.length > 0) return; // Ya están cargados
+    
+    setLoadingMapNodes(true);
+    try {
+      const filters =
+        fundoSeleccionado != null && fundoSeleccionado !== ''
+          ? { fundoId: fundoSeleccionado }
+          : empresaSeleccionada != null && empresaSeleccionada !== ''
+            ? { empresaId: empresaSeleccionada }
+            : paisSeleccionado != null && paisSeleccionado !== ''
+              ? { paisId: paisSeleccionado }
+              : undefined;
+      
+      const nodesData = await JoySenseService.getNodosConLocalizacion(1000, filters);
+      setMapNodes(nodesData || []);
+    } catch (err) {
+      console.error('Error cargando nodos para el mapa:', err);
+      showError('Error', 'No se pudieron cargar los nodos para el mapa');
+    } finally {
+      setLoadingMapNodes(false);
+    }
+  };
 
   // Función auxiliar para verificar si una localización cumple con los filtros globales (centralizada en filterSync)
   // Memoizar correctamente para evitar recreación innecesaria
@@ -1153,6 +1184,21 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                 ×
               </button>
             )}
+
+            {/* Botón para abrir el mapa */}
+            <button
+              onClick={async () => {
+                await loadMapNodes();
+                setShowMapModal(true);
+              }}
+              className="h-10 w-10 flex items-center justify-center bg-emerald-500 hover:bg-emerald-600 text-white rounded transition-colors flex-shrink-0 self-end mb-0"
+              title="Ver en el mapa"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </button>
           </div>
 
           {/* Separador visual */}
@@ -1525,6 +1571,68 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
           </div>
         )}
       </div>
+
+      {/* Modal de Mapa para Seleccionar Nodo */}
+      {showMapModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-xl w-full max-w-5xl flex flex-col">
+            {/* Header del Modal */}
+            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-neutral-700">
+              <h2 className="text-lg font-bold text-blue-500 font-mono uppercase">
+                Ubicación del Nodo
+              </h2>
+              <button
+                onClick={() => setShowMapModal(false)}
+                className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors p-1"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Contenido del Modal - Mapa */}
+            <div className="p-2">
+              <div 
+                className="overflow-hidden"
+                style={{ height: '500px' }}
+              >
+                <style dangerouslySetInnerHTML={{
+                  __html: `
+                    .mediciones-map-container > div {
+                      height: 100% !important;
+                    }
+                    .mediciones-map-container > div > div {
+                      height: 100% !important;
+                    }
+                  `
+                }} />
+                <div className="mediciones-map-container h-full">
+                  <InteractiveMap
+                    nodes={mapNodes}
+                    selectedNode={selectedLocalizacion ? mapNodes.find((n: any) => n.nodoid === selectedLocalizacion.nodoid) || null : null}
+                    onNodeSelect={(node: any) => {
+                      // Buscar la localización correspondiente en uniqueLocalizaciones
+                      const correspondingLocalizacion = uniqueLocalizaciones.find((loc: any) => loc.nodoid === node.nodoid);
+                      if (correspondingLocalizacion) {
+                        flushSync(() => {
+                          justSelectedLocalizacionRef.current = true;
+                          setSelectedLocalizacion(correspondingLocalizacion);
+                        });
+                        syncDashboardSelectionToGlobal(correspondingLocalizacion, 'localizacion');
+                      }
+                      setShowMapModal(false);
+                    }}
+                    loading={loadingMapNodes}
+                    nodeMediciones={{}}
+                    defaultNodeColor="#6b7280"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
