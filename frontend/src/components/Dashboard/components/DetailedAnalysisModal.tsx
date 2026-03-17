@@ -497,7 +497,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                         step="0.1"
                         min="-999999"
                         max="999999"
-                        value={yAxisDomain.min !== null && !isNaN(yAxisDomain.min) ? yAxisDomain.min.toString() : ''}
+                        value={yAxisDomain.min !== null && !isNaN(yAxisDomain.min) ? Math.round(yAxisDomain.min * 100) / 100 : ''}
                         onChange={(e) => {
                           const inputValue = e.target.value
                           if (inputValue === '') {
@@ -515,7 +515,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                           }
                         }}
                         placeholder="Min"
-                        className="h-10 w-16 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-base font-mono"
+                        className="h-10 w-32 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-base font-mono"
                       />
                       <span className="text-gray-600 dark:text-neutral-400">-</span>
                       <input
@@ -523,7 +523,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                         step="0.1"
                         min="-999999"
                         max="999999"
-                        value={yAxisDomain.max !== null && !isNaN(yAxisDomain.max) ? yAxisDomain.max.toString() : ''}
+                        value={yAxisDomain.max !== null && !isNaN(yAxisDomain.max) ? Math.round(yAxisDomain.max * 100) / 100 : ''}
                         onChange={(e) => {
                           const inputValue = e.target.value
                           if (inputValue === '') {
@@ -541,7 +541,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                           }
                         }}
                         placeholder="Max"
-                        className="h-10 w-16 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-base font-mono"
+                        className="h-10 w-32 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-base font-mono"
                       />
                       <button
                         onClick={() => {
