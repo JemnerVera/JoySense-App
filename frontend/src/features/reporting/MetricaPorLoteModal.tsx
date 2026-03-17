@@ -1197,27 +1197,27 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
     const allMetrics: MetricConfig[] = [];
     const processedIds = new Set<number>();
 
-    // SEGUIR EL ORDEN DE metricas (catálogo) para que coincida con el combobox
+    // 1. Primero agregar TODAS las métricas estándar (Temperatura, Humedad, Conductividad)
+    const standardMetrics = getTranslatedMetrics();
+    standardMetrics.forEach(sm => {
+      allMetrics.push(sm);
+      processedIds.add(sm.id);
+    });
+
+    // 2. Luego agregar métricas dinámicas disponibles en los datos (no estándar)
     metricas.forEach(m => {
-      if (availableMetricIds.has(m.metricaid)) {
-        // Buscar si es una métrica estándar
-        const standardMetric = getTranslatedMetrics().find(sm => sm.id === m.metricaid);
-        
-        if (standardMetric) {
-          allMetrics.push(standardMetric);
-        } else {
-          allMetrics.push({
-            id: m.metricaid,
-            dataKey: `metrica_${m.metricaid}`,
-            title: m.metrica,
-            unit: m.unidad || ''
-          });
-        }
+      if (!processedIds.has(m.metricaid) && availableMetricIds.has(m.metricaid)) {
+        allMetrics.push({
+          id: m.metricaid,
+          dataKey: `metrica_${m.metricaid}`,
+          title: m.metrica,
+          unit: m.unidad || ''
+        });
         processedIds.add(m.metricaid);
       }
     });
 
-    // Agregar la métrica inicial si por alguna razón no estaba en el catálogo o en availableMetricIds (seguridad)
+    // 3. Agregar la métrica inicial si no está ya incluida
     if (initialMetricaId && !processedIds.has(initialMetricaId)) {
       const metricInfo = metricas.find(m => m.metricaid === initialMetricaId);
       const title = initialMetricaNombre || metricInfo?.metrica || `Métrica ${initialMetricaId}`;
@@ -1281,12 +1281,12 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
       <div className={overlayClass}>
         <div className={contentWrapperClass}>
           {/* Header con botón Volver + botones de métricas */}
-          <div className={`flex items-center justify-between flex-shrink-0 ${isFullscreenView ? 'p-2' : 'p-4'} border-b border-gray-300 dark:border-neutral-700 ${isFullscreenView ? 'bg-blue-600' : ''}`}>
+          <div className={`flex items-center justify-between flex-shrink-0 ${isFullscreenView ? 'p-3' : 'p-4'} border-b border-gray-300 dark:border-neutral-700 ${isFullscreenView ? 'bg-blue-600 dark:bg-blue-700' : 'bg-gray-100 dark:bg-neutral-800'}`}>
             {/* Botón Volver solo en fullscreen */}
             {isFullscreenView && (
               <button
                 onClick={onClose}
-                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-neutral-800 hover:bg-gray-100 dark:hover:bg-neutral-700 text-blue-600 dark:text-blue-400 font-mono font-bold rounded-lg transition-colors flex-shrink-0"
+                className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-neutral-800 hover:bg-gray-100 dark:hover:bg-neutral-700 text-blue-600 dark:text-blue-400 font-mono font-bold text-sm rounded-lg transition-colors flex-shrink-0"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -1296,7 +1296,7 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
             )}
             {/* Botones de métricas centrados */}
             <div className="flex-1 flex justify-center">
-              <div className="flex space-x-2">
+              <div className="flex flex-wrap items-center justify-center gap-2">
                 {(() => {
                   console.log('[MetricaPorLoteModal] Renderizando botones de métricas:', {
                     metricsToShowLength: metricsToShow.length,
@@ -1311,10 +1311,14 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
                         key={metric.id}
                         onClick={() => setSelectedMetric(metric.dataKey)}
                         disabled={loading}
-                        className={`px-3 py-1 rounded-lg font-mono tracking-wider transition-colors text-sm uppercase ${
+                        className={`px-4 py-2 rounded-lg font-mono tracking-wider font-bold transition-all duration-200 text-base uppercase ${
                           selectedMetric === metric.dataKey
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-200 dark:bg-neutral-700 text-gray-700 dark:text-neutral-300 hover:bg-gray-300 dark:hover:bg-neutral-600'
+                            ? isFullscreenView
+                              ? 'bg-white dark:bg-neutral-800 text-blue-600 dark:text-blue-400 shadow-lg'
+                              : 'bg-blue-600 dark:bg-blue-700 text-white shadow-md'
+                            : isFullscreenView
+                            ? 'bg-blue-500/50 dark:bg-blue-600/50 text-white hover:bg-blue-500/70 dark:hover:bg-blue-600/70'
+                            : 'bg-white dark:bg-neutral-700 text-gray-700 dark:text-neutral-300 hover:bg-gray-200 dark:hover:bg-neutral-600'
                         } ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                       >
                         {metric.title}
@@ -1349,10 +1353,14 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
                             key={metric.id}
                             onClick={() => setSelectedMetric(metric.dataKey)}
                             disabled={loading}
-                            className={`px-3 py-1 rounded-lg font-mono tracking-wider transition-colors text-sm uppercase ${
+                            className={`px-4 py-2 rounded-lg font-mono tracking-wider font-bold transition-all duration-200 text-base uppercase ${
                               selectedMetric === metric.dataKey
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-200 dark:bg-neutral-700 text-gray-700 dark:text-neutral-300 hover:bg-gray-300 dark:hover:bg-neutral-600'
+                                ? isFullscreenView
+                                  ? 'bg-white dark:bg-neutral-800 text-blue-600 dark:text-blue-400 shadow-lg'
+                                  : 'bg-blue-600 dark:bg-blue-700 text-white shadow-md'
+                                : isFullscreenView
+                                ? 'bg-blue-500/50 dark:bg-blue-600/50 text-white hover:bg-blue-500/70 dark:hover:bg-blue-600/70'
+                                : 'bg-white dark:bg-neutral-700 text-gray-700 dark:text-neutral-300 hover:bg-gray-200 dark:hover:bg-neutral-600'
                             } ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                           >
                             {metric.title}
@@ -1385,123 +1393,117 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
                 </div>
               )}
 
-              {/* Controles */}
-              <div className="bg-gray-200 dark:bg-neutral-700 rounded-lg p-2 mb-2">
-                <div className="flex items-center gap-4 overflow-x-auto">
-                  {/* Información del Lote - al extremo derecho en fullscreen */}
-                  {isFullscreenView && (
-                    <>
-                      <div className="flex flex-col items-center flex-shrink-0 ml-auto">
-                        <label className="text-sm font-bold text-blue-500 font-mono mb-0.5 whitespace-nowrap uppercase">
-                          Información del Lote:
-                        </label>
-                        <div className="h-8 flex items-center gap-2 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-sm">
-                          <span className="font-bold text-gray-700 dark:text-gray-300 font-mono">Loc.:</span>
-                          <span className="text-gray-800 dark:text-white font-mono whitespace-nowrap">{localizacionNombre}</span>
-                          <span className="text-gray-400">|</span>
-                          <span className="font-bold text-gray-700 dark:text-gray-300 font-mono">Ubic.:</span>
-                          <span className="text-gray-800 dark:text-white font-mono">{ubicacion || '--'}</span>
-                          <span className="text-gray-400">|</span>
-                          <span className="font-bold text-gray-700 dark:text-gray-300 font-mono">Fundo:</span>
-                          <span className="text-gray-800 dark:text-white font-mono">{fundo || '--'}</span>
-                        </div>
-                      </div>
-                      <div className="w-px h-12 bg-gray-400 dark:bg-neutral-600 flex-shrink-0"></div>
-                    </>
-                  )}
-                  {/* Intervalo de Fechas */}
-                  <div className="flex flex-col flex-shrink-0">
-                    <div className="flex items-center gap-2">
-                      <div className="flex flex-col">
-                        <label className="text-sm font-bold text-blue-500 font-mono mb-0.5 whitespace-nowrap uppercase">Fecha Inicio:</label>
-                        <input
-                          type="date"
-                          value={tempStartDate || detailedStartDate}
-                          onChange={(e) => {
-                            const newStartDate = e.target.value;
-                            // Solo actualizar tempStartDate, NO cargar datos automáticamente
-                            setTempStartDate(newStartDate);
-                          }}
-                          max={tempEndDate || detailedEndDate || undefined}
-                          disabled={loading}
-                          className={`h-8 w-40 pl-6 pr-0 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600 font-mono text-xs ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          style={{
-                            colorScheme: 'dark',
-                            WebkitAppearance: 'none'
-                          }}
-                        />
-                      </div>
-                      <div className="flex flex-col">
-                        <label className="text-sm font-bold text-blue-500 font-mono mb-0.5 whitespace-nowrap uppercase">Fecha Fin:</label>
-                        <input
-                          type="date"
-                          value={tempEndDate || detailedEndDate}
-                          onChange={(e) => {
-                            const newEndDate = e.target.value;
-                            // Solo actualizar tempEndDate, NO cargar datos automáticamente
-                            setTempEndDate(newEndDate);
-                          }}
-                          min={tempStartDate || detailedStartDate || undefined}
-                          disabled={loading}
-                          className={`h-8 w-40 pl-6 pr-0 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600 font-mono text-xs ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                          style={{
-                            colorScheme: 'dark',
-                            WebkitAppearance: 'none'
-                          }}
-                        />
-                      </div>
-                      {/* Botón Aplicar - aparece cuando hay fechas temporales diferentes */}
-                      {(tempStartDate && tempStartDate !== detailedStartDate) || (tempEndDate && tempEndDate !== detailedEndDate) ? (
-                        <div className="flex flex-col">
-                          <label className="text-sm font-bold text-gray-700 dark:text-neutral-300 font-mono mb-2 whitespace-nowrap invisible">Aplicar:</label>
-                          <button
-                            onClick={() => {
-                              // Validar fechas antes de aplicar
-                              const startDateToApply = tempStartDate || detailedStartDate;
-                              const endDateToApply = tempEndDate || detailedEndDate;
-                              
-                              if (startDateToApply && endDateToApply && new Date(startDateToApply) > new Date(endDateToApply)) {
-                                alert('La fecha inicial no puede ser mayor que la fecha final. Por favor, seleccione fechas válidas.');
-                                return;
-                              }
-                              
-                              // Aplicar cambios y cargar datos
-                              flushSync(() => {
-                                setLoading(true);
-                                if (tempStartDate) {
-                                  setDetailedStartDate(tempStartDate);
-                                  setTempStartDate('');
-                                }
-                                if (tempEndDate) {
-                                  setDetailedEndDate(tempEndDate);
-                                  setTempEndDate('');
-                                }
-                                // Si la fecha inicio cambió y es mayor que la fecha fin, ajustar ambas
-                                if (tempStartDate && tempEndDate && new Date(tempStartDate) > new Date(tempEndDate)) {
-                                  setDetailedStartDate(tempStartDate);
-                                  setDetailedEndDate(tempStartDate);
-                                  setTempStartDate('');
-                                  setTempEndDate('');
-                                }
-                              });
-                            }}
-                            disabled={loading}
-                            className="h-8 px-3 ml-2 bg-red-500 hover:bg-red-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded font-mono text-xs transition-colors whitespace-nowrap"
-                          >
-                            Aplicar
-                          </button>
-                        </div>
-                      ) : null}
+              {/* Controles - Una sola línea horizontal con scroll, elementos centrados */}
+              <div className="bg-gray-200 dark:bg-neutral-700 rounded-lg p-3 mb-2 flex-shrink-0">
+                <div className="flex items-center justify-center gap-4 flex-nowrap overflow-x-auto dashboard-scrollbar-blue w-full px-2">
+                  
+                  {/* Información del Lote */}
+                  <div className="flex flex-col items-center flex-shrink-0">
+                    <label className="text-xs font-bold text-blue-500 font-mono mb-0.5 whitespace-nowrap uppercase">
+                      Información del Lote:
+                    </label>
+                    <div className="flex items-center gap-2 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-xs h-7">
+                      <span className="font-bold text-gray-700 dark:text-gray-300 font-mono">Loc.:</span>
+                      <span className="text-gray-800 dark:text-white font-mono whitespace-nowrap truncate max-w-[100px]">{localizacionNombre}</span>
+                      <span className="text-gray-400">|</span>
+                      <span className="font-bold text-gray-700 dark:text-gray-300 font-mono">Ubic.:</span>
+                      <span className="text-gray-800 dark:text-white font-mono whitespace-nowrap truncate max-w-[80px]">{ubicacion || '--'}</span>
+                      <span className="text-gray-400">|</span>
+                      <span className="font-bold text-gray-700 dark:text-gray-300 font-mono">Fundo:</span>
+                      <span className="text-gray-800 dark:text-white font-mono whitespace-nowrap truncate max-w-[80px]">{fundo || '--'}</span>
                     </div>
                   </div>
 
                   {/* Separador visual */}
-                  <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch"></div>
+                  <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
+
+                  {/* Intervalo de Fechas */}
+                  <div className="flex flex-col items-center flex-shrink-0">
+                    <label className="text-xs font-bold text-blue-500 font-mono mb-0.5 whitespace-nowrap uppercase">Fecha Inicio:</label>
+                    <input
+                      type="date"
+                      value={tempStartDate || detailedStartDate}
+                      onChange={(e) => {
+                        const newStartDate = e.target.value;
+                        setTempStartDate(newStartDate);
+                      }}
+                      max={tempEndDate || detailedEndDate || undefined}
+                      disabled={loading}
+                      className={`h-7 w-32 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600 font-mono text-xs ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      style={{
+                        colorScheme: 'dark',
+                        WebkitAppearance: 'none'
+                      }}
+                    />
+                  </div>
+
+                  {/* Fecha Fin */}
+                  <div className="flex flex-col items-center flex-shrink-0">
+                    <label className="text-xs font-bold text-blue-500 font-mono mb-0.5 whitespace-nowrap uppercase">Fecha Fin:</label>
+                    <input
+                      type="date"
+                      value={tempEndDate || detailedEndDate}
+                      onChange={(e) => {
+                        const newEndDate = e.target.value;
+                        setTempEndDate(newEndDate);
+                      }}
+                      min={tempStartDate || detailedStartDate || undefined}
+                      disabled={loading}
+                      className={`h-7 w-32 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-600 font-mono text-xs ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      style={{
+                        colorScheme: 'dark',
+                        WebkitAppearance: 'none'
+                      }}
+                    />
+                  </div>
+
+                  {/* Botón Aplicar - aparece cuando hay fechas temporales diferentes */}
+                  {(tempStartDate && tempStartDate !== detailedStartDate) || (tempEndDate && tempEndDate !== detailedEndDate) ? (
+                    <div className="flex flex-col items-center flex-shrink-0">
+                      <label className="text-xs font-bold text-gray-700 dark:text-neutral-300 font-mono mb-1 whitespace-nowrap invisible">Aplicar:</label>
+                      <button
+                        onClick={() => {
+                          const startDateToApply = tempStartDate || detailedStartDate;
+                          const endDateToApply = tempEndDate || detailedEndDate;
+                          
+                          if (startDateToApply && endDateToApply && new Date(startDateToApply) > new Date(endDateToApply)) {
+                            alert('La fecha inicial no puede ser mayor que la fecha final. Por favor, seleccione fechas válidas.');
+                            return;
+                          }
+                          
+                          flushSync(() => {
+                            setLoading(true);
+                            if (tempStartDate) {
+                              setDetailedStartDate(tempStartDate);
+                              setTempStartDate('');
+                            }
+                            if (tempEndDate) {
+                              setDetailedEndDate(tempEndDate);
+                              setTempEndDate('');
+                            }
+                            if (tempStartDate && tempEndDate && new Date(tempStartDate) > new Date(tempEndDate)) {
+                              setDetailedStartDate(tempStartDate);
+                              setDetailedEndDate(tempStartDate);
+                              setTempStartDate('');
+                              setTempEndDate('');
+                            }
+                          });
+                        }}
+                        disabled={loading}
+                        className="h-7 px-3 bg-red-500 hover:bg-red-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded font-mono text-xs transition-colors whitespace-nowrap"
+                      >
+                        Aplicar
+                      </button>
+                    </div>
+                  ) : null}
+
+                  {/* Separador visual */}
+                  <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
 
                   {/* Ajuste del eje Y */}
-                  <div className="flex flex-col">
-                    <label className="text-sm font-bold text-blue-500 font-mono mb-0.5 uppercase">Ajuste Eje Y:</label>
-                    <div className="flex items-center gap-2">
+                  <div className="flex flex-col items-center flex-shrink-0">
+                    <label className="text-xs font-bold text-blue-500 font-mono mb-0.5 uppercase">Ajuste Eje Y:</label>
+                    <div className="flex items-center gap-1">
                       <input
                         type="number"
                         step="0.1"
@@ -1520,9 +1522,9 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
                           }
                         }}
                         placeholder="Min"
-                        className="h-8 w-16 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-sm font-mono"
+                        className="h-7 w-12 px-1 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-xs font-mono"
                       />
-                      <span className="text-gray-600 dark:text-neutral-400">-</span>
+                      <span className="text-gray-600 dark:text-neutral-400 text-xs">-</span>
                       <input
                         type="number"
                         step="0.1"
@@ -1541,11 +1543,11 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
                           }
                         }}
                         placeholder="Max"
-                        className="h-8 w-16 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-sm font-mono"
+                        className="h-7 w-12 px-1 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-xs font-mono"
                       />
                       <button
                         onClick={() => setYAxisDomain({ min: null, max: null })}
-                        className="h-8 px-2 bg-gray-500 hover:bg-gray-600 text-white rounded text-xs font-mono"
+                        className="h-7 px-1.5 bg-gray-500 hover:bg-gray-600 text-white rounded text-xs font-mono"
                       >
                         Reset
                       </button>
@@ -1553,17 +1555,17 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
                   </div>
 
                   {/* Separador visual */}
-                  <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch"></div>
+                  <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
 
                   {/* Botón de análisis de fluctuación */}
-                  <div className="flex flex-col">
-                    <label className="text-sm font-bold text-blue-500 font-mono mb-0.5 uppercase">Analizar:</label>
+                  <div className="flex flex-col items-center flex-shrink-0">
+                    <label className="text-xs font-bold text-blue-500 font-mono mb-0.5 uppercase">Analizar:</label>
                     <button
                       onClick={analyzeFluctuationAndRecommendThresholds}
                       disabled={loading || !mediciones.length}
-                      className="h-8 px-4 bg-gray-500 hover:bg-gray-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded font-mono text-sm transition-colors flex items-center gap-2 whitespace-nowrap"
+                      className="h-7 px-3 bg-gray-500 hover:bg-gray-600 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded font-mono text-xs transition-colors flex items-center gap-1 whitespace-nowrap"
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                       </svg>
                       Umbrales
@@ -1571,12 +1573,12 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
                   </div>
 
                   {/* Separador visual */}
-                  <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch"></div>
+                  <div className="w-px h-16 bg-gray-400 dark:bg-neutral-600 self-stretch flex-shrink-0"></div>
 
                   {/* Selector de lote para comparación */}
-                  <div className="flex flex-col">
-                    <label className="text-sm font-bold text-blue-500 font-mono mb-0.5 uppercase tracking-wider">Comparar con Loc.:</label>
-                    <div className="flex items-center gap-2">
+                  <div className="flex flex-col items-center flex-shrink-0">
+                    <label className="text-xs font-bold text-blue-500 font-mono mb-0.5 uppercase tracking-wider">Comparar con Loc.:</label>
+                    <div className="flex items-center gap-1">
                       <select
                         value={comparisonLote?.localizacionid || ''}
                         onChange={(e) => {
@@ -1596,12 +1598,13 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
                           }
                         }}
                         disabled={loadingComparisonData}
-                        className="h-8 px-3 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600 text-gray-900 dark:text-white font-mono text-sm min-w-[200px] disabled:opacity-50 hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors dashboard-scrollbar-blue"
+                        className="h-7 px-2 bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-blue-600 focus:border-blue-600 text-gray-900 dark:text-white font-mono text-xs min-w-[140px] disabled:opacity-50 hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors"
                         style={{
                           scrollbarWidth: 'thin',
                           scrollbarColor: '#3b82f6 #d1d5db'
                         }}
                       >
+                        <option value="" disabled hidden>Ninguno</option>
                         {availableLotes.map(lote => (
                           <option key={lote.localizacionid} value={lote.localizacionid}>
                             {lote.localizacion}
@@ -1614,13 +1617,13 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
                             setComparisonLote(null);
                             setComparisonMediciones([]);
                           }}
-                          className="h-8 px-2 bg-red-500 hover:bg-red-600 text-white rounded text-sm font-mono"
+                          className="h-7 px-1.5 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-mono"
                         >
                           ✕
                         </button>
                       )}
                       {loadingComparisonData && (
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-500"></div>
                       )}
                     </div>
                   </div>
