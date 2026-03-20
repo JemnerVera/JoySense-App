@@ -125,25 +125,6 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   const memoizedTipos = useMemo(() => tipos, [tipos]);
 
   const localizacionTipoidMap = useMemo(() => {
-    console.log('[localizacionTipoidMap] Calculando...', {
-      sensoresCount: memoizedSensores.length,
-      localizacionesCount: localizaciones.length
-    });
-    if (memoizedSensores.length > 0) {
-      console.log('[localizacionTipoidMap] Sample sensor:', {
-        sensorid: memoizedSensores[0].sensorid,
-        tipoid: memoizedSensores[0].tipoid,
-        sensor: memoizedSensores[0].sensor
-      });
-    }
-    if (localizaciones.length > 0) {
-      console.log('[localizacionTipoidMap] Sample localizacion:', {
-        localizacionid: localizaciones[0].localizacionid,
-        sensorid: localizaciones[0].sensorid,
-        nodoid: localizaciones[0].nodoid
-      });
-    }
-    
     const map = new Map<number, number>();
     memoizedSensores.forEach((sensor: any) => {
       localizaciones.forEach((loc: any) => {
@@ -152,7 +133,6 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
         }
       });
     });
-    console.log('[localizacionTipoidMap] Resultado - entries:', Array.from(map.entries()).slice(0, 5));
     return map;
   }, [localizaciones, memoizedSensores]);
 
@@ -160,59 +140,32 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   // LoRa (tipoid 1,2): NO filtrar por localizacionid - mostrar métricas de todo el nodo
   // PLC (tipoid 3,4): SÍ filtrar por localizacionid - mostrar solo métricas de esa localización
   const filterByTipoSensor = useCallback((data: any[], selectedLocalizacion: any): { data: any[]; isLora: boolean } => {
-    console.log('[filterByTipoSensor] Datos recibidos:', data?.length);
-    console.log('[filterByTipoSensor] selectedLocalizacion:', { 
-      localizacionid: selectedLocalizacion?.localizacionid,
-      nodoid: selectedLocalizacion?.nodoid,
-      localizacion: selectedLocalizacion?.localizacion
-    });
-    
     if (!data || data.length === 0) {
-      console.log('[filterByTipoSensor] Datos vacíos, retorno []');
       return { data: [], isLora: true };
     }
     
     const tiposPresentes = new Set<number>();
-    const sampleData: any[] = [];
-    data.forEach((m: any, idx: number) => {
+    data.forEach((m: any) => {
       const tipoid = m.tipoid || m.localizacion?.sensor?.tipoid;
-      if (idx < 3) {
-        sampleData.push({ 
-          tipoid,
-          localizacionid: m.localizacionid,
-          metricaid: m.metricaid,
-          hasLocalizacion: !!m.localizacion,
-          hasSensor: !!m.localizacion?.sensor
-        });
-      }
       if (tipoid) tiposPresentes.add(Number(tipoid));
     });
-    
-    console.log('[filterByTipoSensor] Sample datos (primeros 3):', sampleData);
-    console.log('[filterByTipoSensor] Tipos detectados:', Array.from(tiposPresentes));
     
     const hasLora = Array.from(tiposPresentes).some(t => [1, 2].includes(t));
     const hasPlc = Array.from(tiposPresentes).some(t => [3, 4].includes(t));
     
-    console.log('[filterByTipoSensor] hasLora:', hasLora, 'hasPlc:', hasPlc);
-    
     if (hasLora && !hasPlc) {
-      console.log('[filterByTipoSensor] Modo LoRa: NO filtro por localizacionid');
       return { data, isLora: true };
     } else if (hasPlc && !hasLora) {
       const filtered = data.filter((m: any) => m.localizacionid === selectedLocalizacion.localizacionid);
-      console.log('[filterByTipoSensor] Modo PLC: Filtro por localizacionid', selectedLocalizacion.localizacionid, '->', filtered.length, 'de', data.length);
       return { 
         data: filtered,
         isLora: false 
       };
     } else if (hasLora && hasPlc) {
-      console.log('[filterByTipoSensor] Modo Mixto: NO filtro por localizacionid');
       return { data, isLora: true };
     }
     
     const filtered = data.filter((m: any) => m.localizacionid === selectedLocalizacion.localizacionid);
-    console.log('[filterByTipoSensor] Modo Default: Filtro por localizacionid', selectedLocalizacion.localizacionid, '->', filtered.length, 'de', data.length);
     return { 
       data: filtered,
       isLora: false 
@@ -323,27 +276,13 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   // Agrupar localizaciones por nombre + nodoid (clave compuesta)
   // Esto permite mantener múltiples nodos bajo la misma localización
   useEffect(() => {
-    console.log('[uniqueLocalizaciones] 🔵 USE EFFECT EJECUTÁNDOSE');
-    console.log('[uniqueLocalizaciones] localizacionTipoidMap size:', localizacionTipoidMap.size);
-    console.log('[uniqueLocalizaciones] localizacionTipoidMap:', Array.from(localizacionTipoidMap.entries()).slice(0, 5));
-    console.log('[uniqueLocalizaciones] localizaciones.length:', localizaciones.length);
-    if (localizaciones.length > 0) {
-      console.log('[uniqueLocalizaciones] sample loc:', {
-        localizacionid: localizaciones[0].localizacionid,
-        sensorid: localizaciones[0].sensorid,
-        nodoid: localizaciones[0].nodoid
-      });
-    }
-    
     const localizacionesMap = new Map<string, any>();
     
     localizaciones.forEach((loc: Localizacion) => {
       if (loc.localizacion && loc.nodoid) {
-        // Usar clave compuesta: localización + nodoid para diferenciar nodos en la misma localización
         const key = `${loc.localizacion}__${loc.nodoid}`;
         if (!localizacionesMap.has(key)) {
           const tipoid = localizacionTipoidMap.get(loc.localizacionid);
-          console.log('[uniqueLocalizaciones] mapping loc', loc.localizacionid, '-> tipoid:', tipoid);
           localizacionesMap.set(key, {
             localizacionid: loc.localizacionid,
             localizacion: loc.localizacion,
@@ -357,13 +296,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
       }
     });
     
-    const uniqueLocs = Array.from(localizacionesMap.values());
-    console.log('[uniqueLocalizaciones] Final - sample:', uniqueLocs.slice(0, 3).map(x => ({
-      localizacionid: x.localizacionid,
-      localizacion: x.localizacion,
-      tipoid: x.tipoid
-    })));
-    setUniqueLocalizaciones(uniqueLocs);
+    setUniqueLocalizaciones(Array.from(localizacionesMap.values()));
   }, [localizaciones, localizacionTipoidMap]);
 
   // Agrupar TODAS las localizaciones sin filtro global (para contador del dropdown)
@@ -469,20 +402,14 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
 
     const loadMetricsAvailable = async () => {
       try {
-        // Cargar datos de TODAS las métricas en una sola petición
         const data = await SupabaseRPCService.getMedicionesNodoDetallado({
           nodoid: selectedLocalizacion.nodoid,
           startDate: dateRange.start,
           endDate: dateRange.end
         });
 
-        console.log('[loadMetricsAvailable] RPC retornó:', data?.length, 'datos');
-
-        // FILTRO: Aplicar lógica según tipo de sensor (LoRa vs PLC)
         const { data: filteredData, isLora } = filterByTipoSensor(data || [], selectedLocalizacion);
         const medicionesData = filteredData || [];
-        
-        console.log('[loadMetricsAvailable] Después de filtro:', medicionesData.length, 'datos');
         
         // CRÍTICO: Detectar todas las métricas en la carga inicial y guardarlas
         const uniqueMetricIds = new Set<number>();
@@ -576,7 +503,6 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
       try {
         setLoading(true);
 
-        // Cargar datos SOLO de la métrica seleccionada
         const data = await SupabaseRPCService.getMedicionesNodoDetallado({
           nodoid: selectedLocalizacion.nodoid,
           startDate: dateRange.start,
@@ -584,12 +510,8 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
           metricaid: selectedMetricId
         });
 
-        console.log('[loadMedicionesMetricaSeleccionada] RPC retornó:', data?.length, 'datos para metrica:', selectedMetricId);
-
-        // FILTRO: Aplicar lógica según tipo de sensor (LoRa vs PLC)
         const { data: filteredData } = filterByTipoSensor(data || [], selectedLocalizacion);
         const medicionesData = filteredData || [];
-        console.log('[loadMedicionesMetricaSeleccionada] Después de filtro:', medicionesData.length, 'datos');
         setMediciones(medicionesData);
       } catch (err: any) {
         console.error('Error cargando datos de métrica seleccionada:', err);
@@ -1074,9 +996,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
 
   // Preparar datos para el gráfico (usando mediciones ya filtradas por métrica)
   const chartData = useMemo(() => {
-    console.log('[chartData useMemo] medicionesFiltradasPorMetrica.length:', medicionesFiltradasPorMetrica.length);
     if (medicionesFiltradasPorMetrica.length === 0) {
-      console.log('[chartData useMemo] Retornando array vacío');
       return [];
     }
 
@@ -1308,13 +1228,6 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                         <button
                           key={nodo.localizacionid}
                           onClick={() => {
-                            console.log('[DROPDOWN onClick] Seleccionando localización:', {
-                              localizacionid: nodo.localizacionid,
-                              localizacion: nodo.localizacion,
-                              nodoid: nodo.nodoid,
-                              tipoid: nodo.tipoid,
-                              prevSelected: selectedLocalizacion?.localizacionid
-                            });
                             flushSync(() => {
                               justSelectedLocalizacionRef.current = true;
                               setSelectedLocalizacion(nodo);
@@ -1322,7 +1235,6 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                               setIsLocalizacionDropdownOpen(false);
                               setLocalizacionSearchTerm('');
                             });
-                            console.log('[DROPDOWN onClick] Después de setSelectedLocalizacion, selectedLocalizacion:', nodo.localizacionid);
                             syncDashboardSelectionToGlobal(nodo, 'localizacion');
                           }}
                           className={`w-full text-left px-3 py-2 text-base transition-colors font-mono tracking-wider ${
