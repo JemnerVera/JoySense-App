@@ -25,6 +25,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
 
   // Estados principales
   const [localizaciones, setLocalizaciones] = useState<Localizacion[]>([]);
+  const [allLocalizaciones, setAllLocalizaciones] = useState<Localizacion[]>([]); // Todas las localizaciones sin filtro global (para contador del dropdown)
   const [uniqueLocalizaciones, setUniqueLocalizaciones] = useState<any[]>([]);
   const [selectedLocalizacion, setSelectedLocalizacion] = useState<any | null>(null);
   const [mediciones, setMediciones] = useState<any[]>([]);
@@ -238,6 +239,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                 ? { paisId: paisSeleccionado }
                 : undefined;
         const localizacionesData = await JoySenseService.getLocalizacionesParaMediciones(1000, filters);
+        const allLocalizacionesData = await JoySenseService.getLocalizacionesParaMediciones(2000, undefined); // Sin filtro global para contador
 
         const [sensoresData, tiposData, fundosData, empresasData] = await Promise.all([
           JoySenseService.getSensores(),
@@ -247,6 +249,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
         ]);
 
         setLocalizaciones(localizacionesData || []);
+        setAllLocalizaciones(allLocalizacionesData || []);
         setSensores(sensoresData || []);
         setTipos(tiposData || []);
         
@@ -362,6 +365,31 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     })));
     setUniqueLocalizaciones(uniqueLocs);
   }, [localizaciones, localizacionTipoidMap]);
+
+  // Agrupar TODAS las localizaciones sin filtro global (para contador del dropdown)
+  const allUniqueLocalizaciones = useMemo(() => {
+    const localizacionesMap = new Map<string, any>();
+    
+    allLocalizaciones.forEach((loc: Localizacion) => {
+      if (loc.localizacion && loc.nodoid) {
+        const key = `${loc.localizacion}__${loc.nodoid}`;
+        if (!localizacionesMap.has(key)) {
+          const tipoid = localizacionTipoidMap.get(loc.localizacionid);
+          localizacionesMap.set(key, {
+            localizacionid: loc.localizacionid,
+            localizacion: loc.localizacion,
+            nodoid: loc.nodoid,
+            latitud: loc.latitud,
+            longitud: loc.longitud,
+            nodo: loc.nodo,
+            tipoid: tipoid
+          });
+        }
+      }
+    });
+    
+    return Array.from(localizacionesMap.values());
+  }, [allLocalizaciones, localizacionTipoidMap]);
 
   // Validar y limpiar la localización seleccionada cuando cambian los filtros globales
   // OPTIMIZACIÓN: Solo ejecutar cuando cambien los filtros reales, no cuando cambie selectedLocalizacion
@@ -1241,7 +1269,9 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                   className="h-10 min-w-[180px] px-3 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-base flex items-center justify-between"
                 >
                   <span className={selectedLocalizacion ? 'text-gray-800 dark:text-white' : 'text-gray-500 dark:text-neutral-400'}>
-                    {selectedLocalizacion?.localizacion || 'Selecciona'}
+                    {selectedLocalizacion 
+                      ? `${selectedLocalizacion.localizacion} - ${selectedLocalizacion.nodo?.nodo || 'Nodo ' + selectedLocalizacion.nodoid}`
+                      : 'Selecciona'}
                   </span>
                   <svg className={`w-4 h-4 transition-transform ${isLocalizacionDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -1250,11 +1280,11 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
               
               {isLocalizacionDropdownOpen && localizacionDropdownPosition && (
                 <div 
-                  className="fixed z-[9999] bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg shadow-lg max-h-60 overflow-hidden"
+                  className="fixed z-[9999] bg-white dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg shadow-lg max-h-96 overflow-hidden"
                   style={{
                     top: `${localizacionDropdownPosition.top}px`,
                     left: `${localizacionDropdownPosition.left}px`,
-                    width: `${Math.max(localizacionDropdownPosition.width * 1.5, 300)}px`
+                    width: `${Math.max(localizacionDropdownPosition.width * 2.2, 450)}px`
                   }}
                 >
                   <div className="p-2 border-b border-gray-300 dark:border-neutral-700">
@@ -1301,7 +1331,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                               : 'text-gray-700 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-800'
                           }`}
                         >
-                          {nodo.localizacion}
+                          {nodo.localizacion} - {nodo.nodo?.nodo || 'Nodo ' + nodo.nodoid}
                         </button>
                       ))
                     ) : (
@@ -1309,6 +1339,9 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                         No se encontraron resultados
                       </div>
                     )}
+                  </div>
+                  <div className="px-3 py-2 text-xs text-gray-500 dark:text-neutral-400 font-mono border-t border-gray-300 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800">
+                    Mostrando {filteredNodos.length} de {allUniqueLocalizaciones.length} opciones
                   </div>
                 </div>
               )}
