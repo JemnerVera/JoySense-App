@@ -11,11 +11,15 @@ import { localizacionMatchesGlobalFilters as localizacionMatchesGlobalFiltersUti
 import { Localizacion } from '../../types';
 import { MedicionesAreaChart } from './components/MedicionesAreaChart';
 import { InteractiveMap } from './InteractiveMap';
+import { SVGPlantMap } from './SVGPlantMap';
 import { useSidebar } from '../../contexts/SidebarContext';
 
 interface MedicionesDashboardProps {}
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f43f5e', '#6366f1', '#14b8a6', '#f97316'];
+
+// Ubicaciones con mapa SVG para PLC
+const SVG_UBICACIONES = [230, 231, 234] // Planta 01 Valerie, Planta 02 Valerie, Planta 02 Zoe
 
 export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   const { t } = useLanguage();
@@ -1311,6 +1315,8 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
             {/* Botón para abrir el mapa */}
             <button
               onClick={async () => {
+                // Cargar nodos y abrir modal
+                // La detección de PLC se hará en el renderizado del modal basándose en los nodos cargados
                 await loadMapNodes();
                 setShowMapModal(true);
               }}
@@ -1731,25 +1737,121 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                   `
                 }} />
                 <div className="mediciones-map-container h-full">
-                  <InteractiveMap
-                    nodes={mapNodes}
-                    selectedNode={selectedLocalizacion ? mapNodes.find((n: any) => n.nodoid === selectedLocalizacion.nodoid) || null : null}
-                    onNodeSelect={(node: any) => {
-                      // Buscar la localización correspondiente en uniqueLocalizaciones
-                      const correspondingLocalizacion = uniqueLocalizaciones.find((loc: any) => loc.nodoid === node.nodoid);
-                      if (correspondingLocalizacion) {
-                        flushSync(() => {
-                          justSelectedLocalizacionRef.current = true;
-                          setSelectedLocalizacion(correspondingLocalizacion);
-                        });
-                        syncDashboardSelectionToGlobal(correspondingLocalizacion, 'localizacion');
+                  {/* Detectar nodos PLC basándose en los nodos cargados y la ubicación seleccionada */}
+                  {(() => {
+                    // Obtener la ubicación seleccionada del contexto global
+                    const selectedUbicacionId = ubicacionSeleccionada?.ubicacionid;
+                    
+                    console.log('[Mediciones] Modal mapa - selectedUbicacionId:', selectedUbicacionId, 'SVG_UBICACIONES:', SVG_UBICACIONES);
+                    
+                    // Si la ubicación seleccionada es una planta SVG (230, 231, 234), mostrar el mapa SVG de esa planta
+                    if (selectedUbicacionId && SVG_UBICACIONES.includes(selectedUbicacionId)) {
+                      // Filtrar nodos de esta ubicación específica con coordenadas PLC (0-100)
+                      const plcNodesForLocation = mapNodes.filter((n: any) => {
+                        return n.ubicacionid === selectedUbicacionId &&
+                               n.latitud != null && n.longitud != null &&
+                               n.latitud >= 0 && n.latitud <= 100 &&
+                               n.longitud >= 0 && n.longitud <= 100;
+                      });
+                      
+                      console.log('[Mediciones] Mostrando SVG para planta - plcNodesForLocation:', plcNodesForLocation.length, 'ubicacionId:', selectedUbicacionId);
+                      
+                      if (plcNodesForLocation.length > 0) {
+                        return (
+                          <SVGPlantMap
+                            nodes={plcNodesForLocation}
+                            selectedNode={selectedLocalizacion ? mapNodes.find((n: any) => n.nodoid === selectedLocalizacion.nodoid) || null : null}
+                            onNodeSelect={(node: any) => {
+                              // Buscar la localización correspondiente en uniqueLocalizaciones
+                              const correspondingLocalizacion = uniqueLocalizaciones.find((loc: any) => loc.nodoid === node.nodoid);
+                              if (correspondingLocalizacion) {
+                                flushSync(() => {
+                                  justSelectedLocalizacionRef.current = true;
+                                  setSelectedLocalizacion(correspondingLocalizacion);
+                                });
+                                syncDashboardSelectionToGlobal(correspondingLocalizacion, 'localizacion');
+                              }
+                              setShowMapModal(false);
+                            }}
+                            loading={loadingMapNodes}
+                            fundoid={selectedUbicacionId === 230 || selectedUbicacionId === 231 ? 3 : 8} // 3=Valerie, 8=Zoe
+                            defaultNodeColor="#3b82f6"
+                          />
+                        );
                       }
-                      setShowMapModal(false);
-                    }}
-                    loading={loadingMapNodes}
-                    nodeMediciones={{}}
-                    defaultNodeColor="#6b7280"
-                  />
+                    }
+                    
+                    // Si no hay ubicación específica de planta, aplicar lógica actual de "puro PLC"
+                    // Filtrar nodos PLC (ubicaciones SVG con coordenadas relativas 0-100)
+                    const plcNodes = mapNodes.filter((n: any) => {
+                      const hasPlcUbicacion = SVG_UBICACIONES.includes(n.ubicacionid);
+                      const couldBePlc = n.latitud != null && n.longitud != null && 
+                                        n.latitud >= 0 && n.latitud <= 100 && 
+                                        n.longitud >= 0 && n.longitud <= 100;
+                      return hasPlcUbicacion && couldBePlc;
+                    });
+                    
+                    // Filtrar nodos LoRaWAN (coordenadas GPS válidas fuera del rango 0-100)
+                    const loraNodes = mapNodes.filter((n: any) => {
+                      const lat = n.latitud;
+                      const lng = n.longitud;
+                      const isValidGps = lat != null && lng != null && 
+                                        (lat > 100 || lat < 0 || lng > 100 || lng < 0);
+                      return isValidGps;
+                    });
+                    
+                    // Solo mostrar SVG si es PURO PLC (sin LoRaWAN)
+                    const isPurePlc = plcNodes.length > 0 && loraNodes.length === 0;
+                    
+                    console.log('[Mediciones] Fallback - plcNodes:', plcNodes.length, 'loraNodes:', loraNodes.length, 'isPurePlc:', isPurePlc);
+                    
+                    if (isPurePlc && plcNodes.length > 0) {
+                      return (
+                        <SVGPlantMap
+                          nodes={plcNodes}
+                          selectedNode={selectedLocalizacion ? mapNodes.find((n: any) => n.nodoid === selectedLocalizacion.nodoid) || null : null}
+                          onNodeSelect={(node: any) => {
+                            // Buscar la localización correspondiente en uniqueLocalizaciones
+                            const correspondingLocalizacion = uniqueLocalizaciones.find((loc: any) => loc.nodoid === node.nodoid);
+                            if (correspondingLocalizacion) {
+                              flushSync(() => {
+                                justSelectedLocalizacionRef.current = true;
+                                setSelectedLocalizacion(correspondingLocalizacion);
+                              });
+                              syncDashboardSelectionToGlobal(correspondingLocalizacion, 'localizacion');
+                            }
+                            setShowMapModal(false);
+                          }}
+                          loading={loadingMapNodes}
+                          fundoid={plcNodes[0]?.ubicacion?.fundoid}
+                          defaultNodeColor="#3b82f6"
+                        />
+                      );
+                    }
+                    
+                    // Otherwise, show Leaflet map
+                    return (
+                      <InteractiveMap
+                        nodes={mapNodes}
+                        selectedNode={selectedLocalizacion ? mapNodes.find((n: any) => n.nodoid === selectedLocalizacion.nodoid) || null : null}
+                        onNodeSelect={(node: any) => {
+                          // Buscar la localización correspondiente en uniqueLocalizaciones
+                          const correspondingLocalizacion = uniqueLocalizaciones.find((loc: any) => loc.nodoid === node.nodoid);
+                          if (correspondingLocalizacion) {
+                            flushSync(() => {
+                              justSelectedLocalizacionRef.current = true;
+                              setSelectedLocalizacion(correspondingLocalizacion);
+                            });
+                            syncDashboardSelectionToGlobal(correspondingLocalizacion, 'localizacion');
+                          }
+                          setShowMapModal(false);
+                        }}
+                        loading={loadingMapNodes}
+                        nodeMediciones={{}}
+                        defaultNodeColor="#6b7280"
+                      />
+                    );
+                  })()}
                 </div>
               </div>
             </div>
