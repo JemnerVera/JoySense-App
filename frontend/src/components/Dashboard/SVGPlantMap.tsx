@@ -25,9 +25,9 @@ const SVGMarker: React.FC<{
   isSelected: boolean
   hasAlert: boolean
   onClick: () => void
-  tooltip: string
+  node: NodeData
   defaultColor: string
-}> = ({ x, y, isSelected, hasAlert, onClick, tooltip, defaultColor }) => {
+}> = ({ x, y, isSelected, hasAlert, onClick, node, defaultColor }) => {
   const [showTooltip, setShowTooltip] = useState(false)
 
   const markerColor = hasAlert ? '#ef4444' : isSelected ? '#f59e0b' : defaultColor
@@ -39,7 +39,7 @@ const SVGMarker: React.FC<{
       <circle
         cx={x}
         cy={y}
-        r={16}
+        r={32}
         fill="rgba(0, 0, 0, 0.2)"
         style={{ filter: 'blur(2px)' }}
       />
@@ -48,7 +48,7 @@ const SVGMarker: React.FC<{
       <circle
         cx={x}
         cy={y}
-        r={12}
+        r={28}
         fill={markerColor}
         stroke={borderColor}
         strokeWidth="2"
@@ -67,7 +67,7 @@ const SVGMarker: React.FC<{
         y={y}
         textAnchor="middle"
         dominantBaseline="middle"
-        fontSize="10"
+        fontSize="16"
         fill="white"
         fontWeight="bold"
         style={{ pointerEvents: 'none', userSelect: 'none' }}
@@ -80,7 +80,7 @@ const SVGMarker: React.FC<{
         <circle
           cx={x}
           cy={y}
-          r={12}
+          r={28}
           fill="none"
           stroke="#ef4444"
           strokeWidth="1.5"
@@ -92,40 +92,7 @@ const SVGMarker: React.FC<{
         />
       )}
 
-      {/* Tooltip */}
-      {showTooltip && (
-        <g>
-          {/* Fondo del tooltip */}
-          <rect
-            x={x - 60}
-            y={y - 35}
-            width="120"
-            height="30"
-            rx="4"
-            fill="#1f2937"
-            stroke="#4b5563"
-            strokeWidth="1"
-            style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}
-          />
-          {/* Texto del tooltip */}
-          <text
-            x={x}
-            y={y - 15}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fontSize="9"
-            fill="white"
-            fontWeight="bold"
-            style={{
-              pointerEvents: 'none',
-              userSelect: 'none',
-              wordWrap: 'break-word',
-            }}
-          >
-            {tooltip.substring(0, 15)}
-          </text>
-        </g>
-      )}
+      {/* Tooltip SVG removido - ahora se usa un popup HTML flotante */}
     </g>
   )
 }
@@ -146,6 +113,8 @@ export const SVGPlantMap: React.FC<SVGPlantMapProps> = ({
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const [isPanning, setIsPanning] = useState(false)
   const [panStart, setPanStart] = useState({ x: 0, y: 0 })
+  const [showPopup, setShowPopup] = useState(false)
+  const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 })
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [svgContent, setSvgContent] = useState<string>('')
@@ -222,34 +191,20 @@ export const SVGPlantMap: React.FC<SVGPlantMapProps> = ({
     }
   }, [scale])
 
-  // Handler para iniciar pan
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.button === 2 || e.ctrlKey) {
-      // Click derecho o Ctrl+Click para pan
-      setIsPanning(true)
-      setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y })
+  // Cerrar popup cuando se deselecciona el nodo
+  useEffect(() => {
+    if (!selectedNode) {
+      setShowPopup(false)
+      setScale(1)
+      setPan({ x: 0, y: 0 })
     }
-  }
-
-  // Handler para mover durante el pan
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (isPanning) {
-      setPan({
-        x: e.clientX - panStart.x,
-        y: e.clientY - panStart.y,
-      })
-    }
-  }
-
-  // Handler para terminar el pan
-  const handleMouseUp = () => {
-    setIsPanning(false)
-  }
+  }, [selectedNode])
 
   // Resetear zoom y pan cuando cambia el fundoid
   useEffect(() => {
     setScale(1)
     setPan({ x: 0, y: 0 })
+    setShowPopup(false)
   }, [fundoid])
 
   // Handler para los botones de zoom
@@ -264,6 +219,25 @@ export const SVGPlantMap: React.FC<SVGPlantMapProps> = ({
   const handleZoomReset = () => {
     setScale(1)
     setPan({ x: 0, y: 0 })
+  }
+
+  // Handler para los botones de pan
+  const panDistance = 50 // píxeles a mover por click
+
+  const handlePanUp = () => {
+    setPan(prev => ({ ...prev, y: prev.y + panDistance }))
+  }
+
+  const handlePanDown = () => {
+    setPan(prev => ({ ...prev, y: prev.y - panDistance }))
+  }
+
+  const handlePanLeft = () => {
+    setPan(prev => ({ ...prev, x: prev.x + panDistance }))
+  }
+
+  const handlePanRight = () => {
+    setPan(prev => ({ ...prev, x: prev.x - panDistance }))
   }
 
   // Filtrar nodos de esta ubicación (PLC)
@@ -336,10 +310,6 @@ export const SVGPlantMap: React.FC<SVGPlantMapProps> = ({
       ref={containerRef}
       className="bg-gray-100 dark:bg-gray-400 rounded-lg p-0 relative w-full h-full overflow-hidden"
       style={{ height: '100%', width: '100%' }}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
     >
       <style>{`
         @keyframes pulse-alert {
@@ -354,10 +324,8 @@ export const SVGPlantMap: React.FC<SVGPlantMapProps> = ({
         }
 
         .svg-plant-map-container {
-          transform: translate(${pan.x}px, ${pan.y}px) scale(${scale});
-          transform-origin: center center;
-          transition: transform 0.1s ease-out;
-          cursor: ${isPanning ? 'grabbing' : 'grab'};
+          width: 100%;
+          height: 100%;
         }
 
         .svg-plant-map-container svg {
@@ -415,6 +383,59 @@ export const SVGPlantMap: React.FC<SVGPlantMapProps> = ({
           transform: scale(1.05);
         }
 
+        .pan-controls {
+          position: absolute;
+          left: 12px;
+          top: 12px;
+          display: grid;
+          grid-template-columns: 32px 32px 32px;
+          grid-gap: 4px;
+          z-index: 10;
+          width: 100px;
+        }
+
+        .pan-up {
+          grid-column: 2;
+          grid-row: 1;
+        }
+
+        .pan-left {
+          grid-column: 1;
+          grid-row: 2;
+        }
+
+        .pan-right {
+          grid-column: 3;
+          grid-row: 2;
+        }
+
+        .pan-down {
+          grid-column: 2;
+          grid-row: 3;
+        }
+
+        .pan-btn {
+          background: rgba(31, 41, 55, 0.9);
+          border: 1px solid rgba(107, 114, 128, 0.5);
+          color: white;
+          width: 32px;
+          height: 32px;
+          border-radius: 4px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: bold;
+          transition: all 0.2s ease;
+          font-size: 14px;
+        }
+
+        .pan-btn:hover {
+          background: rgba(31, 41, 55, 1);
+          border-color: rgba(107, 114, 128, 0.8);
+          transform: scale(1.05);
+        }
+
         .zoom-info {
           position: absolute;
           bottom: 12px;
@@ -427,9 +448,80 @@ export const SVGPlantMap: React.FC<SVGPlantMapProps> = ({
           font-mono: monospace;
           pointer-events: none;
         }
+
+        .svg-popup {
+          position: absolute;
+          background: #1f2937;
+          border: 1px solid #4b5563;
+          border-radius: 6px;
+          padding: 12px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+          z-index: 50;
+          min-width: 280px;
+          pointer-events: auto;
+          animation: popupFadeIn 0.2s ease-out;
+        }
+
+        @keyframes popupFadeIn {
+          from {
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        .svg-popup-title {
+          font-weight: bold;
+          color: #fbbf24;
+          font-size: 14px;
+          margin-bottom: 8px;
+          padding-bottom: 8px;
+          border-bottom: 1px solid #4b5563;
+        }
+
+        .svg-popup-row {
+          font-size: 12px;
+          color: #e5e7eb;
+          margin-bottom: 6px;
+        }
+
+        .svg-popup-label {
+          font-weight: 600;
+          color: #9ca3af;
+          display: inline-block;
+          min-width: 80px;
+        }
+
+        .svg-popup-close {
+          position: absolute;
+          top: 6px;
+          right: 6px;
+          background: transparent;
+          border: none;
+          color: #9ca3af;
+          cursor: pointer;
+          font-size: 18px;
+          padding: 2px 6px;
+          transition: color 0.2s;
+        }
+
+        .svg-popup-close:hover {
+          color: #e5e7eb;
+        }
       `}</style>
 
-      <div className="svg-plant-map-container relative w-full h-full">
+      <div
+        className="svg-plant-map-container relative w-full h-full"
+        style={{
+          transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
+          transformOrigin: 'center center',
+          cursor: isPanning ? 'grabbing' : 'grab',
+          transition: isPanning ? 'none' : 'transform 0.1s ease-out',
+        }}
+      >
         {/* SVG de fondo de la planta */}
         <div
           dangerouslySetInnerHTML={{ __html: svgContent }}
@@ -463,19 +555,22 @@ export const SVGPlantMap: React.FC<SVGPlantMapProps> = ({
             const isSelected = selectedNode?.nodoid === node.nodoid
             const hasAlert = nodesWithAlerts.includes(node.nodoid)
 
-            const label = node.localizacion
-              ? `${node.ubicacion.ubicacion} - ${node.localizacion}`
-              : node.nodo
+            const handleMarkerClick = () => {
+              onNodeSelect(node)
+              // Mostrar popup (sin auto-zoom)
+              setShowPopup(true)
+              setPopupPosition({ x, y })
+            }
 
             return (
-              <g key={`marker-group-${node.nodoid}`} onClick={() => onNodeSelect(node)}>
+              <g key={`marker-group-${node.nodoid}`} onClick={handleMarkerClick}>
                 <SVGMarker
                   x={x}
                   y={y}
                   isSelected={isSelected}
                   hasAlert={hasAlert}
-                  onClick={() => onNodeSelect(node)}
-                  tooltip={label}
+                  onClick={handleMarkerClick}
+                  node={node}
                   defaultColor={defaultNodeColor}
                 />
               </g>
@@ -483,6 +578,40 @@ export const SVGPlantMap: React.FC<SVGPlantMapProps> = ({
           })}
         </svg>
       </div>
+
+      {/* Botones de pan */}
+      {scale > 1 && (
+        <div className="pan-controls">
+          <button
+            className="pan-btn pan-up"
+            onClick={handlePanUp}
+            title="Pan up"
+          >
+            ↑
+          </button>
+          <button
+            className="pan-btn pan-left"
+            onClick={handlePanLeft}
+            title="Pan left"
+          >
+            ←
+          </button>
+          <button
+            className="pan-btn pan-right"
+            onClick={handlePanRight}
+            title="Pan right"
+          >
+            →
+          </button>
+          <button
+            className="pan-btn pan-down"
+            onClick={handlePanDown}
+            title="Pan down"
+          >
+            ↓
+          </button>
+        </div>
+      )}
 
       {/* Botones de zoom */}
       <div className="zoom-controls">
@@ -512,7 +641,57 @@ export const SVGPlantMap: React.FC<SVGPlantMapProps> = ({
       {/* Info de zoom */}
       {scale > 1 && (
         <div className="zoom-info">
-          Zoom: {(scale * 100).toFixed(0)}% | Ctrl+Drag to pan
+          Zoom: {(scale * 100).toFixed(0)}%
+        </div>
+      )}
+
+      {/* Popup HTML para información del nodo */}
+      {showPopup && selectedNode && (
+        <div
+          className="svg-popup"
+          style={{
+            left: `${popupPosition.x + 40}px`,
+            top: `${popupPosition.y - 80}px`,
+          }}
+        >
+          <button
+            className="svg-popup-close"
+            onClick={() => {
+              setShowPopup(false)
+            }}
+            title="Cerrar"
+          >
+            ✕
+          </button>
+
+          <div className="svg-popup-title">{selectedNode.nodo}</div>
+
+          {selectedNode.localizacion && (
+            <div className="svg-popup-row">
+              <span className="svg-popup-label">Localización:</span>
+              <span>{selectedNode.localizacion}</span>
+            </div>
+          )}
+
+          <div className="svg-popup-row">
+            <span className="svg-popup-label">Ubicación:</span>
+            <span>{selectedNode.ubicacion?.ubicacion}</span>
+          </div>
+
+          <div className="svg-popup-row">
+            <span className="svg-popup-label">Fundo:</span>
+            <span>{selectedNode.ubicacion?.fundo?.fundo}</span>
+          </div>
+
+          <div className="svg-popup-row">
+            <span className="svg-popup-label">Empresa:</span>
+            <span>{selectedNode.ubicacion?.fundo?.empresa?.empresa}</span>
+          </div>
+
+          <div className="svg-popup-row">
+            <span className="svg-popup-label">País:</span>
+            <span>{selectedNode.ubicacion?.fundo?.empresa?.pais?.pais}</span>
+          </div>
         </div>
       )}
 
