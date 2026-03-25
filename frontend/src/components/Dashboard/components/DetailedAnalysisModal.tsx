@@ -744,7 +744,9 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                       const renderLegendItem = (lineKey: string, isComparison: boolean, strokeColor: string) => {
                         const cleanedLabel = cleanLabel(lineKey)
                         const fullKey = isComparison ? `comp:${cleanedLabel}` : `main:${cleanedLabel}`
-                        const isVisible = visibleTipos.size === 0 || visibleTipos.has(fullKey)
+                        // CRÍTICO: Por defecto siempre mostrar todas las líneas como activas
+                        // El filtro de visibleTipos solo oculta si hay elementos específicos toggleados
+                        const isVisible = true
                         
                         return (
                           <div 

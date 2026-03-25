@@ -81,20 +81,11 @@ export const DetailedEChart: React.FC<DetailedEChartProps> = ({
   };
 
   // Filtrar líneas visibles
+  // CRÍTICO: Por defecto siempre mostrar todas las líneas
+  // El filtro de visibleTipos se ignora para garantizar que siempre se muestren todas las líneas
   const filteredVisibleLines = useMemo(() => {
-    if (visibleTipos.size === 0) {
-      return visibleLines;
-    }
-    
-    return visibleLines.filter(lineKey => {
-      const cleanedLabel = cleanLabel(lineKey);
-      const isComp = isComparisonLine(lineKey);
-      const prefix = isComp ? 'comp:' : 'main:';
-      const fullKey = prefix + cleanedLabel;
-      
-      return Array.from(visibleTipos).some(vKey => vKey === cleanedLabel || vKey === fullKey);
-    });
-  }, [visibleLines, visibleTipos]);
+    return visibleLines;
+  }, [visibleLines]);
 
   const option = useMemo<EChartsOption>(() => {
     // Usar solo los tiempos del dataset principal para evitar gaps en las líneas

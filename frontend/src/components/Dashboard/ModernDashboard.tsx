@@ -231,10 +231,10 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
       // Solo LoRaWAN: devolver todos los datos sin filtrar
       return { data, isLora: true }
     } else if (hasPlc && !hasLora) {
-      // Solo PLC: filtrar por localizacionid si es necesario
-      const filtered = data.filter((m: any) => m.localizacionid === selectedNode?.localizacionid)
+      // Solo PLC: NO filtrar por localizacionid - mostrar todas las localizaciones del nodo
+      // (igual que los minigráficos del Mapeo de Nodos)
       return { 
-        data: filtered,
+        data: data,
         isLora: false 
       }
     } else if (hasLora && hasPlc) {
@@ -242,10 +242,9 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
       return { data, isLora: true }
     }
     
-    // Fallback: asumir PLC y filtrar
-    const filtered = data.filter((m: any) => m.localizacionid === selectedNode?.localizacionid)
+    // Fallback: asumir PLC y NO filtrar por localizacionid - devolver todos los datos
     return { 
-      data: filtered,
+      data: data,
       isLora: false 
     }
   }, [])
@@ -1287,20 +1286,9 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
       })
     }
     
-    // Si visibleTipos está vacío o no contiene todos los tipos actuales, inicializar
-    setVisibleTipos(prev => {
-      const newVisible = new Set(prev)
-      let changed = false
-      
-      tiposDisponibles.forEach(tipo => {
-        if (!newVisible.has(tipo)) {
-          newVisible.add(tipo)
-          changed = true
-        }
-      })
-      
-      return changed ? newVisible : prev
-    })
+    // Resetear y poblar visibleTipos con los tipos actuales del nodo/métrica
+    // Esto asegura que las leyendas siempre starten activas por defecto
+    setVisibleTipos(new Set(tiposDisponibles))
   }, [showDetailedAnalysis, selectedDetailedMetric, selectedNode?.nodoid, comparisonNode?.nodoid, mediciones, detailedMediciones, comparisonMediciones, tipos, sensores, getSeriesLabel])
 
   // Recargar datos de comparación cuando cambien las fechas o se seleccione un nodo de comparación (con debouncing)
