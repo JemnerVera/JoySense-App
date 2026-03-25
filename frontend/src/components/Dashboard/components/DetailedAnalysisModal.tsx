@@ -671,8 +671,13 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                 {selectedNode && (
                   <div className={`text-center flex-shrink-0 ${isFullscreenView ? 'mb-1' : 'mb-2'}`}>
                     <h2 className="text-lg font-bold text-gray-800 dark:text-white font-mono">
-                      {selectedNode?.localizacion || localizacionesPorNodo?.get(selectedNode?.nodoid)?.[0] || selectedNode?.ubicacion?.ubicacion || selectedNode?.nodo}
-                      {comparisonNode && ` vs. ${comparisonNode.localizacion || localizacionesPorNodo?.get(comparisonNode.nodoid)?.[0] || comparisonNode.ubicacion?.ubicacion || comparisonNode.nodo}`}
+                      {/* Para PLC (ubicacionid 230, 231, 234) mostrar nodo; para LoRaWAN mantener comportamiento actual */}
+                      {[230, 231, 234].includes(selectedNode?.ubicacionid) 
+                        ? selectedNode?.nodo 
+                        : selectedNode?.localizacion || localizacionesPorNodo?.get(selectedNode?.nodoid)?.[0] || selectedNode?.ubicacion?.ubicacion || selectedNode?.nodo}
+                      {comparisonNode && ` vs. ${[230, 231, 234].includes(comparisonNode.ubicacionid) 
+                        ? comparisonNode.nodo 
+                        : comparisonNode.localizacion || localizacionesPorNodo?.get(comparisonNode.nodoid)?.[0] || comparisonNode.ubicacion?.ubicacion || comparisonNode.nodo}`}
                     </h2>
                   </div>
                 )}

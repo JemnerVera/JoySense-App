@@ -86,6 +86,13 @@ export function getSeriesLabel(
     sensorLabel = `${tipoName} - ${sensorName}`
   }
 
+  // Para PLC (tipoid 3,4), solo mostrar la localización sin el sensor
+  // Para LoRaWAN mantener el formato completo con sensor
+  const isPlc = (medicion.tipoid === 3 || medicion.tipoid === 4)
+  if (isPlc) {
+    return locName
+  }
+  
   return `${locName} (${sensorLabel})`
 }
 
