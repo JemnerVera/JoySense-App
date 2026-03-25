@@ -7,6 +7,7 @@ export interface NodeData {
   longitud: number
   referencia: string
   localizacion?: string  // "LOTE T1 HILERA 6" (tabla localizacion)
+  tipoid?: number  // Tipo de sensor (1=LoRaWAN Temp, 2=LoRaWAN Humedad, 3=PLC Ambiente, 4=PLC Pulpa)
   ubicacion: {
     ubicacion: string
     ubicacionabrev: string

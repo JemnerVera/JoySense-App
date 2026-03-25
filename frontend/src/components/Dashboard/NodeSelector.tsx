@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { JoySenseService } from '../../services/backend-api'
 import { InteractiveMap } from './InteractiveMap'
+import { SVGPlantMap } from './SVGPlantMap'
 import { NodeData } from '../../types/NodeData'
 import { useFilters } from '../../contexts/FilterContext'
 import { useLanguage } from '../../contexts/LanguageContext'
@@ -18,6 +19,7 @@ interface NodeSelectorProps {
     paisId?: number | null;
   }) => void
   onUbicacionChange?: (ubicacion: any) => void
+  autoSelectFirstNode?: boolean  // Nuevo: controlar si auto-seleccionar primer nodo
 }
 
 export const NodeSelector: React.FC<NodeSelectorProps> = ({
@@ -26,7 +28,8 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
   onNodeSelect,
   onNodeClear,
   onFiltersUpdate,
-  onUbicacionChange
+  onUbicacionChange,
+  autoSelectFirstNode = true  // Por defecto enabled (comportamiento actual)
 }) => {
   const { t } = useLanguage();
   const [nodes, setNodes] = useState<NodeData[]>([])
@@ -37,6 +40,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
   const [searchTerm, setSearchTerm] = useState('')
   const [isSearchDropdownOpen, setIsSearchDropdownOpen] = useState(false)
   const [nodeMediciones, setNodeMediciones] = useState<{ [nodeId: number]: number }>({})
+  const [tipos, setTipos] = useState<any[]>([])
   const searchDropdownRef = useRef<HTMLDivElement>(null)
   const lastProcessedUbicacionId = useRef<number | null>(null)
   const pendingUbicacion = useRef<{ ubicacionid: number; ubicacion: string; ubicacionabrev: string; fundoid: number } | null>(null)
@@ -70,9 +74,28 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
         : paisSeleccionado
         ? { paisId: paisSeleccionado }
         : undefined;
-      const data = await JoySenseService.getNodosConLocalizacion(1000, filters)
-      // Los datos ya vienen procesados del backend
-      setNodes(data || [])
+      
+      // Cargar datos en paralelo
+      const [nodesData, tiposData, sensoresData] = await Promise.all([
+        JoySenseService.getNodosConLocalizacion(1000, filters),
+        JoySenseService.getTipos(),
+        JoySenseService.getSensores()
+      ])
+
+      // Guardar tipos para enriquecer nodos
+      setTipos(tiposData || [])
+      
+      // Enriquecer nodos con tipoid desde sensores/localizaciones
+      const enrichedNodes = (nodesData || []).map((node: any) => {
+        // Intentar obtener tipoid desde las localizaciones del nodo
+        // En una estructura real, esto vendría del backend, pero lo enriquecemos aquí como fallback
+        return {
+          ...node,
+          tipoid: (node as any).tipoid || undefined // Si no viene del backend, dejarlo undefined
+        } as NodeData
+      })
+      
+      setNodes(enrichedNodes)
     } catch (err) {
       setError('Error al cargar nodos')
       console.error('[NodeSelector] loadNodes:', err)
@@ -164,26 +187,43 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     setFilteredNodes(filtered)
   }, [nodes, selectedNode, selectedUbicacionId, searchTerm, paisSeleccionado, empresaSeleccionada, fundoSeleccionado])
 
-  // Cargar conteo de mediciones por nodo (solo una vez, optimizado)
-  useEffect(() => {
-    // Evitar cargar múltiples veces
-    if (nodeMedicionesLoadedRef.current) return
+  // Detectar si hay nodos PLC vs LoRaWAN en los nodos filtrados
+  const { hasPlcNodes, plcUbicacionIds, currentFundoid } = useMemo(() => {
+    // Ubicaciones con sensores PLC (que mapean a SVG)
+    const SVG_UBICACIONES = [230, 231, 234] // Planta 01 Valerie, Planta 02 Valerie, Planta 02 Zoe
     
-    const loadNodeMediciones = async () => {
-      try {
-        nodeMedicionesLoadedRef.current = true
-        // No cargar todas las mediciones - esto es muy costoso
-        // Si necesitas el conteo por nodo, usa un endpoint optimizado o countOnly
-        // Por ahora, simplemente no cargar para evitar el problema de rendimiento
-        setNodeMediciones({})
-      } catch (err) {
-        console.error('Error loading node mediciones:', err)
-        nodeMedicionesLoadedRef.current = false
-      }
+    // Filtrar nodos PLC (en ubicaciones SVG con coordenadas relativas 0-100)
+    const plcNodes = filteredNodes.filter(node => {
+      const hasPlcUbicacion = SVG_UBICACIONES.includes(node.ubicacionid)
+      const couldBePlc = (node.latitud != null && node.longitud != null && 
+                         node.latitud >= 0 && node.latitud <= 100 && 
+                         node.longitud >= 0 && node.longitud <= 100)
+      return hasPlcUbicacion && couldBePlc
+    })
+    
+    // Filtrar nodos LoRaWAN (con coordenadas GPS válidas fuera del rango 0-100)
+    const loraNodes = filteredNodes.filter(node => {
+      const lat = node.latitud
+      const lng = node.longitud
+      // GPS válido: debe estar fuera del rango 0-100 (rango típico de Perú es -18 a -0, -84 a -68)
+      const isValidGps = lat != null && lng != null && 
+                        (lat > 100 || lat < 0 || lng > 100 || lng < 0)
+      return isValidGps
+    })
+    
+    // CRÍTICO: Mostrar SVGPlantMap SOLO si hay PURO PLC (sin LoRaWAN)
+    // Si hay ambos tipos, mostrar Leaflet por defecto
+    const isPurePlc = plcNodes.length > 0 && loraNodes.length === 0
+    
+    const plcUbicacionIds = Array.from(new Set(plcNodes.map(n => n.ubicacionid)))
+    const fundoid = plcNodes.length > 0 ? plcNodes[0].ubicacion?.fundoid : null
+    
+    return {
+      hasPlcNodes: isPurePlc,  // ← CAMBIO: Solo true si es PURO PLC
+      plcUbicacionIds,
+      currentFundoid: fundoid
     }
-
-    loadNodeMediciones()
-  }, [])
+  }, [filteredNodes])
 
   // Función para sincronizar todos los filtros cuando se selecciona un nodo
   const syncAllFilters = (node: NodeData) => {
@@ -253,10 +293,11 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
   }
 
   // Seleccionar automáticamente el primer nodo cuando cambia la ubicación en el filtro
-  // Solo se ejecuta cuando cambia selectedUbicacionId y hay nodos disponibles
+  // Solo se ejecuta cuando cambiaSelectedUbicacionId y hay nodos disponibles
+  // SOLO si autoSelectFirstNode es true (controlado por prop)
   useEffect(() => {
-    // Solo actuar si hay una ubicación seleccionada, hay nodos cargados, y es una ubicación diferente a la última procesada
-    if (selectedUbicacionId && nodes.length > 0 && lastProcessedUbicacionId.current !== selectedUbicacionId) {
+    // Solo actuar si hay una ubicación seleccionada, hay nodos cargados, es una ubicación diferente, Y autoSelectFirstNode es true
+    if (autoSelectFirstNode && selectedUbicacionId && nodes.length > 0 && lastProcessedUbicacionId.current !== selectedUbicacionId) {
       // Verificar si el nodo actual pertenece a la ubicación seleccionada
       const currentNodeMatches = selectedNode && selectedNode.ubicacionid === selectedUbicacionId
       
@@ -277,7 +318,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
         lastProcessedUbicacionId.current = selectedUbicacionId
       }
     }
-  }, [selectedUbicacionId, nodes]) // Dependencias: solo selectedUbicacionId y nodes para evitar bucles
+  }, [selectedUbicacionId, nodes, autoSelectFirstNode]) // Dependencias: agregado autoSelectFirstNode
 
   const handleMapNodeClick = (node: NodeData) => {
     try {
@@ -436,13 +477,25 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
 
       {/* Mapa con nodos filtrados */}
       <div className={`w-full flex-1 min-h-0 ${selectedNodeFromParent ? 'h-[30%]' : 'h-full'}`}>
-        <InteractiveMap
-          nodes={filteredNodes}
-          selectedNode={selectedNode}
-          onNodeSelect={handleMapNodeClick}
-          loading={loading}
-          nodeMediciones={nodeMediciones}
-        />
+        {/* Mostrar SVGPlantMap si hay nodos PLC, si no mostrar Leaflet */}
+        {hasPlcNodes && currentFundoid ? (
+          <SVGPlantMap
+            nodes={filteredNodes}
+            selectedNode={selectedNode}
+            onNodeSelect={handleMapNodeClick}
+            loading={loading}
+            fundoid={currentFundoid}
+            defaultNodeColor="#3b82f6"
+          />
+        ) : (
+          <InteractiveMap
+            nodes={filteredNodes}
+            selectedNode={selectedNode}
+            onNodeSelect={handleMapNodeClick}
+            loading={loading}
+            nodeMediciones={nodeMediciones}
+          />
+        )}
       </div>
 
     </div>

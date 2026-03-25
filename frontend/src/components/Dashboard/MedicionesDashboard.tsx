@@ -327,7 +327,16 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   // Validar y limpiar la localización seleccionada cuando cambian los filtros globales
   // OPTIMIZACIÓN: Solo ejecutar cuando cambien los filtros reales, no cuando cambie selectedLocalizacion
   useEffect(() => {
+    console.log('[useEffect global filters] 🔵 Ejecutándose', {
+      selectedLocalizacion: selectedLocalizacion?.localizacionid,
+      pais: paisSeleccionado,
+      empresa: empresaSeleccionada,
+      fundo: fundoSeleccionado,
+      ubicacion: ubicacionSeleccionada
+    });
+    
     if (selectedLocalizacion && !localizacionMatchesGlobalFilters(selectedLocalizacion)) {
+      console.log('[useEffect global filters] ❌ NO coincide con filtros globales - Limpiando');
       setSelectedLocalizacion(null);
       setMediciones([]);
       setAvailableMetrics([]);
@@ -343,14 +352,26 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   // Permite que cuando se selecciona un nodo en otro dashboard (MAPEO DE NODOS, STATUS DE NODOS),
   // al regresar a MEDICIONES ya esté pre-seleccionada la localización
   useEffect(() => {
+    console.log('[useEffect sync] 🔵 Ejecutándose', {
+      localizacionSeleccionada: localizacionSeleccionada?.localizacionid,
+      selectedLocalizacion: selectedLocalizacion?.localizacionid,
+      justSelectedRef: justSelectedLocalizacionRef.current
+    });
+    
     if (localizacionSeleccionada) {
       if (!selectedLocalizacion || selectedLocalizacion.nodoid !== localizacionSeleccionada.nodoid) {
+        console.log('[useEffect sync] ✅ Sincronizando selectedLocalizacion:', localizacionSeleccionada.localizacionid);
         setSelectedLocalizacion(localizacionSeleccionada);
+      } else {
+        console.log('[useEffect sync] ⚠️ NO se sincroniza - nodoid igual:', selectedLocalizacion?.nodoid);
       }
     } else if (selectedLocalizacion && !localizacionSeleccionada) {
       // Solo limpiar selectedLocalizacion si no acabamos de hacer una selección en el dropdown
       if (!justSelectedLocalizacionRef.current) {
+        console.log('[useEffect sync] ❌ Limpiando selectedLocalizacion (no había justSelectedRef)');
         setSelectedLocalizacion(null);
+      } else {
+        console.log('[useEffect sync] ⚠️ NO se limpia - justSelectedRef era true');
       }
     }
     
@@ -385,7 +406,10 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   // Cargar métricas disponibles cuando cambia localización o rango de fechas
   // Este efecto SOLO detecta qué métricas hay disponibles, sin mostrar loading
   useEffect(() => {
+    console.log('[useEffect metrics] 🔵 Ejecutándose - selectedLocalizacion:', selectedLocalizacion?.localizacionid, 'selectedMetricId:', selectedMetricId);
+    
     if (!selectedLocalizacion?.nodoid) {
+      console.log('[useEffect metrics] ⚠️ No hay localizacion seleccionada');
       setAvailableMetrics([]);
       setSelectedMetricId(null);
       setMediciones([]);
@@ -402,6 +426,8 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
 
     const loadMetricsAvailable = async () => {
       try {
+        console.log('[loadMetricsAvailable] 🔵 Iniciando - selectedLocalizacion:', selectedLocalizacion?.localizacionid, 'selectedMetricId (antes):', selectedMetricId);
+        
         const data = await SupabaseRPCService.getMedicionesNodoDetallado({
           nodoid: selectedLocalizacion.nodoid,
           startDate: dateRange.start,
@@ -465,11 +491,18 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
         setAllMetricsFromInitialLoad(allMetricsDetected);
         setAvailableMetrics(allMetricsDetected);
         
+        console.log('[loadMetricsAvailable] 📊 Métricas detectadas:', allMetricsDetected, 'selectedMetricId (actual):', selectedMetricId);
+        
         // Seleccionar primera métrica si no hay seleccionada
         if (allMetricsDetected.length > 0 && !selectedMetricId) {
+          console.log('[loadMetricsAvailable] ✅ Seleccionando primera métrica:', allMetricsDetected[0]);
           flushSync(() => {
             setSelectedMetricId(allMetricsDetected[0].id);
           });
+        } else if (allMetricsDetected.length === 0) {
+          console.log('[loadMetricsAvailable] ⚠️ NO hay métricas detectadas');
+        } else if (selectedMetricId) {
+          console.log('[loadMetricsAvailable] ⚠️ NO se selecciona métrica - ya hay una seleccionada:', selectedMetricId);
         }
       } catch (err: any) {
         console.error('Error detectando métricas:', err);
@@ -483,7 +516,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     };
 
     loadMetricsAvailable();
-  }, [selectedLocalizacion?.nodoid, dateRange.start, dateRange.end, showError, validateDateRange, filterByTipoSensor]);
+  }, [selectedLocalizacion?.localizacionid, dateRange.start, dateRange.end, showError, validateDateRange, filterByTipoSensor]);
 
   // Cargar datos de la métrica seleccionada
   // Se ejecuta DESPUÉS de que ya tenemos la lista de métricas disponibles
@@ -501,6 +534,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
 
     const loadMedicionesMetricaSeleccionada = async () => {
       try {
+        console.log('[loadMedData] 🔵 Iniciando - nodoid:', selectedLocalizacion?.nodoid, 'metricaid:', selectedMetricId);
         setLoading(true);
 
         const data = await SupabaseRPCService.getMedicionesNodoDetallado({
@@ -512,6 +546,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
 
         const { data: filteredData } = filterByTipoSensor(data || [], selectedLocalizacion);
         const medicionesData = filteredData || [];
+        console.log('[loadMedData] ✅ Datos cargados:', medicionesData.length);
         setMediciones(medicionesData);
       } catch (err: any) {
         console.error('Error cargando datos de métrica seleccionada:', err);
@@ -522,7 +557,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     };
 
     loadMedicionesMetricaSeleccionada();
-  }, [selectedLocalizacion?.nodoid, dateRange.start, dateRange.end, selectedMetricId, validateDateRange, filterByTipoSensor]);
+  }, [selectedLocalizacion?.localizacionid, dateRange.start, dateRange.end, selectedMetricId, validateDateRange, filterByTipoSensor]);
 
   // Función helper para obtener etiqueta de serie (para uso en comparación)
   const getComparisonSeriesLabel = useCallback((medicion: any) => {
@@ -585,7 +620,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     };
 
     loadComparisonData();
-  }, [selectedLocalizacion?.nodoid, dateRange.start, dateRange.end, comparisonMetricId, validateDateRange, filterByTipoSensor]);
+  }, [selectedLocalizacion?.localizacionid, dateRange.start, dateRange.end, comparisonMetricId, validateDateRange, filterByTipoSensor]);
 
   // Filtrar mediciones de comparación por métrica (usar directamente los datos ya que RPC filtra por metricaid)
   const comparisonFiltradasPorMetrica = useMemo(() => {
@@ -1228,6 +1263,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                         <button
                           key={nodo.localizacionid}
                           onClick={() => {
+                            console.log('[DROPDOWN] 🔵 Seleccionando:', nodo.localizacion, 'nodoid:', nodo.nodoid, 'localizacionid:', nodo.localizacionid);
                             flushSync(() => {
                               justSelectedLocalizacionRef.current = true;
                               setSelectedLocalizacion(nodo);
@@ -1235,6 +1271,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                               setIsLocalizacionDropdownOpen(false);
                               setLocalizacionSearchTerm('');
                             });
+                            console.log('[DROPDOWN] ✅ Selección completada');
                             syncDashboardSelectionToGlobal(nodo, 'localizacion');
                           }}
                           className={`w-full text-left px-3 py-2 text-base transition-colors font-mono tracking-wider ${

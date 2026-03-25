@@ -188,9 +188,67 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
     return getSeriesLabelHelper(medicion, sensores, tipos)
   }, [tipos, sensores])
   
+  // Memoizar sensores y tipos para evitar que getSeriesLabel se recree innecesariamente
+  const memoizedSensores = useMemo(() => sensores, [sensores])
+  const memoizedTipos = useMemo(() => tipos, [tipos])
+
+  // Mapeo de localizacionid → tipoid para detectar tipo de sensor
+  // Necesario para filtrar correctamente entre LoRaWAN (1,2) y PLC (3,4)
+  const localizacionTipoidMap = useMemo(() => {
+    const map = new Map<number, number>()
+    memoizedSensores.forEach((sensor: any) => {
+      // En ModernDashboard no tenemos acceso a localizaciones completas como en MedicionesDashboard
+      // pero podemos extraer tipoid desde las mediciones del nodo
+      // Esto se usará principalmente para el filtrado en loadMediciones
+    })
+    return map
+  }, [memoizedSensores])
+  
   // ========== OPTIMIZACIONES DE CACHÉ DE MÉTRICAS ==========
   // Hook para crear un cache de métricas optimizado que evita recálculos repetidos
   const { hasData: hasMetricDataOptimized, getCurrentValue: getCurrentValueOptimized } = useMetricCache(mediciones, selectedNode)
+  
+  // Función helper para filtrar datos según el tipo de sensor
+  // LoRa (tipoid 1,2): NO filtrar por localizacionid - mostrar métricas de todo el nodo
+  // PLC (tipoid 3,4): SÍ filtrar por localizacionid - mostrar solo métricas de esa localización
+  const filterByTipoSensor = useCallback((data: any[], selectedNode: any): { data: any[]; isLora: boolean } => {
+    if (!data || data.length === 0) {
+      return { data: [], isLora: true }
+    }
+    
+    // Detectar tipos presentes en los datos
+    const tiposPresentes = new Set<number>()
+    data.forEach((m: any) => {
+      const tipoid = m.tipoid || m.localizacion?.sensor?.tipoid
+      if (tipoid) tiposPresentes.add(Number(tipoid))
+    })
+    
+    const hasLora = Array.from(tiposPresentes).some(t => [1, 2].includes(t))
+    const hasPlc = Array.from(tiposPresentes).some(t => [3, 4].includes(t))
+    
+    // Lógica de filtrado según tipo de sensor
+    if (hasLora && !hasPlc) {
+      // Solo LoRaWAN: devolver todos los datos sin filtrar
+      return { data, isLora: true }
+    } else if (hasPlc && !hasLora) {
+      // Solo PLC: filtrar por localizacionid si es necesario
+      const filtered = data.filter((m: any) => m.localizacionid === selectedNode?.localizacionid)
+      return { 
+        data: filtered,
+        isLora: false 
+      }
+    } else if (hasLora && hasPlc) {
+      // Mezcla de ambos: priorizar LoRaWAN (devolver todos)
+      return { data, isLora: true }
+    }
+    
+    // Fallback: asumir PLC y filtrar
+    const filtered = data.filter((m: any) => m.localizacionid === selectedNode?.localizacionid)
+    return { 
+      data: filtered,
+      isLora: false 
+    }
+  }, [])
   
   const [loadingDetailedData, setLoadingDetailedData] = useState(false)
   
@@ -304,7 +362,9 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
             
             const dataArray = Array.isArray(data) ? data : (data ? [data] : [])
             if (dataArray.length > 0) {
-              allData = dataArray
+              // CRÍTICO: Aplicar filtro por tipo de sensor (LoRa vs PLC)
+              const { data: filteredData } = filterByTipoSensor(dataArray, selectedNode)
+              allData = filteredData
             }
           } catch (error: any) {
             // Fallback a estrategia progresiva si hay error de timeout/500
@@ -544,7 +604,7 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
         setLoading(false)
       }
     }
-  }, [filters.ubicacionId, filters.startDate, filters.endDate, selectedNode?.nodoid])
+  }, [filters.ubicacionId, filters.startDate, filters.endDate, selectedNode?.nodoid, filterByTipoSensor])
 
   // Crear array de dependencias estable para evitar warnings de React
   // IMPORTANTE: Cuando hay un nodo seleccionado, NO incluir ubicacionId en las dependencias
@@ -731,7 +791,10 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
         ubicacionid: 0
       }));
       
-      setDetailedMediciones(transformedData)
+      // CRÍTICO: Aplicar filtro por tipo de sensor (LoRa vs PLC)
+      const { data: filteredData } = filterByTipoSensor(transformedData, selectedNode)
+      
+      setDetailedMediciones(filteredData)
     } catch (err: any) {
       if (err.name === 'AbortError' || signal?.aborted) {
         setLoadingDetailedData(false)
@@ -743,7 +806,7 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
     } finally {
       setLoadingDetailedData(false)
     }
-  }, [selectedNode, selectedDetailedMetric])
+  }, [selectedNode, selectedDetailedMetric, filterByTipoSensor])
 
   // Cargar localizaciones del nodo seleccionado
   useEffect(() => {
@@ -2019,6 +2082,7 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
           onNodeClear={handleNodeClear}
           onFiltersUpdate={handleFiltersUpdate}
           onUbicacionChange={onUbicacionChange}
+          autoSelectFirstNode={false}
         />
 
         {/* REMOVIDO: El selector de puntos físicos ya no es necesario para filtrar las métricas, 
