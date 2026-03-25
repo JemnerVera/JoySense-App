@@ -333,8 +333,8 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     // Actualizar el ref de última ubicación procesada
     lastProcessedUbicacionId.current = node.ubicacionid
 
-    // Sincronizar todos los filtros globales
-    syncAllFilters(node)
+    // NO sincronizar filtros aquí - permite que el popup aparezca sin limpiar el selectedNode
+    // syncAllFilters(node)
 
     // Actualizar filtros del dashboard
     onFiltersUpdate({

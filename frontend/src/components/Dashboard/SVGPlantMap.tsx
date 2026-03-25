@@ -113,11 +113,14 @@ export const SVGPlantMap: React.FC<SVGPlantMapProps> = ({
   const [pan, setPan] = useState({ x: 0, y: 0 })
   const [isPanning, setIsPanning] = useState(false)
   const [panStart, setPanStart] = useState({ x: 0, y: 0 })
-  const [showPopup, setShowPopup] = useState(false)
-  const [popupPosition, setPopupPosition] = useState({ x: 0, y: 0 })
   const svgRef = useRef<SVGSVGElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const [svgContent, setSvgContent] = useState<string>('')
+
+  // Monitor selectedNode prop changes
+  useEffect(() => {
+    console.log('[SVGPlantMap] Props received - selectedNode:', selectedNode?.nodo, 'fundoid:', fundoid)
+  }, [selectedNode])
 
   // Obtener la ruta del SVG según el fundoid
   const svgPath = FUNDO_SVG_MAP[fundoid]
@@ -191,10 +194,9 @@ export const SVGPlantMap: React.FC<SVGPlantMapProps> = ({
     }
   }, [scale])
 
-  // Cerrar popup cuando se deselecciona el nodo
+  // Abrir popup cuando selectedNode cambia
   useEffect(() => {
     if (!selectedNode) {
-      setShowPopup(false)
       setScale(1)
       setPan({ x: 0, y: 0 })
     }
@@ -204,7 +206,6 @@ export const SVGPlantMap: React.FC<SVGPlantMapProps> = ({
   useEffect(() => {
     setScale(1)
     setPan({ x: 0, y: 0 })
-    setShowPopup(false)
   }, [fundoid])
 
   // Handler para los botones de zoom
@@ -448,69 +449,6 @@ export const SVGPlantMap: React.FC<SVGPlantMapProps> = ({
           font-mono: monospace;
           pointer-events: none;
         }
-
-        .svg-popup {
-          position: absolute;
-          background: #1f2937;
-          border: 1px solid #4b5563;
-          border-radius: 6px;
-          padding: 12px;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-          z-index: 50;
-          min-width: 280px;
-          pointer-events: auto;
-          animation: popupFadeIn 0.2s ease-out;
-        }
-
-        @keyframes popupFadeIn {
-          from {
-            opacity: 0;
-            transform: scale(0.95);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-
-        .svg-popup-title {
-          font-weight: bold;
-          color: #fbbf24;
-          font-size: 14px;
-          margin-bottom: 8px;
-          padding-bottom: 8px;
-          border-bottom: 1px solid #4b5563;
-        }
-
-        .svg-popup-row {
-          font-size: 12px;
-          color: #e5e7eb;
-          margin-bottom: 6px;
-        }
-
-        .svg-popup-label {
-          font-weight: 600;
-          color: #9ca3af;
-          display: inline-block;
-          min-width: 80px;
-        }
-
-        .svg-popup-close {
-          position: absolute;
-          top: 6px;
-          right: 6px;
-          background: transparent;
-          border: none;
-          color: #9ca3af;
-          cursor: pointer;
-          font-size: 18px;
-          padding: 2px 6px;
-          transition: color 0.2s;
-        }
-
-        .svg-popup-close:hover {
-          color: #e5e7eb;
-        }
       `}</style>
 
       <div
@@ -557,9 +495,7 @@ export const SVGPlantMap: React.FC<SVGPlantMapProps> = ({
 
             const handleMarkerClick = () => {
               onNodeSelect(node)
-              // Mostrar popup (sin auto-zoom)
-              setShowPopup(true)
-              setPopupPosition({ x, y })
+              // El popup se abrirá automáticamente via useEffect cuando selectedNode prop actualice
             }
 
             return (
@@ -645,55 +581,8 @@ export const SVGPlantMap: React.FC<SVGPlantMapProps> = ({
         </div>
       )}
 
-      {/* Popup HTML para información del nodo */}
-      {showPopup && selectedNode && (
-        <div
-          className="svg-popup"
-          style={{
-            left: `${popupPosition.x + 40}px`,
-            top: `${popupPosition.y - 80}px`,
-          }}
-        >
-          <button
-            className="svg-popup-close"
-            onClick={() => {
-              setShowPopup(false)
-            }}
-            title="Cerrar"
-          >
-            ✕
-          </button>
-
-          <div className="svg-popup-title">{selectedNode.nodo}</div>
-
-          {selectedNode.localizacion && (
-            <div className="svg-popup-row">
-              <span className="svg-popup-label">Localización:</span>
-              <span>{selectedNode.localizacion}</span>
-            </div>
-          )}
-
-          <div className="svg-popup-row">
-            <span className="svg-popup-label">Ubicación:</span>
-            <span>{selectedNode.ubicacion?.ubicacion}</span>
-          </div>
-
-          <div className="svg-popup-row">
-            <span className="svg-popup-label">Fundo:</span>
-            <span>{selectedNode.ubicacion?.fundo?.fundo}</span>
-          </div>
-
-          <div className="svg-popup-row">
-            <span className="svg-popup-label">Empresa:</span>
-            <span>{selectedNode.ubicacion?.fundo?.empresa?.empresa}</span>
-          </div>
-
-          <div className="svg-popup-row">
-            <span className="svg-popup-label">País:</span>
-            <span>{selectedNode.ubicacion?.fundo?.empresa?.pais?.pais}</span>
-          </div>
-        </div>
-      )}
+      {/* Popup renderizado con Portal fuera del árbol del componente */}
+      {/* REMOVIDO - Funcionalidad de popup deshabilitada */}
 
       {/* Info bar inferior */}
       {selectedNode && (
