@@ -270,7 +270,17 @@ export const SVGPlantMap: React.FC<SVGPlantMapProps> = ({
   const plcNodes = useMemo(() => {
     return nodes.filter(n => {
       // Verificar que el nodo pertenezca a esta ubicación/planta
-      return n.ubicacion?.fundoid === fundoid && n.latitud != null && n.longitud != null
+      const hasValidCoordinates = 
+        n.latitud != null && 
+        n.longitud != null && 
+        String(n.latitud).trim() !== '' && 
+        String(n.longitud).trim() !== '' &&
+        !isNaN(Number(n.latitud)) && 
+        !isNaN(Number(n.longitud)) &&
+        Number(n.latitud) > 0 &&
+        Number(n.longitud) > 0
+      
+      return n.ubicacion?.fundoid === fundoid && hasValidCoordinates
     })
   }, [nodes, fundoid])
 
