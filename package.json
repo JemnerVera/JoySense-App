@@ -20,7 +20,8 @@
   "author": "JoySense Team",
   "license": "MIT",
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.0"
+    "@supabase/supabase-js": "^2.103.0",
+    "axios": "^1.15.0",
+    "crypto-js": "^4.2.0"
   }
 }
-
