@@ -66,6 +66,9 @@ import {
   usePreloadCriticalComponents 
 } from './components/LazyComponents';
 
+// Componentes directos (no lazy)
+import { PLCMedicionesChart } from './components/Dashboard/PLCMedicionesChart';
+
 // 9. Hooks
 import { useAppSidebar } from './hooks/useAppSidebar';
 import { useDataLossProtection } from './hooks/useDataLossProtection';
@@ -218,7 +221,7 @@ const AppContentInternal: React.FC<{
   }, [selectedTable]);
   
   // Estados para Dashboard (Reportes)
-  const [dashboardSubTab, setDashboardSubTab] = useState<'mediciones' | 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales'>('mediciones');
+  const [dashboardSubTab, setDashboardSubTab] = useState<'mediciones' | 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales' | 'sensores-planta'>('mediciones');
 
   // Función para convertir nombre de tabla a español (usa configuración centralizada)
   const getTableNameInSpanish = (tableName: string): string => {
@@ -246,8 +249,8 @@ const AppContentInternal: React.FC<{
   // Sincronizar dashboardSubTab con activeTab
   useEffect(() => {
     if (activeTab.startsWith('reportes-dashboard-')) {
-      const subTab = activeTab.replace('reportes-dashboard-', '') as 'mediciones' | 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales';
-      if (subTab === 'mediciones' || subTab === 'mapeo' || subTab === 'status-nodos' || subTab === 'status-alertas' || subTab === 'metrica' || subTab === 'umbrales') {
+      const subTab = activeTab.replace('reportes-dashboard-', '') as 'mediciones' | 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales' | 'sensores-planta';
+      if (subTab === 'mediciones' || subTab === 'mapeo' || subTab === 'status-nodos' || subTab === 'status-alertas' || subTab === 'metrica' || subTab === 'umbrales' || subTab === 'sensores-planta') {
         setDashboardSubTab(subTab);
       }
     }
@@ -1082,7 +1085,7 @@ const AppContentInternal: React.FC<{
   };
 
   // Handler para cambiar el subTab del Dashboard
-  const handleDashboardSubTabChange = (subTab: 'mediciones' | 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales') => {
+  const handleDashboardSubTabChange = (subTab: 'mediciones' | 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales' | 'sensores-planta') => {
     setDashboardSubTab(subTab);
     startTransition(() => {
       setActiveTab(`reportes-dashboard-${subTab}`);
@@ -1881,6 +1884,12 @@ const AppContentInternal: React.FC<{
               }>
                 <UmbralesPorLoteLazy />
               </Suspense>
+            );
+          case 'sensores-planta':
+            return (
+              <div className="p-4">
+                <PLCMedicionesChart />
+              </div>
             );
           default:
             if (reporteTab === 'dashboard') {

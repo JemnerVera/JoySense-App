@@ -9,7 +9,7 @@ export interface MainSidebarProps {
   authToken: string;
   selectedTable?: string;
   activeSubTab?: string;
-  dashboardSubTab?: 'mediciones' | 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales';
+  dashboardSubTab?: 'mediciones' | 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales' | 'sensores-planta';
 }
 
 export interface SubMenuLevel4 {

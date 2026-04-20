@@ -86,6 +86,7 @@ export function useMenuStructure() {
               { id: 'status-alertas', label: 'STATUS DE ALERTAS', icon: <IconAlertas /> },
               { id: 'metrica', label: 'MÉTRICA POR LOCALIZACIÓN', icon: <IconMetricaSensor /> },
               { id: 'umbrales', label: 'UMBRALES POR LOCALIZACIÓN', icon: <IconUmbralAlt /> },
+              { id: 'sensores-planta', label: 'SENSORES PLANTA', icon: <IconSensor /> },
             ],
           },
           {
