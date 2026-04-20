@@ -189,22 +189,43 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
 
   // Detectar si hay nodos PLC vs LoRaWAN en los nodos filtrados
   const { hasPlcNodes, plcUbicacionIds, currentFundoid } = useMemo(() => {
-    // Ubicaciones con sensores PLC (que mapean a SVG)
-    const SVG_UBICACIONES = [230, 231, 234] // Planta 01 Valerie, Planta 02 Valerie, Planta 02 Zoe
+    // Ubicaciones con sensores PLC que tienen SVG disponible
+    // 235: Valerie Planta 01, 236: Valerie Planta 02 → mapa_valerie.svg
+    // 239: Zoe Planta 02 → mapa_zoe_uvas.svg
+    // 237, 238 no tienen SVG aún
+    const SVG_UBICACIONES = [235, 236, 239]
+    
+    // DEBUG: Log de los primeros nodos para diagnóstico
+    if (filteredNodes.length > 0) {
+      console.log('[NodeSelector] Diagnóstico PLC - filteredNodes:', filteredNodes.length, 
+        '| Primer nodo - ubicacionid:', filteredNodes[0].ubicacionid, 
+        'latitud:', filteredNodes[0].latitud, 
+        'longitud:', filteredNodes[0].longitud,
+        'fundoid:', filteredNodes[0].ubicacion?.fundoid)
+    }
     
     // Filtrar nodos PLC (en ubicaciones SVG con coordenadas relativas 0-100)
     const plcNodes = filteredNodes.filter(node => {
       const hasPlcUbicacion = SVG_UBICACIONES.includes(node.ubicacionid)
-      const couldBePlc = (node.latitud != null && node.longitud != null && 
-                         node.latitud >= 0 && node.latitud <= 100 && 
-                         node.longitud >= 0 && node.longitud <= 100)
+      const lat = node.latitud != null ? Number(node.latitud) : null
+      const lng = node.longitud != null ? Number(node.longitud) : null
+      const couldBePlc = lat != null && lng != null && 
+                         lat >= 0 && lat <= 100 && 
+                         lng >= 0 && lng <= 100
       return hasPlcUbicacion && couldBePlc
     })
     
+    // DEBUG: Log de nodos PLC encontrados
+    if (plcNodes.length > 0) {
+      console.log('[NodeSelector] Nodos PLC encontrados:', plcNodes.length, 
+        '| Primer PLC - ubicacionid:', plcNodes[0].ubicacionid,
+        'fundoid:', plcNodes[0].ubicacion?.fundoid)
+    }
+    
     // Filtrar nodos LoRaWAN (con coordenadas GPS válidas fuera del rango 0-100)
     const loraNodes = filteredNodes.filter(node => {
-      const lat = node.latitud
-      const lng = node.longitud
+      const lat = node.latitud != null ? Number(node.latitud) : null
+      const lng = node.longitud != null ? Number(node.longitud) : null
       // GPS válido: debe estar fuera del rango 0-100 (rango típico de Perú es -18 a -0, -84 a -68)
       const isValidGps = lat != null && lng != null && 
                         (lat > 100 || lat < 0 || lng > 100 || lng < 0)
@@ -216,7 +237,15 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     const isPurePlc = plcNodes.length > 0 && loraNodes.length === 0
     
     const plcUbicacionIds = Array.from(new Set(plcNodes.map(n => n.ubicacionid)))
-    const fundoid = plcNodes.length > 0 ? plcNodes[0].ubicacion?.fundoid : null
+    // Obtener fundoid desde el nodo PLC (no desde ubicación anidada)
+    const fundoid = plcNodes.length > 0 ? (plcNodes[0].ubicacion?.fundoid ?? null) : null
+    
+    // DEBUG: Log del resultado
+    console.log('[NodeSelector] Resultado PLC - isPurePlc:', isPurePlc, 
+      '| plcNodes:', plcNodes.length, 
+      '| loraNodes:', loraNodes.length,
+      '| fundoid:', fundoid,
+      '| plcUbicacionIds:', [...plcUbicacionIds])
     
     return {
       hasPlcNodes: isPurePlc,  // ← CAMBIO: Solo true si es PURO PLC

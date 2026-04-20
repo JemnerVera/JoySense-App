@@ -19,7 +19,10 @@ interface MedicionesDashboardProps {}
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f43f5e', '#6366f1', '#14b8a6', '#f97316'];
 
 // Ubicaciones con mapa SVG para PLC
-const SVG_UBICACIONES = [230, 231, 234] // Planta 01 Valerie, Planta 02 Valerie, Planta 02 Zoe
+// 235: Valerie Planta 01, 236: Valerie Planta 02 → mapa_valerie.svg
+// 239: Zoe Planta 02 → mapa_zoe_uvas.svg
+// 237, 238 no tienen SVG aún
+const SVG_UBICACIONES = [235, 236, 239]
 
 export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   const { t } = useLanguage();
