@@ -173,12 +173,31 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
 
   useEffect(() => {
     if (isNodoDropdownOpen && nodoDropdownRef.current) {
-      const rect = nodoDropdownRef.current.getBoundingClientRect();
-      setNodoDropdownPosition({
-        top: rect.bottom + 4,
-        left: rect.left,
-        width: rect.width
-      });
+      let animationFrameId: number;
+      let isMounted = true;
+      
+      const updatePosition = () => {
+        if (!isMounted || !nodoDropdownRef.current) return;
+        const rect = nodoDropdownRef.current.getBoundingClientRect();
+        setNodoDropdownPosition({
+          top: rect.bottom + window.scrollY + 4,
+          left: rect.left + window.scrollX,
+          width: rect.width
+        });
+        
+        if (isMounted) {
+          animationFrameId = requestAnimationFrame(updatePosition);
+        }
+      };
+      
+      animationFrameId = requestAnimationFrame(updatePosition);
+      
+      return () => {
+        isMounted = false;
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      };
+    } else {
+      setNodoDropdownPosition(null);
     }
   }, [isNodoDropdownOpen]);
 
@@ -446,7 +465,7 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
   return (
     <div className="bg-white dark:bg-neutral-900 rounded-lg p-6 border border-gray-200 dark:border-neutral-700">
       <div className="bg-gray-50 dark:bg-neutral-800 rounded-lg p-4 mb-4 border border-gray-200 dark:border-neutral-700">
-        <div className="flex flex-wrap gap-4 items-end justify-center">
+        <div className="flex flex-nowrap gap-4 items-end justify-center overflow-x-auto w-full px-2 py-1">
           <div className="flex flex-col">
             <label className="text-gray-600 dark:text-neutral-400 text-xs font-medium mb-1 font-mono uppercase">
               {t('fields.node') || 'NODO'}
