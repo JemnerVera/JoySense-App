@@ -6,6 +6,7 @@ import * as echarts from 'echarts';
 import type { EChartsOption } from 'echarts';
 import { hexToRgba } from '../../utils/chartUtils';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { PLCDataTable } from './PLCDataTable';
 
 const COLORS = ['#f97316', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#ec4899'];
 
@@ -23,6 +24,7 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
   const [mediciones, setMediciones] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
+  const [showDataTable, setShowDataTable] = useState(false);
 
   const getLocalDateString = (date: Date): string => {
     const year = date.getFullYear();
@@ -392,12 +394,24 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
             />
           </div>
 
-          <button
-            onClick={handleApplyDateRange}
-            className="h-10 px-4 bg-orange-500 hover:bg-orange-600 text-white rounded font-mono text-sm font-medium"
-          >
-            Aplicar
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleApplyDateRange}
+              className="h-10 px-4 bg-orange-500 hover:bg-orange-600 text-white rounded font-mono text-sm font-medium"
+            >
+              Aplicar
+            </button>
+            <button
+              onClick={() => setShowDataTable(!showDataTable)}
+              className={`h-10 px-4 rounded font-mono text-sm font-medium ${
+                showDataTable 
+                  ? 'bg-orange-600 text-white' 
+                  : 'bg-gray-200 dark:bg-neutral-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-neutral-600'
+              }`}
+            >
+              Datos
+            </button>
+          </div>
         </div>
       </div>
 
@@ -412,32 +426,44 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
         </div>
       )}
 
-      {loadingData && (
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-            <p className="text-gray-500 dark:text-neutral-400 font-mono text-sm">Cargando datos...</p>
-          </div>
-        </div>
-      )}
-
-      {!loadingData && selectedNodo && chartData.length === 0 && (
-        <div className="flex items-center justify-center h-96">
-          <div className="text-center">
-            <div className="text-4xl mb-4">📊</div>
-            <p className="text-gray-500 dark:text-neutral-400 font-mono text-sm">No hay datos disponibles</p>
-          </div>
-        </div>
-      )}
-
-      {!loadingData && selectedNodo && chartData.length > 0 && (
-        <div style={{ height: 'calc(100vh - 320px)', minHeight: '400px', width: '100%' }}>
-          <ReactECharts
-            option={option}
-            style={{ height: '100%', width: '100%' }}
-            opts={{ renderer: 'canvas' }}
+      {selectedNodo && showDataTable ? (
+        <div className="mt-4">
+          <PLCDataTable 
+            selectedNodo={selectedNodo}
+            dateRange={dateRange}
+            onClose={() => setShowDataTable(false)}
           />
         </div>
+      ) : (
+        <>
+          {loadingData && (
+            <div className="flex items-center justify-center h-96">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+                <p className="text-gray-500 dark:text-neutral-400 font-mono text-sm">Cargando datos...</p>
+              </div>
+            </div>
+          )}
+
+          {!loadingData && selectedNodo && chartData.length === 0 && (
+            <div className="flex items-center justify-center h-96">
+              <div className="text-center">
+                <div className="text-4xl mb-4">📊</div>
+                <p className="text-gray-500 dark:text-neutral-400 font-mono text-sm">No hay datos disponibles</p>
+              </div>
+            </div>
+          )}
+
+          {!loadingData && selectedNodo && chartData.length > 0 && (
+            <div style={{ height: 'calc(100vh - 320px)', minHeight: '400px', width: '100%' }}>
+              <ReactECharts
+                option={option}
+                style={{ height: '100%', width: '100%' }}
+                opts={{ renderer: 'canvas' }}
+              />
+            </div>
+          )}
+        </>
       )}
     </div>
   );
