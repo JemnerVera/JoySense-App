@@ -6,6 +6,7 @@ import * as echarts from 'echarts';
 import type { EChartsOption } from 'echarts';
 import { hexToRgba } from '../../utils/chartUtils';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useFilterSync } from '../../hooks/useFilterSync';
 import { PLCDataTable } from './PLCDataTable';
 
 const COLORS = ['#f97316', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#ec4899'];
@@ -31,6 +32,32 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
   const [nodoSearchTerm, setNodoSearchTerm] = useState('');
   const [nodoDropdownPosition, setNodoDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
   const nodoDropdownRef = useRef<HTMLDivElement>(null);
+  const [fundosInfo, setFundosInfo] = useState<Map<number, any>>(new Map());
+  const { syncDashboardSelectionToGlobal } = useFilterSync(fundosInfo);
+
+  const enrichNodoForSync = useCallback((nodo: any) => {
+    if (!nodo || !fundosInfo || fundosInfo.size === 0) return nodo;
+    
+    const ubicacionid = nodo.ubicacionid;
+    if (!ubicacionid) return nodo;
+    
+    return {
+      nodo: {
+        ...nodo,
+        ubicacion: {
+          ubicacionid: nodo.ubicacionid,
+          localizacion: nodo.ubicacion_nombre,
+          fundoid: nodo.fundoid,
+          fundo: {
+            fundoid: nodo.fundoid,
+            fundo: nodo.fundo_nombre,
+            empresaid: fundosInfo.get(nodo.fundoid)?.empresaid,
+            empresa: fundosInfo.get(nodo.fundoid)?.empresa
+          }
+        }
+      }
+    };
+  }, [fundosInfo]);
 
   const getLocalDateString = (date: Date): string => {
     const year = date.getFullYear();
@@ -56,11 +83,12 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
     const loadInitialData = async () => {
       try {
         setLoading(true);
-        const [nodosData, tiposData, ubicacionesData, fundosData] = await Promise.all([
+        const [nodosData, tiposData, ubicacionesData, fundosData, empresasData] = await Promise.all([
           JoySenseService.getTableData('nodo', 1000),
           JoySenseService.getTableData('tipo', 100),
           JoySenseService.getTableData('ubicacion', 1000),
-          JoySenseService.getTableData('fundo', 100)
+          JoySenseService.getTableData('fundo', 100),
+          JoySenseService.getTableData('empresa', 100)
         ]);
         
         const nodesWithInfo = (nodosData || []).map((nodo: any) => {
@@ -69,12 +97,30 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
           return {
             ...nodo,
             fundo_nombre: fundo?.fundo || '',
-            ubicacion_nombre: ubicacion?.ubicacion || ''
+            ubicacion_nombre: ubicacion?.ubicacion || '',
+            fundoid: ubicacion?.fundoid
           };
         });
         
         setNodos(nodesWithInfo || []);
         setTipos(tiposData || []);
+        
+        const empresasMap = new Map();
+        (empresasData || []).forEach((empresa: any) => {
+          empresasMap.set(empresa.empresaid, empresa);
+        });
+        
+        const fundosMap = new Map();
+        (fundosData || []).forEach((fundo: any) => {
+          const empresa = empresasMap.get(fundo.empresaid);
+          fundosMap.set(fundo.fundoid, {
+            ...fundo,
+            empresa: empresa,
+            paisid: empresa?.paisid
+          });
+        });
+        setFundosInfo(fundosMap);
+        console.log('[PLC] fundosInfo cargado, size:', fundosMap.size);
       } catch (error) {
         console.error('Error loading initial data:', error);
       } finally {
@@ -449,9 +495,14 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
                         <button
                           key={nodo.nodoid}
                           onClick={() => {
+                            console.log('[PLC] Seleccionando nodo:', nodo.nodo, 'nodoid:', nodo.nodoid, 'ubicacionid:', nodo.ubicacionid);
                             setSelectedNodo(nodo);
                             setIsNodoDropdownOpen(false);
                             setNodoSearchTerm('');
+                            const enrichedNodo = enrichNodoForSync(nodo);
+                            console.log('[PLC] Llamando syncDashboardSelectionToGlobal con:', enrichedNodo);
+                            syncDashboardSelectionToGlobal(enrichedNodo, 'localizacion');
+                            console.log('[PLC] syncDashboardSelectionToGlobal completado');
                           }}
                           className={`w-full text-left px-3 py-2 text-base transition-colors font-mono tracking-wider ${
                             selectedNodo?.nodoid === nodo.nodoid
