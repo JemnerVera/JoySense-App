@@ -48,11 +48,24 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
     const loadInitialData = async () => {
       try {
         setLoading(true);
-        const [nodosData, tiposData] = await Promise.all([
+        const [nodosData, tiposData, ubicacionesData, fundosData] = await Promise.all([
           JoySenseService.getTableData('nodo', 1000),
-          JoySenseService.getTableData('tipo', 100)
+          JoySenseService.getTableData('tipo', 100),
+          JoySenseService.getTableData('ubicacion', 1000),
+          JoySenseService.getTableData('fundo', 100)
         ]);
-        setNodos(nodosData || []);
+        
+        const nodesWithInfo = (nodosData || []).map((nodo: any) => {
+          const ubicacion = ubicacionesData?.find((u: any) => u.ubicacionid === nodo.ubicacionid);
+          const fundo = fundosData?.find((f: any) => f.fundoid === ubicacion?.fundoid);
+          return {
+            ...nodo,
+            fundo_nombre: fundo?.fundo || '',
+            ubicacion_nombre: ubicacion?.ubicacion || ''
+          };
+        });
+        
+        setNodos(nodesWithInfo || []);
         setTipos(tiposData || []);
       } catch (error) {
         console.error('Error loading initial data:', error);
@@ -154,7 +167,40 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
     return Array.from(keys);
   }, [chartData]);
 
+  const yAxisDomain = useMemo(() => {
+    if (!chartData || chartData.length === 0) return { min: null, max: null };
+    
+    let minVal = Infinity;
+    let maxVal = -Infinity;
+    
+    chartData.forEach(d => {
+      Object.keys(d).forEach(key => {
+        if (key !== 'time') {
+          const val = Number(d[key]);
+          if (!isNaN(val) && val !== null) {
+            minVal = Math.min(minVal, val);
+            maxVal = Math.max(maxVal, val);
+          }
+        }
+      });
+    });
+    
+    if (minVal === Infinity || maxVal === -Infinity) {
+      return { min: null, max: null };
+    }
+    
+    const padding = (maxVal - minVal) * 0.1;
+    return { 
+      min: Math.floor(minVal - padding), 
+      max: Math.ceil(maxVal + padding) 
+    };
+  }, [chartData]);
+
   const option = useMemo<EChartsOption>(() => {
+    if (!chartData || chartData.length === 0) {
+      return { tooltip: {}, xAxis: {}, yAxis: {}, series: [] };
+    }
+    
     const xAxisData = chartData.map(d => d.time);
 
     const series = metricKeys.map((metricKey, idx) => ({
@@ -206,10 +252,10 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
         }
       },
       grid: {
-        left: '3%',
+        left: '4%',
         right: '4%',
-        bottom: '60px',
-        top: '15%',
+        bottom: '50px',
+        top: '8%',
         containLabel: true
       },
       xAxis: {
@@ -219,7 +265,8 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
         axisLabel: {
           color: '#666',
           fontFamily: 'Inter, sans-serif',
-          rotate: 45
+          rotate: 45,
+          interval: Math.floor(xAxisData.length / 24)
         },
         axisLine: {
           lineStyle: { color: '#ccc' }
@@ -230,12 +277,19 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
       },
       yAxis: {
         type: 'value' as const,
+        min: yAxisDomain.min ?? undefined,
+        max: yAxisDomain.max ?? undefined,
         axisLabel: {
           color: '#666',
-          fontFamily: 'Inter, sans-serif'
+          fontFamily: 'Inter, sans-serif',
+          formatter: (value: number) => value.toFixed(1)
         },
         splitLine: {
           lineStyle: { color: '#eee' }
+        },
+        nameTextStyle: {
+          color: '#666',
+          fontSize: 10
         }
       },
       dataZoom: [
@@ -273,7 +327,7 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
       },
       series
     };
-  }, [chartData, metricKeys]);
+  }, [chartData, metricKeys, yAxisDomain]);
 
   const handleApplyDateRange = () => {
     setDateRange(pendingDateRange);
@@ -298,49 +352,49 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
 
   return (
     <div className="bg-white dark:bg-neutral-900 rounded-lg p-6 border border-gray-200 dark:border-neutral-700">
-      <div className="flex flex-wrap gap-4 mb-4">
-        <div className="flex flex-col">
-          <label className="text-gray-600 dark:text-neutral-400 text-xs font-medium mb-1">
-            {t('fields.node') || 'Nodo'}
-          </label>
-          <select
-            value={selectedNodo?.nodoid || ''}
-            onChange={handleNodoChange}
-            className="bg-gray-50 dark:bg-neutral-800 text-gray-900 dark:text-white border border-gray-300 dark:border-neutral-600 rounded px-3 py-2 min-w-48 text-sm"
-          >
-            <option value="">Seleccionar nodo...</option>
-            {nodos.map(nodo => (
-              <option key={nodo.nodoid} value={nodo.nodoid}>
-                {nodo.nodo}
-              </option>
-            ))}
-          </select>
-        </div>
+      <div className="bg-gray-50 dark:bg-neutral-800 rounded-lg p-4 mb-4 border border-gray-200 dark:border-neutral-700">
+        <div className="flex flex-wrap gap-4 items-end">
+          <div className="flex flex-col">
+            <label className="text-gray-600 dark:text-neutral-400 text-xs font-medium mb-1 font-mono">
+              {t('fields.node') || 'NODO'}
+            </label>
+            <select
+              value={selectedNodo?.nodoid || ''}
+              onChange={handleNodoChange}
+              className="h-10 min-w-[200px] px-3 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm flex items-center justify-between"
+            >
+              <option value="">Seleccionar nodo...</option>
+              {nodos.map(nodo => (
+                <option key={nodo.nodoid} value={nodo.nodoid}>
+                  {nodo.fundo_nombre} - {nodo.ubicacion_nombre} - {nodo.nodo}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        <div className="flex flex-col">
-          <label className="text-gray-600 dark:text-neutral-400 text-xs font-medium mb-1">Desde</label>
-          <input
-            type="date"
-            value={pendingDateRange.start}
-            onChange={e => setPendingDateRange(prev => ({ ...prev, start: e.target.value }))}
-            className="bg-gray-50 dark:bg-neutral-800 text-gray-900 dark:text-white border border-gray-300 dark:border-neutral-600 rounded px-3 py-2 text-sm"
-          />
-        </div>
+          <div className="flex flex-col">
+            <label className="text-gray-600 dark:text-neutral-400 text-xs font-medium mb-1 font-mono">DESDE</label>
+            <input
+              type="date"
+              value={pendingDateRange.start}
+              onChange={e => setPendingDateRange(prev => ({ ...prev, start: e.target.value }))}
+              className="h-10 w-36 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-base font-mono"
+            />
+          </div>
 
-        <div className="flex flex-col">
-          <label className="text-gray-600 dark:text-neutral-400 text-xs font-medium mb-1">Hasta</label>
-          <input
-            type="date"
-            value={pendingDateRange.end}
-            onChange={e => setPendingDateRange(prev => ({ ...prev, end: e.target.value }))}
-            className="bg-gray-50 dark:bg-neutral-800 text-gray-900 dark:text-white border border-gray-300 dark:border-neutral-600 rounded px-3 py-2 text-sm"
-          />
-        </div>
+          <div className="flex flex-col">
+            <label className="text-gray-600 dark:text-neutral-400 text-xs font-medium mb-1 font-mono">HASTA</label>
+            <input
+              type="date"
+              value={pendingDateRange.end}
+              onChange={e => setPendingDateRange(prev => ({ ...prev, end: e.target.value }))}
+              className="h-10 w-36 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-base font-mono"
+            />
+          </div>
 
-        <div className="flex items-end">
           <button
             onClick={handleApplyDateRange}
-            className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded text-sm font-medium"
+            className="h-10 px-4 bg-orange-500 hover:bg-orange-600 text-white rounded font-mono text-sm font-medium"
           >
             Aplicar
           </button>
@@ -377,7 +431,7 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
       )}
 
       {!loadingData && selectedNodo && chartData.length > 0 && (
-        <div style={{ height: '500px', width: '100%' }}>
+        <div style={{ height: 'calc(100vh - 320px)', minHeight: '400px', width: '100%' }}>
           <ReactECharts
             option={option}
             style={{ height: '100%', width: '100%' }}
