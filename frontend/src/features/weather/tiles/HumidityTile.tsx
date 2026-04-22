@@ -34,7 +34,7 @@ export const HumidityTile: React.FC<HumidityTileProps> = ({ humidity, dewPoint }
 
       <div className="text-center mb-2">
         <span className="text-2xl font-bold font-mono text-gray-800 dark:text-gray-200">
-          {current !== null ? current.toFixed(0) : '--'}
+          {current !== null ? current.toFixed(2) : '--'}
         </span>
         <span className="text-sm font-mono text-gray-500 ml-1">%</span>
       </div>
@@ -51,7 +51,7 @@ export const HumidityTile: React.FC<HumidityTileProps> = ({ humidity, dewPoint }
         <div className="text-xs font-mono text-gray-500 text-center mb-1">Punto de rocío</div>
         <div className="text-center">
           <span className="text-lg font-bold font-mono text-gray-700 dark:text-gray-300">
-            {dew !== null ? dew.toFixed(1) : '--'}
+            {dew !== null ? dew.toFixed(2) : '--'}
           </span>
           <span className="text-sm font-mono text-gray-500 ml-1">°C</span>
         </div>

@@ -32,13 +32,13 @@ export const WindTile: React.FC<WindTileProps> = ({ speed, direction, gust }) =>
         <div className="text-center">
           <span className="text-gray-500">Ráfaga</span>
           <div className="font-semibold text-red-600">
-            {maxGust !== null ? maxGust.toFixed(1) + ' m/s' : '--'}
+            {maxGust !== null ? maxGust.toFixed(2) + ' m/s' : '--'}
           </div>
         </div>
         <div className="text-center">
           <span className="text-gray-500">Avg</span>
           <div className="font-semibold text-gray-700 dark:text-gray-300">
-            {avgSpeed !== null ? avgSpeed.toFixed(1) + ' m/s' : '--'}
+            {avgSpeed !== null ? avgSpeed.toFixed(2) + ' m/s' : '--'}
           </div>
         </div>
       </div>

@@ -25,21 +25,21 @@ export const RainTile: React.FC<RainTileProps> = ({ today, rate, et }) => {
         <div className="text-center">
           <span className="text-gray-500">Hoy</span>
           <div className="font-semibold text-blue-600">
-            {rainToday !== null ? rainToday.toFixed(1) : '--'}
+            {rainToday !== null ? rainToday.toFixed(2) : '--'}
           </div>
           <span className="text-gray-400 text-xs">mm</span>
         </div>
         <div className="text-center">
           <span className="text-gray-500">Tasa</span>
           <div className="font-semibold text-gray-700 dark:text-gray-300">
-            {rainRate !== null ? rainRate.toFixed(1) : '--'}
+            {rainRate !== null ? rainRate.toFixed(2) : '--'}
           </div>
           <span className="text-gray-400 text-xs">mm/h</span>
         </div>
         <div className="text-center">
           <span className="text-gray-500">ET</span>
           <div className="font-semibold text-gray-700 dark:text-gray-300">
-            {rainET !== null ? rainET.toFixed(1) : '--'}
+            {rainET !== null ? rainET.toFixed(2) : '--'}
           </div>
           <span className="text-gray-400 text-xs">mm</span>
         </div>

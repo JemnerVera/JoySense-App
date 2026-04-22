@@ -10,3 +10,4 @@ export { ForecastTile } from './ForecastTile';
 export { MoonPhaseTile } from './MoonPhaseTile';
 export { WindRoseTile } from './WindRoseTile';
 export { IndexTile } from './IndexTile';
+export { TempBarChartTile } from './TempBarChartTile';

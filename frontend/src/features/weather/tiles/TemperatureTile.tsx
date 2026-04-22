@@ -32,7 +32,7 @@ export const TemperatureTile: React.FC<TemperatureTileProps> = ({ temp }) => {
 
       <div className="text-center mb-2">
         <span className="text-2xl font-bold font-mono text-gray-800 dark:text-gray-200">
-          {current !== null ? current.toFixed(1) : '--'}
+          {current !== null ? current.toFixed(2) : '--'}
         </span>
         <span className="text-sm font-mono text-gray-500 ml-1">°C</span>
       </div>

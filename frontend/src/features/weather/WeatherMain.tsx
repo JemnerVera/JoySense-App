@@ -13,7 +13,8 @@ import {
   ForecastTile,
   MoonPhaseTile,
   WindRoseTile,
-  IndexTile
+  IndexTile,
+  TempBarChartTile
 } from './tiles';
 
 export const WeatherMain: React.FC = () => {
@@ -118,11 +119,16 @@ export const WeatherMain: React.FC = () => {
             />
           </div>
 
-          {/* Fila 4: Rosa de vientos */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Fila 4: Rosa de vientos + Temperatura */}
+          <div className="grid grid-cols-2 gap-4">
             <WindRoseTile 
               windDir={openMeteoData?.hourlyWindDir ?? []}
               windSpeed={openMeteoData?.hourlyWindSpeed ?? []}
+            />
+            <TempBarChartTile 
+              tempOutTrend={summaryData?.temp_out?.trend ?? []}
+              tempInTrend={summaryData?.temp_in?.trend ?? []}
+              dewPointTrend={summaryData?.dew_point?.trend ?? []}
             />
           </div>
         </div>

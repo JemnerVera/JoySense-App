@@ -20,7 +20,7 @@ export const IndoorTile: React.FC<IndoorTileProps> = ({ tempIn, humIn }) => {
         <div className="text-center">
           <div className="text-xs font-mono text-gray-500 mb-1">Temperatura</div>
           <div className="text-2xl font-bold font-mono text-gray-800 dark:text-gray-200">
-            {temp !== null ? temp.toFixed(1) : '--'}
+            {temp !== null ? temp.toFixed(2) : '--'}
           </div>
           <span className="text-sm font-mono text-gray-500">°C</span>
         </div>
