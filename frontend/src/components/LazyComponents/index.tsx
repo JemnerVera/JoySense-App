@@ -31,6 +31,20 @@ const WeatherMainLazy = lazy(() =>
   }))
 );
 
+// Lazy load Weather Details component
+const WeatherDetailsPageLazy = lazy(() => 
+  import('../../features/weather/WeatherDetailsPage').then(module => ({
+    default: module.WeatherDetailsPage
+  }))
+);
+
+// Lazy load Weather Data Historica component
+const WeatherDataHistoricaLazy = lazy(() => 
+  import('../../features/weather/WeatherDataHistorica').then(module => ({
+    default: module.WeatherDataHistorica
+  }))
+);
+
 // Lazy load UmbralesMain component
 const UmbralesMainLazy = lazy(() => 
   import('../../features/reporting').then(module => ({
@@ -194,6 +208,22 @@ export const WeatherMainLazyWithBoundary: React.FC = () => (
   <LazyComponentErrorBoundary>
     <LazyComponentWrapper>
       <WeatherMainLazy />
+    </LazyComponentWrapper>
+  </LazyComponentErrorBoundary>
+);
+
+export const WeatherDetailsPageLazyWithBoundary: React.FC = () => (
+  <LazyComponentErrorBoundary>
+    <LazyComponentWrapper>
+      <WeatherDetailsPageLazy />
+    </LazyComponentWrapper>
+  </LazyComponentErrorBoundary>
+);
+
+export const WeatherDataHistoricaLazyWithBoundary: React.FC = () => (
+  <LazyComponentErrorBoundary>
+    <LazyComponentWrapper>
+      <WeatherDataHistoricaLazy />
     </LazyComponentWrapper>
   </LazyComponentErrorBoundary>
 );

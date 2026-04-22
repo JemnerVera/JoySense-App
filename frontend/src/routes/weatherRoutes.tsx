@@ -1,4 +1,5 @@
 import { WeatherMain } from '../features/weather';
+import { WeatherDetailsPage } from '../features/weather/WeatherDetailsPage';
 
 export const weatherRoutes = [
   {
@@ -7,6 +8,14 @@ export const weatherRoutes = [
     title: 'Meteorología',
     description: 'Dashboard de estaciones meteorológicas WeatherLink',
     icon: '🌤️',
+    requiresAuth: true
+  },
+  {
+    path: '/meteorologia/details',
+    element: <WeatherDetailsPage />,
+    title: 'Meteorología - Detalles',
+    description: 'Detalles de estaciones meteorológicas',
+    icon: '📊',
     requiresAuth: true
   }
 ];

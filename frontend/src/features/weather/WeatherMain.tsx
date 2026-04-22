@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useWeatherData } from '../../hooks/useWeatherData';
 import { WeatherStationSelector } from './WeatherStationSelector';
-import { WeatherDetailsTab } from './WeatherDetailsTab';
 import { 
   TemperatureTile, 
   HumidityTile, 
@@ -18,11 +17,7 @@ import {
   TempBarChartTile
 } from './tiles';
 
-type WeatherTab = 'conditions' | 'details';
-
 export const WeatherMain: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<WeatherTab>('conditions');
-  
   const {
     stations,
     selectedStation,
@@ -30,7 +25,6 @@ export const WeatherMain: React.FC = () => {
     summaryData,
     openMeteoData,
     moonPhase,
-    historical24h,
     loading,
     error,
     refreshCurrent,
@@ -44,8 +38,16 @@ export const WeatherMain: React.FC = () => {
     refreshOpenMeteo();
   };
 
+  if (loading && !summaryData) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-4">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <WeatherStationSelector
           stations={stations}
@@ -70,66 +72,6 @@ export const WeatherMain: React.FC = () => {
         </div>
       )}
 
-      <div className="border-b border-gray-200 dark:border-gray-600">
-        <nav className="flex gap-6 -mb-px">
-          <button
-            onClick={() => setActiveTab('conditions')}
-            className={`py-3 px-1 border-b-2 font-mono text-sm ${
-              activeTab === 'conditions'
-                ? 'border-gray-800 dark:border-gray-300 text-gray-800 dark:text-gray-200'
-                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-            }`}
-          >
-            Condiciones
-          </button>
-          <button
-            onClick={() => setActiveTab('details')}
-            className={`py-3 px-1 border-b-2 font-mono text-sm ${
-              activeTab === 'details'
-                ? 'border-gray-800 dark:border-gray-300 text-gray-800 dark:text-gray-200'
-                : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-            }`}
-          >
-            Detalles
-          </button>
-        </nav>
-      </div>
-
-      <div className="tab-content">
-        {activeTab === 'conditions' ? (
-          <ConditionsView 
-            summaryData={summaryData}
-            openMeteoData={openMeteoData}
-            moonPhase={moonPhase}
-            loading={loading}
-          />
-        ) : (
-          <WeatherDetailsTab 
-            historicalData={historical24h}
-            loading={loading}
-          />
-        )}
-      </div>
-    </div>
-  );
-};
-
-const ConditionsView: React.FC<{
-  summaryData: ReturnType<typeof useWeatherData>['summaryData'];
-  openMeteoData: ReturnType<typeof useWeatherData>['openMeteoData'];
-  moonPhase: ReturnType<typeof useWeatherData>['moonPhase'];
-  loading: boolean;
-}> = ({ summaryData, openMeteoData, moonPhase, loading }) => {
-  if (loading && !summaryData) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         <TemperatureTile temp={summaryData?.temp_out ?? null} />
         <HumidityTile

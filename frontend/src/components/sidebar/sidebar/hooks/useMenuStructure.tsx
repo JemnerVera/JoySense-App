@@ -258,6 +258,23 @@ export function useMenuStructure() {
         icon: <IconWeather />,
         color: 'gray',
         requiresPermission: false,
+        subMenus: [
+          {
+            id: 'conditions',
+            label: 'Condiciones',
+            icon: '📊',
+          },
+          {
+            id: 'details',
+            label: 'Detalles',
+            icon: '📋',
+          },
+          {
+            id: 'data-historica',
+            label: 'Data Histórica',
+            icon: '📈',
+          },
+        ],
       },
     ];
 

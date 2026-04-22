@@ -55,6 +55,8 @@ import {
   NotificacionesMainLazyWithBoundary,
   UmbralesMainLazyWithBoundary,
   WeatherMainLazyWithBoundary,
+  WeatherDetailsPageLazyWithBoundary,
+  WeatherDataHistoricaLazyWithBoundary,
   // Dashboards
   DashboardLazy,
   NodeStatusDashboardLazy, 
@@ -2006,10 +2008,39 @@ const AppContentInternal: React.FC<{
       );
     }
 
-    if (activeTab === 'meteorologia' || activeTab.startsWith('meteorologia-')) {
+    if (activeTab === 'meteorologia') {
+      return (
+        <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+          <div className="text-center">
+            <div className="bg-gray-100 dark:bg-neutral-900 border border-gray-300 dark:border-neutral-700 rounded-lg p-6 max-w-md mx-auto">
+              <h2 className="text-2xl font-bold text-gray-500 mb-4 font-mono tracking-wider">METEOROLOGÍA</h2>
+              <p className="text-gray-600 dark:text-neutral-300 font-mono tracking-wider">Selecciona una opción de meteorología</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    if (activeTab === 'meteorologia-conditions') {
       return (
         <div className="p-6 bg-gray-50 dark:bg-black min-h-screen">
           <WeatherMainLazyWithBoundary />
+        </div>
+      );
+    }
+
+    if (activeTab === 'meteorologia-details') {
+      return (
+        <div className="p-6 bg-gray-50 dark:bg-black min-h-screen">
+          <WeatherDetailsPageLazyWithBoundary />
+        </div>
+      );
+    }
+
+    if (activeTab === 'meteorologia-data-historica') {
+      return (
+        <div className="p-6 bg-gray-50 dark:bg-black min-h-screen">
+          <WeatherDataHistoricaLazyWithBoundary />
         </div>
       );
     }
