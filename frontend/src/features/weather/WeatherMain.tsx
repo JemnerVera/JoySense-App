@@ -1,7 +1,20 @@
 import React from 'react';
 import { useWeatherData } from '../../hooks/useWeatherData';
 import { WeatherStationSelector } from './WeatherStationSelector';
-import { TemperatureTile, HumidityTile, WindTile, RainTile, PressureTile, SolarTile, IndoorTile } from './tiles';
+import { 
+  TemperatureTile, 
+  HumidityTile, 
+  WindTile, 
+  RainTile, 
+  PressureTile, 
+  SolarTile, 
+  IndoorTile,
+  SunTimesTile,
+  ForecastTile,
+  MoonPhaseTile,
+  WindRoseTile,
+  IndexTile
+} from './tiles';
 
 export const WeatherMain: React.FC = () => {
   const {
@@ -9,15 +22,19 @@ export const WeatherMain: React.FC = () => {
     selectedStation,
     setSelectedStation,
     summaryData,
+    openMeteoData,
+    moonPhase,
     loading,
     error,
     refreshCurrent,
     refreshSummary,
+    refreshOpenMeteo,
   } = useWeatherData();
 
   const handleRefresh = () => {
     refreshCurrent();
     refreshSummary();
+    refreshOpenMeteo();
   };
 
   return (
@@ -52,12 +69,9 @@ export const WeatherMain: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-4">
+          {/* Fila 1: Métricas principales */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            <TemperatureTile
-              temp={summaryData?.temp_out ?? null}
-              thw={summaryData?.thw_index ?? null}
-              thsw={summaryData?.thsw_index ?? null}
-            />
+            <TemperatureTile temp={summaryData?.temp_out ?? null} />
             <HumidityTile
               humidity={summaryData?.hum_out ?? null}
               dewPoint={summaryData?.dew_point ?? null}
@@ -68,21 +82,48 @@ export const WeatherMain: React.FC = () => {
               gust={summaryData?.wind_gust_10_min ?? null}
             />
             <PressureTile pressure={summaryData?.bar ?? null} />
+          </div>
+
+          {/* Fila 2: Más métricas + Sol */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             <RainTile
               today={summaryData?.rain_day_mm ?? null}
               rate={summaryData?.rain_rate_mm ?? null}
               et={summaryData?.et_day ?? null}
             />
             <SolarTile radiation={summaryData?.solar_rad ?? null} />
+            <IndoorTile
+              tempIn={summaryData?.temp_in ?? null}
+              humIn={summaryData?.hum_in ?? null}
+            />
+            <SunTimesTile 
+              sunrise={openMeteoData?.sunrise ?? ''} 
+              sunset={openMeteoData?.sunset ?? ''} 
+            />
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="col-span-1">
-              <IndoorTile
-                tempIn={summaryData?.temp_in ?? null}
-                humIn={summaryData?.hum_in ?? null}
-              />
-            </div>
+          {/* Fila 3: Índices + Pronóstico + Fase Lunar */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <IndexTile label="THW" value={summaryData?.thw_index ?? null} />
+            <IndexTile label="THSW" value={summaryData?.thsw_index ?? null} />
+            <ForecastTile 
+              weatherCode={openMeteoData?.weatherCode ?? 0}
+              tempMax={openMeteoData?.tempMax ?? null}
+              tempMin={openMeteoData?.tempMin ?? null}
+            />
+            <MoonPhaseTile 
+              phase={moonPhase.phase}
+              icon={moonPhase.icon}
+              name={moonPhase.name}
+            />
+          </div>
+
+          {/* Fila 4: Rosa de vientos */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <WindRoseTile 
+              windDir={openMeteoData?.hourlyWindDir ?? []}
+              windSpeed={openMeteoData?.hourlyWindSpeed ?? []}
+            />
           </div>
         </div>
       )}

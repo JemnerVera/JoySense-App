@@ -5,3 +5,8 @@ export { RainTile } from './RainTile';
 export { PressureTile } from './PressureTile';
 export { SolarTile } from './SolarTile';
 export { IndoorTile } from './IndoorTile';
+export { SunTimesTile } from './SunTimesTile';
+export { ForecastTile } from './ForecastTile';
+export { MoonPhaseTile } from './MoonPhaseTile';
+export { WindRoseTile } from './WindRoseTile';
+export { IndexTile } from './IndexTile';

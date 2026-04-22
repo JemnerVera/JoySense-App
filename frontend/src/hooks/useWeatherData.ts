@@ -8,6 +8,8 @@ export interface WeatherStation {
   localizacionStart: number;
   localizacionEnd: number;
   hasHistoric: boolean;
+  latitude: number;
+  longitude: number;
 }
 
 export interface WeatherMetric {
@@ -19,10 +21,10 @@ export interface WeatherMetric {
 }
 
 export const WEATHER_STATIONS: WeatherStation[] = [
-  { id: '34651', name: 'D3 FUNDO CALIFORNIA', nodoid: 848, localizacionStart: 2027, localizacionEnd: 2055, hasHistoric: true },
-  { id: '91399', name: 'D2 FUNDO CALIFORNIA', nodoid: 849, localizacionStart: 2056, localizacionEnd: 2070, hasHistoric: false },
-  { id: '94218', name: 'D1 FUNDO CALIFORNIA', nodoid: 850, localizacionStart: 2071, localizacionEnd: 2085, hasHistoric: false },
-  { id: '219179', name: 'ARENUVA Home', nodoid: 851, localizacionStart: 2086, localizacionEnd: 2126, hasHistoric: true },
+  { id: '34651', name: 'D3 FUNDO CALIFORNIA', nodoid: 848, localizacionStart: 2027, localizacionEnd: 2055, hasHistoric: true, latitude: -13.787780, longitude: -76.024490 },
+  { id: '91399', name: 'D2 FUNDO CALIFORNIA', nodoid: 849, localizacionStart: 2056, localizacionEnd: 2070, hasHistoric: false, latitude: -13.774630, longitude: -76.024960 },
+  { id: '94218', name: 'D1 FUNDO CALIFORNIA', nodoid: 850, localizacionStart: 2071, localizacionEnd: 2085, hasHistoric: false, latitude: -13.773870, longitude: -75.995330 },
+  { id: '219179', name: 'ARENUVA Home', nodoid: 851, localizacionStart: 2086, localizacionEnd: 2126, hasHistoric: true, latitude: -13.749100, longitude: -76.002800 },
 ];
 
 export const WEATHER_METRICS: WeatherMetric[] = [
@@ -82,11 +84,14 @@ export interface UseWeatherDataResult {
   currentData: WeatherCurrentData;
   summaryData: WeatherSummaryData | null;
   historical24h: WeatherMedicionData[];
+  openMeteoData: OpenMeteoData | null;
+  moonPhase: { phase: string; icon: string; name: string };
   loading: boolean;
   error: string | null;
   refreshCurrent: () => Promise<void>;
   refreshSummary: () => Promise<void>;
   refreshHistorical: (startDate: string, endDate: string) => Promise<void>;
+  refreshOpenMeteo: () => Promise<void>;
   dateRange: 'today' | 'yesterday' | '7days';
   setDateRange: (range: 'today' | 'yesterday' | '7days') => void;
 }
@@ -184,6 +189,134 @@ export interface WeatherMedicionData {
   tipo_nombre: string;
 }
 
+export interface OpenMeteoData {
+  sunrise: string;
+  sunset: string;
+  weatherCode: number;
+  tempMax: number;
+  tempMin: number;
+  hourlyTemp: number[];
+  hourlyHumidity: number[];
+  hourlyWindSpeed: number[];
+  hourlyWindDir: number[];
+}
+
+export const fetchOpenMeteo = async (latitude: number, longitude: number): Promise<OpenMeteoData> => {
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&hourly=temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m&daily=sunrise,sunset,weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=2`;
+  
+  const response = await fetch(url);
+  const data = await response.json();
+  
+  return {
+    sunrise: data.daily.sunrise[0] || '',
+    sunset: data.daily.sunset[0] || '',
+    weatherCode: data.daily.weather_code[0] || 0,
+    tempMax: data.daily.temperature_2m_max[0] || 0,
+    tempMin: data.daily.temperature_2m_min[0] || 0,
+    hourlyTemp: data.hourly.temperature_2m?.slice(0, 24) || [],
+    hourlyHumidity: data.hourly.relative_humidity_2m?.slice(0, 24) || [],
+    hourlyWindSpeed: data.hourly.wind_speed_10m?.slice(0, 24) || [],
+    hourlyWindDir: data.hourly.wind_direction_10m?.slice(0, 24) || [],
+  };
+};
+
+export const getMoonPhase = (): { phase: string; icon: string; name: string } => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const day = now.getDate();
+  
+  let c = 0, e = 0, jd = 0, jd1 = 0, b = 0;
+  
+  if (month <= 2) {
+    c = year - 1;
+    e = month + 12;
+  } else {
+    c = year;
+    e = month;
+  }
+  
+  jd = Math.floor(365.25 * (c + 4716)) + Math.floor(30.6001 * (e + 1)) + day - 1524.5;
+  jd1 = Math.floor(365.25 * (c + 4716)) + Math.floor(30.6001 * (e + 1)) + 1 - 1524.5;
+  b = Math.floor((jd - 2451545) / 365.25);
+  
+  const daysSinceNew = jd - 2451545 - (b * 365.25);
+  const newMoons = daysSinceNew / 29.530588853;
+  const phase = (newMoons % 1) * 29.530588853;
+  
+  const phases = [
+    { day: 0, name: 'Luna Nueva', icon: '🌑' },
+    { day: 1.85, name: 'Cuarto Creciente', icon: '🌓' },
+    { day: 7.38, name: 'Luna Gibosa Creciente', icon: '🌒' },
+    { day: 9.23, name: 'Luna Llena', icon: '🌕' },
+    { day: 14.77, name: 'Luna Gibosa Menguante', icon: '🌖' },
+    { day: 16.61, name: 'Cuarto Menguante', icon: '🌗' },
+    { day: 22.14, name: 'Luna Creciente Menguante', icon: '🌘' },
+    { day: 23.98, name: 'Luna Nueva', icon: '🌑' },
+  ];
+  
+  for (let i = 0; i < phases.length - 1; i++) {
+    if (phase >= phases[i].day && phase < phases[i + 1].day) {
+      return { phase: phase.toFixed(1), icon: phases[i].icon, name: phases[i].name };
+    }
+  }
+  return { phase: phase.toFixed(1), icon: '🌑', name: 'Luna Nueva' };
+};
+
+export const getWeatherDescription = (code: number): string => {
+  const codes: Record<number, string> = {
+    0: 'Cielo despejado',
+    1: 'Mayormente despejado',
+    2: 'Parcialmente nublado',
+    3: 'Nublado',
+    45: 'Niebla',
+    48: 'Niebla',
+    51: 'Llovizna ligera',
+    53: 'Llovizna moderada',
+    55: 'Llovizna densa',
+    61: 'Lluvia ligera',
+    63: 'Lluvia moderada',
+    65: 'Lluvia fuerte',
+    71: 'Nieve ligera',
+    73: 'Nieve moderada',
+    75: 'Nieve fuerte',
+    80: 'Chubascos ligeros',
+    81: 'Chubascos moderados',
+    82: 'Chubascos fuertes',
+    95: 'Tormenta',
+    96: 'Tormenta con granizo',
+    99: 'Tormenta fuerte',
+  };
+  return codes[code] || 'Desconocido';
+};
+
+export const getWeatherIcon = (code: number): string => {
+  const icons: Record<number, string> = {
+    0: '☀️',
+    1: '🌤️',
+    2: '⛅',
+    3: '☁️',
+    45: '🌫️',
+    48: '🌫️',
+    51: '🌧️',
+    53: '🌧️',
+    55: '🌧️',
+    61: '🌧️',
+    63: '🌧️',
+    65: '🌧️',
+    71: '❄️',
+    73: '❄️',
+    75: '❄️',
+    80: '🌦️',
+    81: '🌦️',
+    82: '🌦️',
+    95: '⛈️',
+    96: '⛈️',
+    99: '⛈️',
+  };
+  return icons[code] || '🌡️';
+};
+
 const getDateRangeParams = (range: 'today' | 'yesterday' | '7days') => {
   const now = new Date();
   const limaOffset = -5;
@@ -220,6 +353,8 @@ export function useWeatherData(): UseWeatherDataResult {
   const [currentData, setCurrentData] = useState<WeatherCurrentData>({});
   const [summaryData, setSummaryData] = useState<WeatherSummaryData | null>(null);
   const [historical24h, setHistorical24h] = useState<WeatherMedicionData[]>([]);
+  const [openMeteoData, setOpenMeteoData] = useState<OpenMeteoData | null>(null);
+  const [moonPhase, setMoonPhase] = useState<{ phase: string; icon: string; name: string }>({ phase: '0', icon: '🌑', name: 'Luna Nueva' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<'today' | 'yesterday' | '7days'>('today');
@@ -329,12 +464,25 @@ export function useWeatherData(): UseWeatherDataResult {
     }
   }, [selectedStation]);
 
+  const refreshOpenMeteo = useCallback(async () => {
+    if (!selectedStation) return;
+    
+    try {
+      const data = await fetchOpenMeteo(selectedStation.latitude, selectedStation.longitude);
+      setOpenMeteoData(data);
+      setMoonPhase(getMoonPhase());
+    } catch (err: any) {
+      console.error('[useWeatherData] Error fetching OpenMeteo:', err);
+    }
+  }, [selectedStation]);
+
   useEffect(() => {
     if (selectedStation) {
       refreshCurrent();
       refreshSummary();
+      refreshOpenMeteo();
     }
-  }, [selectedStation, refreshCurrent, refreshSummary]);
+  }, [selectedStation, refreshCurrent, refreshSummary, refreshOpenMeteo]);
 
   return {
     stations,
@@ -343,11 +491,14 @@ export function useWeatherData(): UseWeatherDataResult {
     currentData,
     summaryData,
     historical24h,
+    openMeteoData,
+    moonPhase,
     loading,
     error,
     refreshCurrent,
     refreshSummary,
     refreshHistorical,
+    refreshOpenMeteo,
     dateRange,
     setDateRange,
   };

@@ -4,21 +4,13 @@ import { WeatherSummary } from '../../../hooks/useWeatherData';
 
 interface TemperatureTileProps {
   temp: WeatherSummary | null;
-  thw: WeatherSummary | null;
-  thsw: WeatherSummary | null;
 }
 
-export const TemperatureTile: React.FC<TemperatureTileProps> = ({
-  temp,
-  thw,
-  thsw,
-}) => {
+export const TemperatureTile: React.FC<TemperatureTileProps> = ({ temp }) => {
   const current = temp?.current ?? null;
   const min = temp?.min ?? null;
   const max = temp?.max ?? null;
   const trend = temp?.trend ?? [];
-  const thwVal = thw?.current ?? null;
-  const thswVal = thsw?.current ?? null;
 
   return (
     <div className="bg-gray-100 dark:bg-gray-900 rounded-lg border border-gray-300 dark:border-gray-600 p-3">
@@ -56,21 +48,6 @@ export const TemperatureTile: React.FC<TemperatureTileProps> = ({
 
       <div className="mt-2">
         <WeatherSparkArea data={trend} color="#ef4444" height={30} />
-      </div>
-
-      <div className="grid grid-cols-2 gap-2 mt-2 text-xs font-mono">
-        <div className="text-center">
-          <span className="text-gray-500">THW</span>
-          <div className="font-semibold text-gray-700 dark:text-gray-300">
-            {thwVal !== null ? thwVal.toFixed(1) + '°C' : '--'}
-          </div>
-        </div>
-        <div className="text-center">
-          <span className="text-gray-500">THSW</span>
-          <div className="font-semibold text-gray-700 dark:text-gray-300">
-            {thswVal !== null ? thswVal.toFixed(1) + '°C' : '--'}
-          </div>
-        </div>
       </div>
     </div>
   );
