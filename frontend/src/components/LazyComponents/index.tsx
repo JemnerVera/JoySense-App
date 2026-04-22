@@ -24,6 +24,13 @@ const NotificacionesMainLazy = lazy(() =>
   })
 );
 
+// Lazy load Weather component
+const WeatherMainLazy = lazy(() => 
+  import('../../features/weather').then(module => ({
+    default: module.WeatherMain
+  }))
+);
+
 // Lazy load UmbralesMain component
 const UmbralesMainLazy = lazy(() => 
   import('../../features/reporting').then(module => ({
@@ -182,6 +189,14 @@ export const NotificacionesMainLazyWithBoundary = React.forwardRef<any, any>((pr
     </LazyComponentWrapper>
   </LazyComponentErrorBoundary>
 ));
+
+export const WeatherMainLazyWithBoundary: React.FC = () => (
+  <LazyComponentErrorBoundary>
+    <LazyComponentWrapper>
+      <WeatherMainLazy />
+    </LazyComponentWrapper>
+  </LazyComponentErrorBoundary>
+);
 
 export const UmbralesMainLazyWithBoundary: React.FC = () => (
   <LazyComponentErrorBoundary>

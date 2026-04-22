@@ -36,6 +36,7 @@ import {
   IconMetricaSensor,
   IconFundo,
   IconCriticidad as IconUmbralAlt,
+  IconWeather,
 } from '../utils/menuIcons';
 
 export function useMenuStructure() {
@@ -251,6 +252,25 @@ export function useMenuStructure() {
           },
         ],
       },
+      {
+        id: 'meteorologia',
+        label: 'METEOROLOGÍA',
+        icon: <IconWeather />,
+        color: 'gray',
+        requiresPermission: false,
+        subMenus: [
+          {
+            id: 'meteorologia-current',
+            label: 'CONDICIONES ACTUALES',
+            icon: '📊',
+          },
+          {
+            id: 'meteorologia-historical',
+            label: 'HISTÓRICO',
+            icon: '📈',
+          },
+        ],
+      },
     ];
 
     if (isLoadingPermissions) return [];
@@ -271,6 +291,7 @@ export function useMenuStructure() {
       if (tab.id === 'configuracion') return hasAccessToMenu('CONFIGURACIÓN');
       if (tab.id === 'reportes') return hasAccessToMenu('REPORTES');
       if (tab.id === 'ajustes') return hasAccessToMenu('AJUSTES');
+      if (tab.id === 'meteorologia') return true;
       return false;
     });
 

@@ -44,6 +44,12 @@ export const IconTipo = () => (
   </svg>
 );
 
+export const IconWeather = () => (
+  <svg className="w-4 h-4" {...svgProps}>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.336 2.999A4.002 4.002 0 013 15z" />
+  </svg>
+);
+
 export const IconMetrica = () => (
   <svg className="w-4 h-4" {...svgProps}>
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />

@@ -54,6 +54,7 @@ import {
   SystemParametersLazyWithBoundary,
   NotificacionesMainLazyWithBoundary,
   UmbralesMainLazyWithBoundary,
+  WeatherMainLazyWithBoundary,
   // Dashboards
   DashboardLazy,
   NodeStatusDashboardLazy, 
@@ -2005,6 +2006,14 @@ const AppContentInternal: React.FC<{
       );
     }
 
+    if (activeTab === 'meteorologia' || activeTab.startsWith('meteorologia-')) {
+      return (
+        <div className="p-6 bg-gray-50 dark:bg-black min-h-screen">
+          <WeatherMainLazyWithBoundary />
+        </div>
+      );
+    }
+
 
     // Manejar sub-rutas de ALERTAS
     if (activeTab.startsWith('alertas-regla-') && !activeTab.startsWith('alertas-regla_')) {
@@ -2186,6 +2195,8 @@ const AppContentInternal: React.FC<{
       return 'theme-cyan';
     } else if (activeTab === 'parameters' || activeTab?.startsWith('parameters-')) {
       return 'theme-orange';
+    } else if (activeTab === 'meteorologia' || activeTab?.startsWith('meteorologia-')) {
+      return 'theme-cyan';
     } else if (activeTab === 'umbrales' || activeTab?.startsWith('umbrales-')) {
       return 'theme-gray';
     } else if (activeTab === 'permisos' || activeTab?.startsWith('permisos-')) {
