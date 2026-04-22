@@ -258,18 +258,6 @@ export function useMenuStructure() {
         icon: <IconWeather />,
         color: 'gray',
         requiresPermission: false,
-        subMenus: [
-          {
-            id: 'meteorologia-current',
-            label: 'CONDICIONES ACTUALES',
-            icon: '📊',
-          },
-          {
-            id: 'meteorologia-historical',
-            label: 'HISTÓRICO',
-            icon: '📈',
-          },
-        ],
       },
     ];
 

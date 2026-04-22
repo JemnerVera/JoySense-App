@@ -17,22 +17,6 @@ export const WeatherNavigationItem = {
   icon: '🌤️',
   path: '/meteorologia',
   description: 'Dashboard de estaciones meteorológicas WeatherLink',
-  children: [
-    {
-      id: 'weather-current',
-      label: 'Condiciones Actuales',
-      icon: '📊',
-      path: '/meteorologia?tab=current',
-      description: 'Condiciones meteorológicas actuales'
-    },
-    {
-      id: 'weather-historical',
-      label: 'Histórico',
-      icon: '📈',
-      path: '/meteorologia?tab=historical',
-      description: 'Gráficos históricos'
-    }
-  ]
 };
 
 export default WeatherMain;
