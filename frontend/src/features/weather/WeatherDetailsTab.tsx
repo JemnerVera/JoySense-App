@@ -133,8 +133,8 @@ export const WeatherDetailsTab: React.FC<WeatherDetailsTabProps> = ({
       </div>
 
       {groups.map((group) => (
-        <div key={group.title} className="bg-gray-100 dark:bg-gray-900 rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
-          <div className="bg-gray-200 dark:bg-gray-800 px-4 py-2 border-b border-gray-300 dark:border-gray-600">
+        <div key={group.title} className="bg-gray-100 dark:bg-neutral-800 rounded-lg border border-gray-300 dark:border-neutral-700 overflow-hidden">
+          <div className="bg-gray-200 dark:bg-neutral-700 px-4 py-2 border-b border-gray-300 dark:border-neutral-700">
             <span className="text-sm font-mono font-bold text-gray-700 dark:text-gray-300">
               {group.title}
             </span>
@@ -142,7 +142,7 @@ export const WeatherDetailsTab: React.FC<WeatherDetailsTabProps> = ({
           <div className="overflow-x-auto">
             <table className="w-full text-xs font-mono">
               <thead>
-                <tr className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+<tr className="bg-gray-50 dark:bg-neutral-700 text-gray-500 dark:text-gray-400">
                   <th className="px-3 py-2 text-left w-1/4">Métrica</th>
                   <th className="px-3 py-2 text-right">Actual</th>
                   <th className="px-3 py-2 text-right">Máx</th>
@@ -151,14 +151,14 @@ export const WeatherDetailsTab: React.FC<WeatherDetailsTabProps> = ({
                   <th className="px-3 py-2 text-center">Hora mín</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody className="divide-y divide-gray-200 dark:divide-neutral-600">
                 {group.metrics.map((metric) => {
                   const stats = getDayStats(metric.key);
                   const isTemperature = metric.unit === '°C';
                   const decimals = isTemperature ? 1 : metric.key === 'wind_dir' ? 0 : 1;
                   
                   return (
-                    <tr key={metric.key} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                    <tr key={metric.key} className="hover:bg-gray-50 dark:hover:bg-neutral-700">
                       <td className="px-3 py-2 text-gray-700 dark:text-gray-300">{metric.label}</td>
                       <td className="px-3 py-2 text-right font-semibold text-gray-800 dark:text-gray-200">
                         {formatValue(stats.actual, decimals)}{metric.unit}
@@ -184,8 +184,8 @@ export const WeatherDetailsTab: React.FC<WeatherDetailsTabProps> = ({
         </div>
       ))}
 
-      <div className="bg-gray-100 dark:bg-gray-900 rounded-lg border border-gray-300 dark:border-gray-600 overflow-hidden">
-        <div className="bg-gray-200 dark:bg-gray-800 px-4 py-2 border-b border-gray-300 dark:border-gray-600">
+      <div className="bg-gray-100 dark:bg-neutral-800 rounded-lg border border-gray-300 dark:border-neutral-700 overflow-hidden">
+        <div className="bg-gray-200 dark:bg-neutral-700 px-4 py-2 border-b border-gray-300 dark:border-neutral-700">
           <span className="text-sm font-mono font-bold text-gray-700 dark:text-gray-300">
             {groups4.title}
           </span>
@@ -201,8 +201,8 @@ export const WeatherDetailsTab: React.FC<WeatherDetailsTabProps> = ({
                 <th className="px-3 py-2 text-right">Año</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-              <tr className="hover:bg-gray-50 dark:hover:bg-gray-800">
+            <tbody className="divide-y divide-gray-200 dark:divide-neutral-600">
+              <tr className="hover:bg-gray-50 dark:hover:bg-neutral-700">
                 <td className="px-3 py-2 text-gray-700 dark:text-gray-300">Lluvia</td>
                 <td className="px-3 py-2 text-right font-semibold text-blue-600 dark:text-blue-400">
                   {formatValue(getDayStats('rain_rate_mm').actual, 2)} mm/h
@@ -213,7 +213,7 @@ export const WeatherDetailsTab: React.FC<WeatherDetailsTabProps> = ({
                 <td className="px-3 py-2 text-right text-gray-500">-- mm</td>
                 <td className="px-3 py-2 text-right text-gray-500">-- mm</td>
               </tr>
-              <tr className="hover:bg-gray-50 dark:hover:bg-gray-800">
+              <tr className="hover:bg-gray-50 dark:hover:bg-neutral-700">
                 <td className="px-3 py-2 text-gray-700 dark:text-gray-300">ET</td>
                 <td className="px-3 py-2 text-right text-gray-500">--</td>
                 <td className="px-3 py-2 text-right font-semibold text-gray-800 dark:text-gray-200">

@@ -12,17 +12,15 @@ export const SolarTile: React.FC<SolarTileProps> = ({ radiation }) => {
   const trend = radiation?.trend ?? [];
 
   return (
-    <div className="bg-gray-100 dark:bg-gray-900 rounded-lg border border-gray-300 dark:border-gray-600 p-3">
-      <div className="text-xs font-mono text-gray-600 dark:text-gray-400 mb-2 text-center uppercase">
-        Solar
-      </div>
+    <div className="weather-tile">
+      <div className="weather-tile-header">Solar</div>
       
       <div className="flex justify-center mb-2">
         <WeatherGauge
           value={current}
           min={0}
           max={1400}
-          label=" radiación"
+          label=""
           unit="W/m²"
           thresholds={{ min: 0, max: 1000 }}
           height={100}
@@ -30,10 +28,10 @@ export const SolarTile: React.FC<SolarTileProps> = ({ radiation }) => {
       </div>
 
       <div className="text-center mb-2">
-        <span className="text-2xl font-bold font-mono text-yellow-600">
+        <span className="weather-tile-value text-yellow-600">
           {current !== null ? current.toFixed(0) : '--'}
         </span>
-        <span className="text-sm font-mono text-gray-500 ml-1">W/m²</span>
+        <span className="weather-tile-value-unit">W/m²</span>
       </div>
 
       <div className="text-center text-xs font-mono text-gray-500 mb-2">

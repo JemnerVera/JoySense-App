@@ -26,12 +26,8 @@ export const IndexTile: React.FC<IndexTileProps> = ({ label, value, unit = '°C'
   };
 
   return (
-    <div className="bg-gray-100 dark:bg-gray-900 rounded-lg border border-gray-300 dark:border-gray-600 p-3">
-      <div className="text-xs font-mono text-gray-600 dark:text-gray-400 mb-2 text-center uppercase">
-        {label}
-      </div>
-      
-      <div className="text-[10px] text-gray-500 text-center mb-1">{getDescription()}</div>
+    <div className="weather-tile">
+      <div className="weather-tile-header" title={getDescription()}>{label}</div>
       
       <div className="flex justify-center mb-2">
         <WeatherGauge
@@ -46,10 +42,10 @@ export const IndexTile: React.FC<IndexTileProps> = ({ label, value, unit = '°C'
       </div>
 
       <div className="text-center mb-2">
-<span className="text-2xl font-bold font-mono text-gray-800 dark:text-gray-200">
-            {current !== null ? current.toFixed(2) : '--'}
-          </span>
-        <span className="text-sm font-mono text-gray-500 ml-1">{unit}</span>
+        <span className="weather-tile-value">
+          {current !== null ? current.toFixed(2) : '--'}
+        </span>
+        <span className="weather-tile-value-unit">{unit}</span>
       </div>
 
       <div className="flex justify-between text-xs font-mono px-2">

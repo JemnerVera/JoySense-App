@@ -58,10 +58,8 @@ export const SunTimesTile: React.FC<SunTimesTileProps> = ({ sunrise, sunset }) =
   const nightArcColor = '#1e3a5f';
 
   return (
-    <div className="bg-gray-100 dark:bg-gray-900 rounded-lg border border-gray-300 dark:border-gray-600 p-3">
-      <div className="text-xs font-mono text-gray-600 dark:text-gray-400 mb-2 text-center uppercase">
-        Sol
-      </div>
+    <div className="weather-tile">
+      <div className="weather-tile-header">Sol</div>
       
       <div className="relative flex justify-center items-center h-16 mb-2">
         <svg viewBox="0 0 200 80" className="w-full h-full">
@@ -138,10 +136,27 @@ export const SunTimesTile: React.FC<SunTimesTileProps> = ({ sunrise, sunset }) =
         </svg>
       </div>
 
-      <div className="flex justify-between text-xs font-mono px-1">
+      <div className="flex justify-between text-xs font-mono px-1 mb-2">
         <span className="text-yellow-600">🌅 {sunriseTime}</span>
         <span className="text-gray-500">{getDayDuration()}</span>
         <span className="text-orange-600">{sunsetTime} 🌙</span>
+      </div>
+
+      <div className="pt-2 border-t border-gray-300 dark:border-gray-600">
+        <div className="flex justify-between items-center">
+          <div className="text-center flex-1">
+            <div className="text-xs font-mono text-gray-500">Amanecer</div>
+            <div className="text-sm font-mono text-yellow-600 font-semibold">{sunriseTime}</div>
+          </div>
+          <div className="text-center flex-1">
+            <div className="text-xs font-mono text-gray-500">Duración</div>
+            <div className="text-sm font-mono text-gray-700 dark:text-gray-300 font-semibold">{getDayDuration()}</div>
+          </div>
+          <div className="text-center flex-1">
+            <div className="text-xs font-mono text-gray-500">Atardecer</div>
+            <div className="text-sm font-mono text-orange-600 font-semibold">{sunsetTime}</div>
+          </div>
+        </div>
       </div>
     </div>
   );

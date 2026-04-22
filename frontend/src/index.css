@@ -136,3 +136,28 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 .dark .scrollbar-thin {
   scrollbar-color: #6b7280 #374151;
 }
+
+/* Weather Dashboard Tile Base Styles */
+.weather-tile {
+  @apply bg-gray-100 dark:bg-neutral-800 rounded-lg border border-gray-300 dark:border-neutral-700 p-3;
+}
+
+.weather-tile-header {
+  @apply text-xs font-mono text-gray-600 dark:text-gray-400 mb-2 text-center uppercase;
+}
+
+.weather-tile-value {
+  @apply text-2xl font-bold font-mono text-gray-800 dark:text-gray-200;
+}
+
+.weather-tile-value-unit {
+  @apply text-sm font-mono text-gray-500 ml-1;
+}
+
+.weather-tile-content {
+  @apply text-gray-700 dark:text-gray-300;
+}
+
+.weather-tile-content-secondary {
+  @apply text-xs font-mono text-gray-500 dark:text-gray-400;
+}

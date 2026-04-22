@@ -125,10 +125,8 @@ export const TempBarChartTile: React.FC<TempBarChartTileProps> = ({
   };
 
   return (
-    <div className="bg-gray-100 dark:bg-gray-900 rounded-lg border border-gray-300 dark:border-gray-600 p-2 w-full">
-      <div className="text-xs font-mono text-gray-600 dark:text-gray-400 mb-1 text-center uppercase">
-        Temperatura
-      </div>
+    <div className="weather-tile">
+      <div className="weather-tile-header">Temperatura</div>
       <ReactECharts
         option={option}
         style={{ height: 80, width: '100%' }}

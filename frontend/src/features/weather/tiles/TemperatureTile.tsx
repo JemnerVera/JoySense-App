@@ -12,18 +12,16 @@ export const TemperatureTile: React.FC<TemperatureTileProps> = ({ temp }) => {
   const max = temp?.max ?? null;
   const trend = temp?.trend ?? [];
 
-  return (
-    <div className="bg-gray-100 dark:bg-gray-900 rounded-lg border border-gray-300 dark:border-gray-600 p-3">
-      <div className="text-xs font-mono text-gray-600 dark:text-gray-400 mb-2 text-center uppercase">
-        Temperatura
-      </div>
+return (
+    <div className="weather-tile">
+      <div className="weather-tile-header">Temperatura</div>
       
       <div className="flex justify-center mb-2">
         <WeatherGauge
           value={current}
           min={0}
           max={40}
-          label=" temperatura"
+          label=""
           unit="°C"
           thresholds={{ min: 10, max: 30 }}
           height={100}
@@ -31,10 +29,10 @@ export const TemperatureTile: React.FC<TemperatureTileProps> = ({ temp }) => {
       </div>
 
       <div className="text-center mb-2">
-        <span className="text-2xl font-bold font-mono text-gray-800 dark:text-gray-200">
+        <span className="weather-tile-value">
           {current !== null ? current.toFixed(2) : '--'}
         </span>
-        <span className="text-sm font-mono text-gray-500 ml-1">°C</span>
+        <span className="weather-tile-value-unit">°C</span>
       </div>
 
       <WeatherMinMaxBar

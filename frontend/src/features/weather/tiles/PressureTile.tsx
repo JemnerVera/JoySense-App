@@ -13,17 +13,15 @@ export const PressureTile: React.FC<PressureTileProps> = ({ pressure }) => {
   const trend = pressure?.trend ?? [];
 
   return (
-    <div className="bg-gray-100 dark:bg-gray-900 rounded-lg border border-gray-300 dark:border-gray-600 p-3">
-      <div className="text-xs font-mono text-gray-600 dark:text-gray-400 mb-2 text-center uppercase">
-        Presión
-      </div>
+    <div className="weather-tile">
+      <div className="weather-tile-header">Presión</div>
       
       <div className="flex justify-center mb-2">
         <WeatherGauge
           value={current}
           min={980}
           max={1040}
-          label=" presión"
+          label=""
           unit="hPa"
           thresholds={{ min: 1000, max: 1020 }}
           height={100}
@@ -31,10 +29,10 @@ export const PressureTile: React.FC<PressureTileProps> = ({ pressure }) => {
       </div>
 
       <div className="text-center mb-2">
-        <span className="text-2xl font-bold font-mono text-gray-800 dark:text-gray-200">
+        <span className="weather-tile-value">
           {current !== null ? current.toFixed(0) : '--'}
         </span>
-        <span className="text-sm font-mono text-gray-500 ml-1">hPa</span>
+        <span className="weather-tile-value-unit">hPa</span>
       </div>
 
       <div className="flex justify-between text-xs font-mono px-2 mb-2">

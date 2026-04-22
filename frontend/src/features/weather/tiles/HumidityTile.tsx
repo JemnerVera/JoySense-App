@@ -15,17 +15,15 @@ export const HumidityTile: React.FC<HumidityTileProps> = ({ humidity, dewPoint }
   const dew = dewPoint?.current ?? null;
 
   return (
-    <div className="bg-gray-100 dark:bg-gray-900 rounded-lg border border-gray-300 dark:border-gray-600 p-3">
-      <div className="text-xs font-mono text-gray-600 dark:text-gray-400 mb-2 text-center uppercase">
-        Humedad
-      </div>
+    <div className="weather-tile">
+      <div className="weather-tile-header">Humedad</div>
       
       <div className="flex justify-center mb-2">
         <WeatherGauge
           value={current}
           min={0}
           max={100}
-          label=" humedad"
+          label=""
           unit="%"
           thresholds={{ min: 30, max: 80 }}
           height={100}
@@ -33,10 +31,10 @@ export const HumidityTile: React.FC<HumidityTileProps> = ({ humidity, dewPoint }
       </div>
 
       <div className="text-center mb-2">
-        <span className="text-2xl font-bold font-mono text-gray-800 dark:text-gray-200">
+        <span className="weather-tile-value">
           {current !== null ? current.toFixed(2) : '--'}
         </span>
-        <span className="text-sm font-mono text-gray-500 ml-1">%</span>
+        <span className="weather-tile-value-unit">%</span>
       </div>
 
       <div className="flex justify-between text-xs font-mono px-2 mb-2">

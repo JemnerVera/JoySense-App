@@ -14,10 +14,8 @@ export const RainTile: React.FC<RainTileProps> = ({ today, rate, et }) => {
   const rainET = et?.current ?? null;
 
   return (
-    <div className="bg-gray-100 dark:bg-gray-900 rounded-lg border border-gray-300 dark:border-gray-600 p-3">
-      <div className="text-xs font-mono text-gray-600 dark:text-gray-400 mb-2 text-center uppercase">
-        Lluvia
-      </div>
+    <div className="weather-tile">
+      <div className="weather-tile-header">Lluvia</div>
       
       <WeatherRainBar today={rainToday} month={null} height={100} />
 

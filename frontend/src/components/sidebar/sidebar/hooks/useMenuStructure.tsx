@@ -37,6 +37,9 @@ import {
   IconFundo,
   IconCriticidad as IconUmbralAlt,
   IconWeather,
+  IconWeatherConditions,
+  IconWeatherDetails,
+  IconWeatherHistory,
 } from '../utils/menuIcons';
 
 export function useMenuStructure() {
@@ -261,18 +264,18 @@ export function useMenuStructure() {
         subMenus: [
           {
             id: 'conditions',
-            label: 'Condiciones',
-            icon: '📊',
+            label: 'Condicion Actual',
+            icon: <IconWeatherConditions />,
           },
           {
             id: 'details',
             label: 'Detalles',
-            icon: '📋',
+            icon: <IconWeatherDetails />,
           },
           {
             id: 'data-historica',
             label: 'Data Histórica',
-            icon: '📈',
+            icon: <IconWeatherHistory />,
           },
         ],
       },
