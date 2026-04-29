@@ -260,7 +260,8 @@ export function useMenuStructure() {
         label: 'METEOROLOGÍA',
         icon: <IconWeather />,
         color: 'gray',
-        requiresPermission: false,
+        requiresPermission: true,
+        requiredMenu: 'METEOROLOGÍA',
         subMenus: [
           {
             id: 'conditions',
@@ -299,7 +300,7 @@ export function useMenuStructure() {
       if (tab.id === 'configuracion') return hasAccessToMenu('CONFIGURACIÓN');
       if (tab.id === 'reportes') return hasAccessToMenu('REPORTES');
       if (tab.id === 'ajustes') return hasAccessToMenu('AJUSTES');
-      if (tab.id === 'meteorologia') return true;
+      if (tab.id === 'meteorologia') return hasAccessToMenu('METEOROLOGÍA');
       return false;
     });
 
