@@ -1206,7 +1206,13 @@ export class JoySenseService {
   static async getTableColumns(tableName: TableName | string): Promise<any[]> {
     try {
       const endpoint = `/generic/${tableName}/columns`;
-      const data = await backendAPI.get(endpoint);
+
+      // Obtener token de sesión de Supabase para enviarlo al backend
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+
+      const data = await backendAPI.get(endpoint, token || undefined);
       
       const rawColumns = Array.isArray(data) ? data : (data?.columns || []);
       
