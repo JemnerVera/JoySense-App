@@ -6,11 +6,17 @@
 const express = require('express');
 const router = express.Router();
 const usuariosController = require('../controllers/usuariosController');
-const { optionalAuth } = require('../middleware/auth');
+const { verifyAuth } = require('../middleware/auth');
 
-// Aplicar middleware de autenticación opcional a todas las rutas
-// Esto permite que las queries usen el token del usuario para RLS
-router.use(optionalAuth);
+// ============================================================================
+// RUTAS PÚBLICAS (sin autenticación)
+// ============================================================================
+router.post('/usuario/login', usuariosController.login);
+
+// ============================================================================
+// MIDDLEWARE - Todas las rutas siguientes requieren autenticación
+// ============================================================================
+router.use(verifyAuth);
 
 // ============================================================================
 // USUARIO
@@ -24,11 +30,6 @@ router.put('/usuario/:id', usuariosController.putUsuario);
 // SINCRONIZAR USUARIO CON AUTH (Reintentar sincronización)
 // ============================================================================
 router.post('/usuario/:id/sync-auth', usuariosController.syncAuth);
-
-// ============================================================================
-// LOGIN (Público)
-// ============================================================================
-router.post('/usuario/login', usuariosController.login);
 
 // ============================================================================
 // PERFIL

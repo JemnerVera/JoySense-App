@@ -6,11 +6,9 @@
 const express = require('express');
 const router = express.Router();
 const medicionesController = require('../controllers/medicionesController');
-const { optionalAuth } = require('../middleware/auth');
+const { verifyAuth } = require('../middleware/auth');
 
-// Aplicar middleware de autenticación opcional a todas las rutas
-// Esto permite que las queries usen el token del usuario para RLS
-router.use(optionalAuth);
+router.use(verifyAuth);
 
 // ============================================================================
 // MEDICION

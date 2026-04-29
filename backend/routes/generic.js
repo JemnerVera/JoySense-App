@@ -7,13 +7,11 @@ const express = require('express');
 const router = express.Router();
 const { db, dbSchema, supabase: baseSupabase } = require('../config/database');
 const { paginateAndFilter, getTableMetadata, clearMetadataCache } = require('../utils/pagination');
-const { optionalAuth } = require('../middleware/auth');
+const { verifyAuth } = require('../middleware/auth');
 const logger = require('../utils/logger');
 const bcrypt = require('bcrypt');
 
-// Aplicar middleware de autenticación opcional a todas las rutas
-// Esto permite que las queries usen el token del usuario para RLS
-router.use(optionalAuth);
+router.use(verifyAuth);
 
 // Lista de tablas permitidas para operaciones genéricas
 const ALLOWED_TABLES = [

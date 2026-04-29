@@ -154,7 +154,10 @@ export async function checkUserSyncStatus(usuarioid: number): Promise<{
   error?: string;
 }> {
   try {
-    const response = await backendAPI.get(`/usuario/${usuarioid}/sync-status`);
+    const { supabaseAuth } = await import('./supabase-auth');
+    const { data: { session } } = await supabaseAuth.auth.getSession();
+    const token = session?.access_token || null;
+    const response = await backendAPI.get(`/usuario/${usuarioid}/sync-status`, token || undefined);
     return response;
   } catch (error: any) {
     return {
@@ -577,7 +580,10 @@ export class JoySenseService {
 
   static async getCriticidades(): Promise<Criticidad[]> {
     try {
-      const data = await backendAPI.get('/alertas/criticidad');
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      const data = await backendAPI.get('/alertas/criticidad', token || undefined);
       return data || [];
     } catch (error) {
       console.error('Error in getCriticidades:', error);
@@ -670,7 +676,10 @@ export class JoySenseService {
       
       const queryString = params.toString();
       const endpoint = `/alertas/alerta_regla${queryString ? '?' + queryString : ''}`;
-      const data = await backendAPI.get(endpoint);
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      const data = await backendAPI.get(endpoint, token || undefined);
       return data || [];
     } catch (error) {
       console.error('Error in getAlertas:', error);
@@ -680,7 +689,10 @@ export class JoySenseService {
 
   static async getAlertasConsolidadas(): Promise<AlertaConsolidado[]> {
     try {
-      const data = await backendAPI.get('/alertas/alerta_regla_consolidado');
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      const data = await backendAPI.get('/alertas/alerta_regla_consolidado', token || undefined);
       return data || [];
     } catch (error) {
       console.error('Error in getAlertasConsolidadas:', error);
@@ -694,7 +706,10 @@ export class JoySenseService {
 
   static async getUsuarios(): Promise<Usuario[]> {
     try {
-      const data = await backendAPI.get('/usuarios/usuario');
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      const data = await backendAPI.get('/usuarios/usuario', token || undefined);
       return data || [];
     } catch (error) {
       console.error('Error in getUsuarios:', error);
@@ -704,9 +719,12 @@ export class JoySenseService {
 
   static async getContactos(usuarioId?: number): Promise<Contacto[]> {
     try {
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
       let endpoint = '/usuarios/contacto';
       if (usuarioId) endpoint += `?usuarioid=${usuarioId}`;
-      const data = await backendAPI.get(endpoint);
+      const data = await backendAPI.get(endpoint, token || undefined);
       return data || [];
     } catch (error) {
       console.error('Error in getContactos:', error);
@@ -716,9 +734,12 @@ export class JoySenseService {
 
   static async getCorreos(usuarioId?: number): Promise<Correo[]> {
     try {
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
       let endpoint = '/usuarios/correo';
       if (usuarioId) endpoint += `?usuarioid=${usuarioId}`;
-      const data = await backendAPI.get(endpoint);
+      const data = await backendAPI.get(endpoint, token || undefined);
       return data || [];
     } catch (error) {
       console.error('Error in getCorreos:', error);
@@ -728,7 +749,10 @@ export class JoySenseService {
 
   static async getCodigosTelefonicos(): Promise<CodigoTelefono[]> {
     try {
-      const data = await backendAPI.get('/usuarios/codigotelefono');
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      const data = await backendAPI.get('/usuarios/codigotelefono', token || undefined);
       return data || [];
     } catch (error) {
       console.error('Error in getCodigosTelefonicos:', error);

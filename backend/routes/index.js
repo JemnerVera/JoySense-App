@@ -6,8 +6,6 @@ const express = require('express');
 const router = express.Router();
 const { dbSchema, supabase: baseSupabase } = require('../config/database');
 const logger = require('../utils/logger');
-const { optionalAuth } = require('../middleware/auth');
-
 // ============================================================================
 // RUTAS DE DIAGNÓSTICO Y SALUD
 // ============================================================================
@@ -83,13 +81,6 @@ router.get('/detect', async (req, res) => {
     res.json({ available: false, error: error.message });
   }
 });
-
-// ============================================================================
-// MIDDLEWARE
-// ============================================================================
-
-// Auth opcional para permitir requests autenticados
-router.use(optionalAuth);
 
 // ============================================================================
 // MOUNT MODULE ROUTERS

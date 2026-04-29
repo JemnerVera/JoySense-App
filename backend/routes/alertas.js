@@ -8,12 +8,10 @@ const express = require('express');
 const router = express.Router();
 const { dbSchema, supabase: baseSupabase } = require('../config/database');
 const { paginateAndFilter, getTableMetadata } = require('../utils/pagination');
-const { optionalAuth } = require('../middleware/auth');
+const { verifyAuth } = require('../middleware/auth');
 const logger = require('../utils/logger');
 
-// Aplicar middleware de autenticaci├│n opcional a todas las rutas
-// Esto permite que las queries usen el token del usuario para RLS
-router.use(optionalAuth);
+router.use(verifyAuth);
 
 // ============================================================================
 // CRITICIDAD
