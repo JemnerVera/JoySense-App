@@ -48,7 +48,10 @@ const SEARCHABLE_FIELDS = {
  * Paginar, buscar y filtrar datos
  */
 async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
-  const supabase = userSupabase || baseSupabase;
+  if (!userSupabase) {
+    throw new Error('paginateAndFilter requiere cliente autenticado (userSupabase)');
+  }
+  const supabase = userSupabase;
   
   const {
     page,
@@ -226,8 +229,12 @@ function clearMetadataCache(tableName = null) {
  * Obtener metadatos de tabla
  */
 async function getTableMetadata(tableName, userSupabase = null) {
-  const supabase = userSupabase || baseSupabase;
-  const isUsingUserToken = !!userSupabase;
+  if (!userSupabase) {
+    throw new Error('getTableMetadata requiere cliente autenticado (userSupabase)');
+  }
+  const supabase = userSupabase;
+
+  logger.debug(`[getTableMetadata] Obteniendo metadatos para: ${tableName}`);
   
   if (metadataCache.has(tableName)) {
     const cached = metadataCache.get(tableName);
@@ -257,8 +264,8 @@ async function getTableMetadata(tableName, userSupabase = null) {
       
       if (isPermissionError) {
         logger.error(`⚠️ ${logMsg}`);
-        logger.error(`   Rol: ${isUsingUserToken ? 'authenticated' : 'anon'}`);
-        logger.error(`   SQL: GRANT USAGE ON SCHEMA joysense TO authenticated, anon, service_role;`);
+        logger.error(`   Rol: authenticated`);
+        logger.error(`   SQL: GRANT EXECUTE ON FUNCTION joysense.fn_get_table_metadata(text) TO authenticated;`);
       } else {
         logger.warn(logMsg);
       }

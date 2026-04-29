@@ -66,14 +66,6 @@ router.get('/test-db', async (req, res) => {
     results.tests.select_pais = { error: e.message };
   }
   
-  // Test: RPC de metadatos
-  try {
-    const { data, error } = await supabase.schema('joysense').rpc('fn_get_table_metadata', { tbl_name: 'usuario' });
-    results.tests.rpc_metadata = error ? { error: error.message, code: error.code } : { success: true };
-  } catch (e) {
-    results.tests.rpc_metadata = { error: e.message };
-  }
-  
   res.json(results);
 });
 
