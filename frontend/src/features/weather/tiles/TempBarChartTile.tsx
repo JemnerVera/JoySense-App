@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactECharts from 'echarts-for-react';
+import { useEChartsReady } from 'hooks/useEChartsReady';
 
 interface TempBarChartTileProps {
   tempOutTrend: number[];
@@ -12,6 +13,7 @@ export const TempBarChartTile: React.FC<TempBarChartTileProps> = ({
   tempInTrend, 
   dewPointTrend 
 }) => {
+  const { isReady, containerRef, chartRef } = useEChartsReady();
   const getStats = (data: number[]) => {
     if (!data || data.length === 0) return { current: null, min: null, max: null };
     const valid = data.filter(v => v !== null);
@@ -127,11 +129,16 @@ export const TempBarChartTile: React.FC<TempBarChartTileProps> = ({
   return (
     <div className="weather-tile">
       <div className="weather-tile-header">Temperatura</div>
-      <ReactECharts
-        option={option}
-        style={{ height: 80, width: '100%' }}
-        opts={{ renderer: 'svg' }}
-      />
+      <div ref={containerRef} style={{ height: 80, width: '100%' }}>
+        {isReady && (
+          <ReactECharts
+            ref={chartRef}
+            option={option}
+            style={{ height: '100%', width: '100%' }}
+            opts={{ renderer: 'svg' }}
+          />
+        )}
+      </div>
     </div>
   );
 };

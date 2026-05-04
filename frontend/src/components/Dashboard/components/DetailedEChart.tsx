@@ -10,6 +10,7 @@ import ReactECharts from 'echarts-for-react';
 import * as echarts from 'echarts';
 import type { EChartsOption } from 'echarts';
 import { hexToRgba, calculateDateRange, calculateXAxisInterval, calculateNiceInterval } from '../../../utils/chartUtils';
+import { useEChartsReady } from 'hooks/useEChartsReady';
 
 export interface DetailedEChartProps {
   data: any[];
@@ -61,6 +62,7 @@ export const DetailedEChart: React.FC<DetailedEChartProps> = ({
   fillHeight = false,
   showLegend = true,
 }) => {
+  const { isReady, containerRef, chartRef } = useEChartsReady();
   const colors = ['#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16'];
   const comparisonColors = ['#6366f1', '#8b5cf6', '#ec4899', '#f43f5e', '#14b8a6', '#06b6d4'];
 
@@ -398,13 +400,16 @@ export const DetailedEChart: React.FC<DetailedEChartProps> = ({
   }
 
   return (
-    <div style={{ height: fillHeight ? '100%' : '400px', width: '100%' }}>
-      <ReactECharts
-        option={option}
-        style={{ height: '100%', width: '100%' }}
-        opts={{ renderer: 'canvas' }}
-        notMerge={true}
-      />
+    <div ref={containerRef} style={{ height: fillHeight ? '100%' : '400px', width: '100%' }}>
+      {isReady && (
+        <ReactECharts
+          ref={chartRef}
+          option={option}
+          style={{ height: '100%', width: '100%' }}
+          opts={{ renderer: 'canvas' }}
+          notMerge={true}
+        />
+      )}
     </div>
   );
 };

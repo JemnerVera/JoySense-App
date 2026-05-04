@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactECharts from 'echarts-for-react';
+import { useEChartsReady } from 'hooks/useEChartsReady';
 
 interface WeatherSparkAreaProps {
   data: number[];
@@ -14,6 +15,7 @@ export const WeatherSparkArea: React.FC<WeatherSparkAreaProps> = ({
   height = 40,
   showArea = true,
 }) => {
+  const { isReady, containerRef, chartRef } = useEChartsReady();
   if (!data || data.length === 0) {
     return (
       <div 
@@ -71,11 +73,16 @@ export const WeatherSparkArea: React.FC<WeatherSparkAreaProps> = ({
   };
 
   return (
-    <ReactECharts
-      option={option}
-      style={{ height, width: '100%' }}
-      opts={{ renderer: 'svg' }}
-    />
+    <div ref={containerRef} style={{ width: '100%', height }}>
+      {isReady && (
+        <ReactECharts
+          ref={chartRef}
+          option={option}
+          style={{ height: '100%', width: '100%' }}
+          opts={{ renderer: 'svg' }}
+        />
+      )}
+    </div>
   );
 };
 

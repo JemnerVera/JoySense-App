@@ -1,11 +1,19 @@
-const { supabase: baseSupabase } = require('../config/database');
+const { dbSchema } = require('../config/database');
 const geografiaService = require('../services/geografiaService');
 const logger = require('../utils/logger');
 
 /**
  * Helper to get the correct supabase client
+ * REQUIERE: req.supabase debe estar definido (usuario autenticado)
  */
-const getSupabase = (req) => req.supabase || baseSupabase;
+const getSupabase = (req) => {
+  if (!req.supabase) {
+    logger.error(`❌ [getSupabase] ERROR: req.supabase no definido - se requiere autenticación JWT`);
+    throw new Error('Usuario no autenticado - se requiere token JWT válido');
+  }
+  logger.info(`✅ [getSupabase] Usando cliente AUTENTICADO para: ${req.user?.email || 'N/A'} (${req.user?.id || 'N/A'})`);
+  return req.supabase;
+};
 
 /**
  * PAIS

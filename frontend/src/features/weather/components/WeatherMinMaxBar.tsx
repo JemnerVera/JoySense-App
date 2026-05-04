@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactECharts from 'echarts-for-react';
+import { useEChartsReady } from 'hooks/useEChartsReady';
 
 interface WeatherMinMaxBarProps {
   current: number | null;
@@ -18,6 +19,7 @@ export const WeatherMinMaxBar: React.FC<WeatherMinMaxBarProps> = ({
   label,
   height = 100,
 }) => {
+  const { isReady, containerRef, chartRef } = useEChartsReady();
   const hasData = current !== null && min !== null && max !== null;
   const range = hasData ? max! - min! : 1;
   const currentPos = hasData ? ((current! - min!) / range) * 100 : 50;
@@ -71,12 +73,15 @@ export const WeatherMinMaxBar: React.FC<WeatherMinMaxBarProps> = ({
   };
 
   return (
-    <div className="relative">
-      <ReactECharts
-        option={option}
-        style={{ height, width: '100%' }}
-        opts={{ renderer: 'svg' }}
-      />
+    <div ref={containerRef} className="relative" style={{ height, width: '100%' }}>
+      {isReady && (
+        <ReactECharts
+          ref={chartRef}
+          option={option}
+          style={{ height: '100%', width: '100%' }}
+          opts={{ renderer: 'svg' }}
+        />
+      )}
       <div className="absolute top-0 left-0 right-0 flex justify-between px-1">
         <span className="text-xs font-mono text-blue-600">
           {min !== null ? min.toFixed(1) : '--'}{unit}

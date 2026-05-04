@@ -62,6 +62,8 @@ async function verifyAuth(req, res, next) {
       user_metadata: user.user_metadata || {}
     };
     
+    logger.info(`✅ [verifyAuth] Usuario autenticado exitosamente: ${user.email} (${user.id})`);
+    
     next();
   } catch (error) {
     logger.error('Error verificando autenticación:', error);
@@ -70,30 +72,25 @@ async function verifyAuth(req, res, next) {
 }
 
 /**
- * Middleware opcional - no falla si no hay token
- * Útil para endpoints que pueden funcionar con o sin autenticación
- * Si hay token, crea un cliente de Supabase con el contexto del usuario
+ * Middleware opcional - NO USA ANON, requiere autenticación válida
+ * Si hay token válido, crea un cliente de Supabase con el contexto del usuario
+ * Si no hay token o es inválido, retorna 401
  */
 async function optionalAuth(req, res, next) {
   const authHeader = req.headers.authorization;
   
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    req.user = null;
-    req.supabase = baseSupabase; // Usar cliente base sin autenticación
-    return next();
+    return res.status(401).json({ error: 'Token de autorización requerido' });
   }
 
   const token = authHeader.substring(7);
   
   if (!token || token.length === 0) {
-    req.user = null;
-    req.supabase = baseSupabase;
-    return next();
+    return res.status(401).json({ error: 'Token vacío' });
   }
   
   try {
     // Crear cliente de Supabase con el token del usuario
-    // IMPORTANTE: Usar global.headers para que RLS funcione correctamente
     const userSupabase = createClient(supabaseUrl, supabaseAnonKey, {
       global: {
         headers: {
@@ -110,10 +107,8 @@ async function optionalAuth(req, res, next) {
     const { data: { user }, error: getUserError } = await userSupabase.auth.getUser();
     
     if (getUserError || !user) {
-      logger.warn(`⚠️ [optionalAuth] Token inválido o sin usuario: ${getUserError?.message || 'Usuario no encontrado'}`);
-      req.user = null;
-      req.supabase = baseSupabase; // Usar cliente base sin autenticación
-      return next();
+      logger.warn(`⚠️ [optionalAuth] Token inválido: ${getUserError?.message || 'Usuario no encontrado'}`);
+      return res.status(401).json({ error: 'Token inválido o expirado' });
     }
     
     // Crear cliente de Supabase con el contexto del usuario para este request
@@ -123,10 +118,10 @@ async function optionalAuth(req, res, next) {
       email: user.email,
       user_metadata: user.user_metadata || {}
     };
+    logger.info(`✅ [optionalAuth] Usuario autenticado: ${user.email} (${user.id})`);
   } catch (error) {
     logger.error('Error en autenticación opcional:', error);
-    req.user = null;
-    req.supabase = baseSupabase; // Usar cliente base sin autenticación
+    return res.status(401).json({ error: 'Error verificando autenticación' });
   }
   
   next();

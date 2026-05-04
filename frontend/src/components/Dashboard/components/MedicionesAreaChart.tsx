@@ -3,6 +3,7 @@ import ReactECharts from 'echarts-for-react';
 import * as echarts from 'echarts';
 import type { EChartsOption } from 'echarts';
 import { hexToRgba, calculateDateRange, calculateXAxisInterval, calculateNiceInterval } from '../../../utils/chartUtils';
+import { useEChartsReady } from 'hooks/useEChartsReady';
 
 export interface ChartDataPoint {
   fecha: string;
@@ -34,6 +35,7 @@ function MedicionesAreaChartComponent({
   comparisonYAxisDomain = { min: null, max: null },
   isComparisonMode = false
 }: MedicionesAreaChartProps) {
+  const { isReady, containerRef, chartRef } = useEChartsReady();
   const option = useMemo<EChartsOption>(() => {
     const xAxisData = chartData.map(d => d.fecha);
     
@@ -380,12 +382,17 @@ function MedicionesAreaChartComponent({
   ]);
 
   return (
-    <ReactECharts
-      option={option}
-      style={{ height: '100%', width: '100%' }}
-      opts={{ renderer: 'canvas' }}
-      notMerge={true}
-    />
+    <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
+      {isReady && (
+        <ReactECharts
+          ref={chartRef}
+          option={option}
+          style={{ height: '100%', width: '100%' }}
+          opts={{ renderer: 'canvas' }}
+          notMerge={true}
+        />
+      )}
+    </div>
   );
 }
 

@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactECharts from 'echarts-for-react';
+import { useEChartsReady } from 'hooks/useEChartsReady';
 
 interface WindRoseTileProps {
   windDir: number[];
@@ -7,6 +8,7 @@ interface WindRoseTileProps {
 }
 
 export const WindRoseTile: React.FC<WindRoseTileProps> = ({ windDir, windSpeed }) => {
+  const { isReady, containerRef, chartRef } = useEChartsReady();
   const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
   const dirAngles = [0, 22.5, 45, 67.5, 90, 112.5, 135, 157.5, 180, 202.5, 225, 247.5, 270, 292.5, 315, 337.5];
   
@@ -64,12 +66,16 @@ export const WindRoseTile: React.FC<WindRoseTileProps> = ({ windDir, windSpeed }
   return (
     <div className="weather-tile">
       <div className="weather-tile-header">Rosa de Vientos</div>
-      
-      <ReactECharts
-        option={option}
-        style={{ height: 120, width: '100%' }}
-        opts={{ renderer: 'svg' }}
-      />
+      <div ref={containerRef} style={{ height: 120, width: '100%' }}>
+        {isReady && (
+          <ReactECharts
+            ref={chartRef}
+            option={option}
+            style={{ height: '100%', width: '100%' }}
+            opts={{ renderer: 'svg' }}
+          />
+        )}
+      </div>
     </div>
   );
 };

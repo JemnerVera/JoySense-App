@@ -3,6 +3,7 @@ import ReactECharts from 'echarts-for-react'
 import * as echarts from 'echarts'
 import type { EChartsOption } from 'echarts'
 import type { MetricConfig } from '../types'
+import { useEChartsReady } from 'hooks/useEChartsReady'
 
 interface MetricMiniChartProps {
   metric: MetricConfig
@@ -25,6 +26,7 @@ function MetricMiniChartComponent({
   onOpenAnalysis,
   t
 }: MetricMiniChartProps) {
+  const { isReady, containerRef, chartRef } = useEChartsReady();
   // Memoizar el cálculo de series keys para evitar recálculos
   const seriesKeys = useMemo(() => {
     if (!chartData || chartData.length === 0) return []
@@ -311,12 +313,15 @@ function MetricMiniChartComponent({
 
       <div className="h-32 mb-1">
         {hasData ? (
-          <div style={{ width: '100%', height: '100%' }}>
-            <ReactECharts
-              option={option}
-              style={{ width: '100%', height: '100%' }}
-              opts={{ renderer: 'canvas' }}
-            />
+          <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
+            {isReady && (
+              <ReactECharts
+                ref={chartRef}
+                option={option}
+                style={{ width: '100%', height: '100%' }}
+                opts={{ renderer: 'canvas' }}
+              />
+            )}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-full bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-800/30">

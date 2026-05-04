@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactECharts from 'echarts-for-react';
+import { useEChartsReady } from 'hooks/useEChartsReady';
 
 interface WeatherGaugeProps {
   value: number | null;
@@ -20,6 +21,7 @@ export const WeatherGauge: React.FC<WeatherGaugeProps> = ({
   thresholds,
   height = 120,
 }) => {
+  const { isReady, containerRef, chartRef } = useEChartsReady();
   const getColor = () => {
     if (value === null) return '#9ca3af';
     if (thresholds) {
@@ -87,11 +89,16 @@ export const WeatherGauge: React.FC<WeatherGaugeProps> = ({
 
   return (
     <div className="flex flex-col items-center">
-      <ReactECharts
-        option={option}
-        style={{ height: height, width: '100%' }}
-        opts={{ renderer: 'svg' }}
-      />
+      <div ref={containerRef} style={{ height: height, width: '100%' }}>
+        {isReady && (
+          <ReactECharts
+            ref={chartRef}
+            option={option}
+            style={{ height: '100%', width: '100%' }}
+            opts={{ renderer: 'svg' }}
+          />
+        )}
+      </div>
       <span className="text-xs text-gray-600 dark:text-gray-400 font-mono mt-[-10px]">
         {label}
       </span>

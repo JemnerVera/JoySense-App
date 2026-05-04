@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactECharts from 'echarts-for-react';
+import { useEChartsReady } from 'hooks/useEChartsReady';
 
 interface WeatherRainBarProps {
   today: number | null;
@@ -12,6 +13,7 @@ export const WeatherRainBar: React.FC<WeatherRainBarProps> = ({
   month,
   height = 120,
 }) => {
+  const { isReady, containerRef, chartRef } = useEChartsReady();
   const option = {
     grid: {
       left: 30,
@@ -62,11 +64,16 @@ export const WeatherRainBar: React.FC<WeatherRainBarProps> = ({
 
   return (
     <div className="flex flex-col items-center">
-      <ReactECharts
-        option={option}
-        style={{ height, width: '100%' }}
-        opts={{ renderer: 'svg' }}
-      />
+      <div ref={containerRef} style={{ height, width: '100%' }}>
+        {isReady && (
+          <ReactECharts
+            ref={chartRef}
+            option={option}
+            style={{ height: '100%', width: '100%' }}
+            opts={{ renderer: 'svg' }}
+          />
+        )}
+      </div>
     </div>
   );
 };

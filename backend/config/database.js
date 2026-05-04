@@ -59,37 +59,33 @@ if (!supabaseUrl || !supabaseAnonKey) {
     console.error('   - SUPABASE_URL=https://tu-proyecto.supabase.co');
     console.error('   - SUPABASE_ANON_KEY=tu-anon-key');
     console.error('');
-    console.error('   ⚠️ IMPORTANTE: Después de agregar las variables, haz clic en "Save"');
-    console.error('   Esto reiniciará la aplicación y cargará las nuevas variables.');
-  } else {
-    console.error('   🔷 EN DESARROLLO LOCAL:');
-    console.error('   Agrega estas variables a tu archivo backend/.env:');
-    console.error('   SUPABASE_URL=https://tu-proyecto.supabase.co');
-    console.error('   SUPABASE_ANON_KEY=tu-anon-key');
-  }
-  console.error('');
-  process.exit(1);
+  console.error('   ⚠️ IMPORTANTE: Después de agregar las variables, haz clic en "Save"');
+  console.error('   Esto reiniciará la aplicación y cargará las nuevas variables.');
+} else {
+  console.error('   🔷 EN DESARROLLO LOCAL:');
+  console.error('   Agrega estas variables a tu archivo backend/.env:');
+  console.error('   SUPABASE_URL=https://tu-proyecto.supabase.co');
+  console.error('   SUPABASE_ANON_KEY=tu-anon-key');
+}
+console.error('');
+process.exit(1);
 }
 
-// Crear cliente base de Supabase (anon key para queries normales)
-// NOTA: Este cliente se usa como fallback cuando no hay token de usuario
-// Las rutas deben usar req.supabase (con token del usuario) cuando esté disponible
-// para que RLS funcione correctamente
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-// NOTA: El backend ya NO autentica con credenciales de admin
-// Todas las queries usan el token de sesión del usuario que viene del frontend
+// NOTA: El backend usa exclusivamente tokens JWT del frontend
+// NO hay cliente base "anon" - todo debe pasar por autenticación
+// Las rutas usan req.supabase (con token del usuario)
 // Esto permite que las políticas RLS usen auth.uid() correctamente
-logger.info('ℹ️  Backend configurado para usar tokens de sesión del frontend');
+logger.info('ℹ️  Backend configurado para usar SOLO tokens de sesión del frontend');
+logger.info('   NO se permite acceso anónimo (anon)');
 logger.info('   Las queries usarán el contexto del usuario autenticado desde el frontend');
 
-console.log(`✅ Cliente Supabase configurado para schema: ${dbSchema}`);
+console.log(`✅ Backend configurado para schema: ${dbSchema} (solo autenticados)`);
 
 // ============================================================================
 // EXPORTS
 // ============================================================================
 
 module.exports = {
-  dbSchema,
-  supabase // Cliente base de Supabase (sin autenticación de admin)
+  dbSchema
+  // NO exportar supabase - todo cliente debe usar req.supabase (autenticado)
 };

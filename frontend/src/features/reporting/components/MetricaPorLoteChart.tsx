@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import ReactECharts from 'echarts-for-react';
 import * as echarts from 'echarts';
+import { useEChartsReady } from 'hooks/useEChartsReady';
 
 interface ChartDataPoint {
   fecha: string;
@@ -33,6 +34,7 @@ export function MetricaPorLoteChart({
   comparisonLote,
   metricUnit
 }: MetricaPorLoteChartProps) {
+  const { isReady, chartRef } = useEChartsReady();
   const option = useMemo<any>(() => {
     if (!chartData || chartData.length === 0) {
       return { xAxis: { data: [] }, yAxis: {}, series: [] };
@@ -299,12 +301,17 @@ export function MetricaPorLoteChart({
   ]);
 
   return (
-    <ReactECharts
-      option={option}
-      style={{ height: '100%', width: '100%', minHeight: '300px' }}
-      opts={{ renderer: 'canvas' }}
-      notMerge={true}
-    />
+    <div style={{ width: '100%', height: '100%', minHeight: '300px' }}>
+      {isReady && (
+        <ReactECharts
+          ref={chartRef}
+          option={option}
+          style={{ height: '100%', width: '100%' }}
+          opts={{ renderer: 'canvas' }}
+          notMerge={true}
+        />
+      )}
+    </div>
   );
 }
 

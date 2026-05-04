@@ -7,6 +7,7 @@ import type { EChartsOption } from 'echarts';
 import { hexToRgba } from '../../utils/chartUtils';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useFilterSync } from '../../hooks/useFilterSync';
+import { useEChartsReady } from 'hooks/useEChartsReady';
 import { PLCDataTable } from './PLCDataTable';
 
 const COLORS = ['#f97316', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#ec4899'];
@@ -18,6 +19,7 @@ interface PLCMedicionesChartProps {}
 
 export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
   const { t } = useLanguage();
+  const { isReady, chartRef } = useEChartsReady();
 
   const [nodos, setNodos] = useState<any[]>([]);
   const [tipos, setTipos] = useState<any[]>([]);
@@ -685,11 +687,14 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
 
           {!loadingData && selectedNodo && chartData.length > 0 && (
             <div style={{ height: 'calc(100vh - 320px)', minHeight: '400px', width: '100%' }}>
-              <ReactECharts
-                option={option}
-                style={{ height: '100%', width: '100%' }}
-                opts={{ renderer: 'canvas' }}
-              />
+              {isReady && (
+                <ReactECharts
+                  ref={chartRef}
+                  option={option}
+                  style={{ height: '100%', width: '100%' }}
+                  opts={{ renderer: 'canvas' }}
+                />
+              )}
             </div>
           )}
         </>

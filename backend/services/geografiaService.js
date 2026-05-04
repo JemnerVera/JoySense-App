@@ -6,6 +6,7 @@ const logger = require('../utils/logger');
  * PAIS
  */
 const getPaises = async (supabase, queryParams) => {
+  logger.info(`📋 [getPaises] Iniciando consulta. queryParams: ${JSON.stringify(queryParams)}`);
   return await paginateAndFilter('pais', { ...queryParams, sortBy: 'paisid' }, supabase);
 };
 
@@ -30,6 +31,7 @@ const updatePais = async (supabase, id, paisData) => {
  * EMPRESA
  */
 const getEmpresas = async (supabase, paisId) => {
+  logger.info(`📋 [getEmpresas] Iniciando consulta. paisId: ${paisId}`);
   let query = supabase
     .schema(dbSchema)
     .from('empresa')
@@ -75,6 +77,7 @@ const updateEmpresa = async (supabase, id, empresaData) => {
  * FUNDO
  */
 const getFundos = async (supabase, empresaId) => {
+  logger.info(`📋 [getFundos] Iniciando consulta. empresaId: ${empresaId}`);
   let query = supabase
     .schema(dbSchema)
     .from('fundo')
@@ -120,6 +123,7 @@ const updateFundo = async (supabase, id, fundoData) => {
  * UBICACION
  */
 const getUbicaciones = async (supabase, fundoId) => {
+  logger.info(`📋 [getUbicaciones] Iniciando consulta. fundoId: ${fundoId}`);
   let query = supabase
     .schema(dbSchema)
     .from('ubicacion')

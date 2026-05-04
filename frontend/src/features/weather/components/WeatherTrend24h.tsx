@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactECharts from 'echarts-for-react';
+import { useEChartsReady } from 'hooks/useEChartsReady';
 
 interface DataPoint {
   time: string;
@@ -21,6 +22,8 @@ export const WeatherTrend24h: React.FC<WeatherTrend24hProps> = ({
   color = '#3b82f6',
   height = 200,
 }) => {
+  const { isReady, containerRef, chartRef } = useEChartsReady();
+
   if (!data || data.length === 0) {
     return (
       <div 
@@ -95,11 +98,16 @@ export const WeatherTrend24h: React.FC<WeatherTrend24hProps> = ({
       <div className="text-xs font-mono text-gray-600 dark:text-gray-400 mb-1">
         {metric} ({unit})
       </div>
-      <ReactECharts
-        option={option}
-        style={{ height, width: '100%' }}
-        opts={{ renderer: 'svg' }}
-      />
+      <div ref={containerRef} style={{ height, width: '100%' }}>
+        {isReady && (
+          <ReactECharts
+            ref={chartRef}
+            option={option}
+            style={{ height: '100%', width: '100%' }}
+            opts={{ renderer: 'svg' }}
+          />
+        )}
+      </div>
     </div>
   );
 };

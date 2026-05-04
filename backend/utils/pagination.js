@@ -2,7 +2,7 @@
  * Paginación y filtros para Supabase
  */
 
-const { supabase: baseSupabase, dbSchema } = require('../config/database');
+const { dbSchema } = require('../config/database');
 const logger = require('./logger');
 
 /**
@@ -117,6 +117,7 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
     }
     
     // Query de datos
+    logger.info(`🔍 [paginateAndFilter] EJECUTANDO query para tabla: ${tableName} (usuarioid de JWT: se extrae en BD via auth.uid())`);
     let dataQuery = supabase.schema(dbSchema).from(tableName).select('*');
     
     // Aplicar filtros
