@@ -81,7 +81,6 @@ const syncAuth = async (supabase, usuarioid) => {
       .single();
 
     if (!updateError && updatedData) {
-      logger.info(`✅ Usuario sincronizado exitosamente. useruuid: ${syncResult}`);
       return { 
         success: true, 
         useruuid: syncResult, 

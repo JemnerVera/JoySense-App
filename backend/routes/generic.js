@@ -107,7 +107,6 @@ router.get('/regla-filtradas/:tipo', async (req, res) => {
       throw new Error(`RPC Error: ${error.message || JSON.stringify(error)}`);
     }
     
-    logger.info(`✅ [GET /regla-filtradas/${tipo}] Retornando ${(data || []).length} reglas`);
     res.json(data || []);
   } catch (error) {
     logger.error(`❌ Error en GET /regla-filtradas/${tipo}: ${error.message}`);

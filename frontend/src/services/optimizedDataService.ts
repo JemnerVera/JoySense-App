@@ -47,7 +47,6 @@ class OptimizedDataService {
     
     // Verificar si ya está cargando
     if (this.loadingPromises.has(cacheKey)) {
-      console.log(`⏳ Ya cargando ${table}, esperando...`);
       return this.loadingPromises.get(cacheKey)!;
     }
 
@@ -81,21 +80,17 @@ class OptimizedDataService {
    */
   private async performLoad(table: string, limit: number, ttl?: number): Promise<any[]> {
     try {
-      console.log(`🔄 Cargando ${table} (limit: ${limit})`);
       const startTime = performance.now();
       
       const response = await JoySenseService.getTableData(table, limit);
       const data = Array.isArray(response) ? response : ((response as any)?.data || []);
-      
-      const endTime = performance.now();
-      console.log(`✅ ${table} cargado en ${(endTime - startTime).toFixed(2)}ms (${data.length} registros)`);
       
       // Guardar en caché
       queryCache.set(table, data, ttl, limit);
       
       return data;
     } catch (error) {
-      console.error(`❌ Error cargando ${table}:`, error);
+      console.error(`Error cargando ${table}:`, error);
       throw error;
     }
   }
@@ -105,8 +100,7 @@ class OptimizedDataService {
    */
   async loadReferenceData(): Promise<ReferenceData> {
     const startTime = performance.now();
-    console.log('🚀 Iniciando carga optimizada de datos de referencia...');
-
+ 
     // Cargar datos críticos primero (alta prioridad)
     const criticalData = await this.loadCriticalData();
     
@@ -115,9 +109,6 @@ class OptimizedDataService {
     
     // Cargar datos opcionales en paralelo (prioridad baja)
     const optionalData = await this.loadOptionalData();
-
-    const endTime = performance.now();
-    console.log(`✅ Datos de referencia cargados en ${(endTime - startTime).toFixed(2)}ms`);
 
     return {
       paises: criticalData.paises || [],
@@ -203,8 +194,7 @@ class OptimizedDataService {
     criticidades: any[];
   }> {
     const startTime = performance.now();
-    console.log('📊 Cargando datos optimizados para dashboard...');
-
+ 
     const [alertas, umbrales, mediciones, nodos, metricas, tipos, ubicaciones, criticidades] = await Promise.all([
       this.loadTableData('alerta', 1000, true, CACHE_TTL.DASHBOARD_DATA),
       this.loadTableData('umbral', 1000, true, CACHE_TTL.DASHBOARD_DATA),
@@ -215,10 +205,7 @@ class OptimizedDataService {
       this.loadTableData('ubicacion', 1000, true, CACHE_TTL.DASHBOARD_DATA),
       this.loadTableData('criticidad', 1000, true, CACHE_TTL.DASHBOARD_DATA)
     ]);
-
-    const endTime = performance.now();
-    console.log(`✅ Datos de dashboard cargados en ${(endTime - startTime).toFixed(2)}ms`);
-
+ 
     return { alertas, umbrales, mediciones, nodos, metricas, tipos, ubicaciones, criticidades };
   }
 
@@ -236,8 +223,7 @@ class OptimizedDataService {
     mediciones: any[];
   }> {
     const startTime = performance.now();
-    console.log('💬 Cargando datos optimizados para mensajes...');
-
+ 
     const [mensajes, contactos, medios, usuarios, alertas, umbrales, criticidades, mediciones] = await Promise.all([
       this.loadTableData('mensaje', 1000, true, CACHE_TTL.DASHBOARD_DATA),
       this.loadTableData('contacto', 1000, true, CACHE_TTL.DASHBOARD_DATA),
@@ -248,10 +234,7 @@ class OptimizedDataService {
       this.loadTableData('criticidad', 1000, true, CACHE_TTL.DASHBOARD_DATA),
       this.loadTableData('medicion', 1000, true, CACHE_TTL.DASHBOARD_DATA)
     ]);
-
-    const endTime = performance.now();
-    console.log(`✅ Datos de mensajes cargados en ${(endTime - startTime).toFixed(2)}ms`);
-
+ 
     return { mensajes, contactos, medios, usuarios, alertas, umbrales, criticidades, mediciones };
   }
 

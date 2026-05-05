@@ -11,7 +11,6 @@ const getSupabase = (req) => {
     logger.error(`❌ [getSupabase] ERROR: req.supabase no definido - se requiere autenticación JWT`);
     throw new Error('Usuario no autenticado - se requiere token JWT válido');
   }
-  logger.info(`✅ [getSupabase] Usando cliente AUTENTICADO para: ${req.user?.email || 'N/A'} (${req.user?.id || 'N/A'})`);
   return req.supabase;
 };
 

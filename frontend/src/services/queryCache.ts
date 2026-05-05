@@ -71,7 +71,6 @@ class QueryCache {
     const entry = this.cache.get(key);
     
     if (entry && this.isValid(entry)) {
-      console.log(`🎯 Cache HIT para ${table}`);
       return entry.data;
     }
     
@@ -79,7 +78,6 @@ class QueryCache {
       this.cache.delete(key);
     }
     
-    console.log(`❌ Cache MISS para ${table}`);
     return null;
   }
 
@@ -98,7 +96,6 @@ class QueryCache {
     };
     
     this.cache.set(key, entry);
-    console.log(`💾 Cache SET para ${table} (TTL: ${entry.ttl}ms)`);
   }
 
   /**
@@ -110,7 +107,6 @@ class QueryCache {
     );
     
     keysToDelete.forEach(key => this.cache.delete(key));
-    console.log(`🗑️ Cache INVALIDATED para ${table} (${keysToDelete.length} entradas)`);
   }
 
   /**
@@ -118,7 +114,6 @@ class QueryCache {
    */
   clear(): void {
     this.cache.clear();
-    console.log('🧹 Cache CLEARED');
   }
 
   /**

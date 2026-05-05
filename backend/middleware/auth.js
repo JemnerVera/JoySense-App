@@ -62,8 +62,6 @@ async function verifyAuth(req, res, next) {
       user_metadata: user.user_metadata || {}
     };
     
-    logger.info(`✅ [verifyAuth] Usuario autenticado exitosamente: ${user.email} (${user.id})`);
-    
     next();
   } catch (error) {
     logger.error('Error verificando autenticación:', error);
@@ -118,13 +116,11 @@ async function optionalAuth(req, res, next) {
       email: user.email,
       user_metadata: user.user_metadata || {}
     };
-    logger.info(`✅ [optionalAuth] Usuario autenticado: ${user.email} (${user.id})`);
+    next();
   } catch (error) {
-    logger.error('Error en autenticación opcional:', error);
+    logger.error('Error verificando autenticación opcional:', error);
     return res.status(401).json({ error: 'Error verificando autenticación' });
   }
-  
-  next();
 }
 
 module.exports = {
