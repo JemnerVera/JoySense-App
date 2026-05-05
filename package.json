@@ -18,10 +18,5 @@
     "node"
   ],
   "author": "JoySense Team",
-  "license": "MIT",
-  "dependencies": {
-    "@supabase/supabase-js": "^2.105.3",
-    "axios": "^1.15.0",
-    "crypto-js": "^4.2.0"
-  }
+  "license": "MIT"
 }
