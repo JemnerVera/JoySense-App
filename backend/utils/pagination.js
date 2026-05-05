@@ -251,8 +251,8 @@ async function getTableMetadata(tableName, userSupabase = null) {
   
   try {
     const { data: rpcData, error: rpcError } = await supabase
-      .schema('joysense')
-      .rpc('fn_get_table_metadata', { tbl_name: tableName });
+      .schema(dbSchema)
+       .rpc('fn_get_table_metadata', { tbl_name: tableName });
     
     if (!rpcError && rpcData && rpcData.columns !== undefined) {
       metadataCache.set(tableName, rpcData);

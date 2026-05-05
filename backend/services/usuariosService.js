@@ -34,7 +34,11 @@ const createUsuario = async (supabase, userData) => {
     throw new Error('El login debe ser un email válido');
   }
   
-  const password_hash = await bcrypt.hash(password || 'temporal123', 10);
+  if (!password) {
+    throw new Error('Password es requerido para crear usuario');
+  }
+  
+  const password_hash = await bcrypt.hash(password, 10);
   
   const { data, error } = await supabase
     .schema(dbSchema)
@@ -61,8 +65,8 @@ const syncAuth = async (supabase, usuarioid) => {
   logger.info(`🔄 Sincronizando usuario ${usuarioid} con Supabase Auth...`);
   
   const { data: syncResult, error: syncError } = await supabase
-    .schema('joysense')
-    .rpc('fn_sync_usuario_con_auth_wait', {
+     .schema(dbSchema)
+     .rpc('fn_sync_usuario_con_auth_wait', {
       p_usuarioid: usuarioid,
       p_max_attempts: 6,
       p_sleep_ms: 250

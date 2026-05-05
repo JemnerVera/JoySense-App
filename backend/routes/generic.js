@@ -426,12 +426,12 @@ router.post('/:table', async (req, res) => {
       
       // Asegurar que password_hash esté presente
       if (!dataToInsert.password_hash) {
-        plainPassword = dataToInsert.password || 'temporal123';
-        const defaultPassword = plainPassword;
-        dataToInsert.password_hash = await bcrypt.hash(defaultPassword, 10);
-        if (dataToInsert.password) {
-          delete dataToInsert.password;
+        if (!dataToInsert.password) {
+          throw new Error('Password es requerido para crear usuario');
         }
+        plainPassword = dataToInsert.password;
+        dataToInsert.password_hash = await bcrypt.hash(plainPassword, 10);
+        delete dataToInsert.password;
       }
       
       req.tempPlainPassword = plainPassword;
@@ -458,8 +458,8 @@ router.post('/:table', async (req, res) => {
         try {
           // Llamar a fn_sync_usuario_con_auth_wait
           const { data: syncResult, error: syncError } = await userSupabase
-            .schema('joysense')
-            .rpc('fn_sync_usuario_con_auth_wait', {
+             .schema(dbSchema)
+             .rpc('fn_sync_usuario_con_auth_wait', {
               p_usuarioid: newUsuario.usuarioid,
               p_max_attempts: 6,
               p_sleep_ms: 250
@@ -671,7 +671,7 @@ async function runTableDiagnostics() {
   try {
     // Obtener información del usuario autenticado en Supabase
     const { data: { user }, error: userError } = await baseSupabase.auth.getUser();
-    const currentUser = user?.email || 'admin@joysense.com';
+    const currentUser = user?.email || null;
     
     const diagnostics = {
       connection: {

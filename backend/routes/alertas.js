@@ -355,7 +355,7 @@ router.get('/umbral/por-nodo', async (req, res) => {
     
     if (umbralError) throw umbralError;
     
-    // Obtener m├®tricas de forma separada
+    // Obtener metricas de forma separada
     const metricaIds = [...new Set((umbrales || []).map(u => u.metricaid).filter(Boolean))];
     let metricasMap = new Map();
     
