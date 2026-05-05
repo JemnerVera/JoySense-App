@@ -47,7 +47,7 @@ const getMetricInfo = (metricName: string): MetricInfo => {
 const RECORDS_PER_PAGE = 50;
 
 export const WeatherDataHistorica: React.FC = () => {
-  const { stations, selectedStation, setSelectedStation } = useWeatherData();
+  const { stations, stationsLoading, selectedStation, setSelectedStation } = useWeatherData();
   const [timeRange, setTimeRange] = useState<TimeRange>('1d');
   const [loading, setLoading] = useState(false);
   const [rawData, setRawData] = useState<any[]>([]);
@@ -173,6 +173,23 @@ export const WeatherDataHistorica: React.FC = () => {
       return fecha;
     }
   };
+
+  if (stationsLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <span className="ml-2">Cargando estaciones...</span>
+      </div>
+    );
+  }
+
+  if (stations.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-gray-500">No hay estaciones meteorológicas configuradas</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">

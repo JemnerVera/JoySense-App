@@ -20,6 +20,7 @@ import {
 export const WeatherMain: React.FC = () => {
   const {
     stations,
+    stationsLoading,
     selectedStation,
     setSelectedStation,
     summaryData,
@@ -37,6 +38,23 @@ export const WeatherMain: React.FC = () => {
     refreshSummary();
     refreshOpenMeteo();
   };
+
+  if (stationsLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <span className="ml-2">Cargando estaciones...</span>
+      </div>
+    );
+  }
+
+  if (stations.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-gray-500">No hay estaciones meteorológicas configuradas</p>
+      </div>
+    );
+  }
 
   if (loading && !summaryData) {
     return (

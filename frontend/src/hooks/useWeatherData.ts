@@ -5,47 +5,10 @@ export interface WeatherStation {
   id: string;
   name: string;
   nodoid: number;
-  localizacionStart: number;
-  localizacionEnd: number;
   hasHistoric: boolean;
   latitude: number;
   longitude: number;
 }
-
-export interface WeatherMetric {
-  id: number;
-  name: string;
-  unit: string;
-  localizacionid: number;
-  category: 'temperature' | 'humidity' | 'wind' | 'rain' | 'solar' | 'pressure' | 'index';
-}
-
-export const WEATHER_STATIONS: WeatherStation[] = [
-  { id: '34651', name: 'D3 FUNDO CALIFORNIA', nodoid: 848, localizacionStart: 2027, localizacionEnd: 2055, hasHistoric: true, latitude: -13.787780, longitude: -76.024490 },
-  { id: '91399', name: 'D2 FUNDO CALIFORNIA', nodoid: 849, localizacionStart: 2056, localizacionEnd: 2070, hasHistoric: false, latitude: -13.774630, longitude: -76.024960 },
-  { id: '94218', name: 'D1 FUNDO CALIFORNIA', nodoid: 850, localizacionStart: 2071, localizacionEnd: 2085, hasHistoric: false, latitude: -13.773870, longitude: -75.995330 },
-  { id: '219179', name: 'ARENUVA Home', nodoid: 851, localizacionStart: 2086, localizacionEnd: 2126, hasHistoric: true, latitude: -13.749100, longitude: -76.002800 },
-];
-
-export const WEATHER_METRICS: WeatherMetric[] = [
-  { id: 14, name: 'temp_out', unit: '°C', localizacionid: 2027, category: 'temperature' },
-  { id: 15, name: 'hum_out', unit: '%', localizacionid: 2028, category: 'humidity' },
-  { id: 16, name: 'dew_point', unit: '°C', localizacionid: 2029, category: 'temperature' },
-  { id: 26, name: 'temp_in', unit: '°C', localizacionid: 2030, category: 'temperature' },
-  { id: 27, name: 'hum_in', unit: '%', localizacionid: 2031, category: 'humidity' },
-  { id: 17, name: 'wind_speed_10_min_avg', unit: 'm/s', localizacionid: 2032, category: 'wind' },
-  { id: 18, name: 'wind_dir', unit: '°', localizacionid: 2033, category: 'wind' },
-  { id: 19, name: 'wind_gust_10_min', unit: 'm/s', localizacionid: 2034, category: 'wind' },
-  { id: 23, name: 'rain_day_mm', unit: 'mm', localizacionid: 2035, category: 'rain' },
-  { id: 24, name: 'rain_rate_mm', unit: 'mm/h', localizacionid: 2036, category: 'rain' },
-  { id: 25, name: 'solar_rad', unit: 'W/m²', localizacionid: 2037, category: 'solar' },
-  { id: 22, name: 'bar', unit: 'hPa', localizacionid: 2038, category: 'pressure' },
-  { id: 28, name: 'et_day', unit: 'mm', localizacionid: 2039, category: 'rain' },
-  { id: 20, name: 'wind_chill', unit: '°C', localizacionid: 2040, category: 'index' },
-  { id: 21, name: 'heat_index', unit: '°C', localizacionid: 2041, category: 'index' },
-  { id: 34, name: 'thw_index', unit: '°C', localizacionid: 2042, category: 'index' },
-  { id: 35, name: 'thsw_index', unit: '°C', localizacionid: 2043, category: 'index' },
-];
 
 export const METRIC_DISPLAY_NAMES: Record<string, string> = {
   temp_out: 'Temperatura',
@@ -79,6 +42,7 @@ export const METRIC_ICONS: Record<string, string> = {
 
 export interface UseWeatherDataResult {
   stations: WeatherStation[];
+  stationsLoading: boolean;
   selectedStation: WeatherStation | null;
   setSelectedStation: (station: WeatherStation | null) => void;
   currentData: WeatherCurrentData;
@@ -348,8 +312,9 @@ const getDateRangeParams = (range: 'today' | 'yesterday' | '7days') => {
 };
 
 export function useWeatherData(): UseWeatherDataResult {
-  const [stations] = useState<WeatherStation[]>(WEATHER_STATIONS);
-  const [selectedStation, setSelectedStation] = useState<WeatherStation | null>(WEATHER_STATIONS[0]);
+  const [stations, setStations] = useState<WeatherStation[]>([]);
+  const [stationsLoading, setStationsLoading] = useState(true);
+  const [selectedStation, setSelectedStation] = useState<WeatherStation | null>(null);
   const [currentData, setCurrentData] = useState<WeatherCurrentData>({});
   const [summaryData, setSummaryData] = useState<WeatherSummaryData | null>(null);
   const [historical24h, setHistorical24h] = useState<WeatherMedicionData[]>([]);
@@ -358,6 +323,25 @@ export function useWeatherData(): UseWeatherDataResult {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<'today' | 'yesterday' | '7days'>('today');
+
+  // Cargar estaciones dinámicamente
+  useEffect(() => {
+    const loadStations = async () => {
+      try {
+        setStationsLoading(true);
+        const data = await SupabaseRPCService.getWeatherStations();
+        setStations(data);
+        if (data.length > 0 && !selectedStation) {
+          setSelectedStation(data[0]);
+        }
+      } catch (err) {
+        console.error('[useWeatherData] Error cargando estaciones:', err);
+      } finally {
+        setStationsLoading(false);
+      }
+    };
+    loadStations();
+  }, []);
 
   const refreshCurrent = useCallback(async () => {
     if (!selectedStation) return;
@@ -486,6 +470,7 @@ export function useWeatherData(): UseWeatherDataResult {
 
   return {
     stations,
+    stationsLoading,
     selectedStation,
     setSelectedStation,
     currentData,

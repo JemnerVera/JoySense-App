@@ -673,6 +673,52 @@ export class SupabaseRPCService {
       throw err;
     }
   }
+
+  /**
+   * Obtiene estaciones meteorológicas dinámicamente
+   * Reemplaza el array hardcodeado WEATHER_STATIONS
+   * @returns Array de estaciones con nodoid, nombre, referencia, coordenadas
+   */
+  static async getWeatherStations(): Promise<any[]> {
+    try {
+      if (this.DEBUG) {
+        console.log('[SupabaseRPCService] getWeatherStations');
+      }
+
+      const { data, error } = await supabaseAuth
+        .schema('joysense')
+        .rpc('fn_get_weather_stations', {});
+
+      if (error) {
+        if (error.message.includes('does not exist')) {
+          console.warn('[SupabaseRPCService] fn_get_weather_stations no existe aún');
+          return [];
+        }
+        throw new Error(`RPC error: ${error.message}`);
+      }
+
+      if (!Array.isArray(data)) {
+        return [];
+      }
+
+      // Filtrar duplicados por referencia (por si acaso)
+      const uniqueData = data.filter((item: any, index: number, self: any[]) =>
+        index === self.findIndex((t: any) => t.referencia === item.referencia)
+      );
+
+      return uniqueData.map((item: any) => ({
+        id: item.referencia,
+        name: item.nodo,
+        nodoid: item.nodoid,
+        hasHistoric: item.has_historic,
+        latitude: Number(item.latitud) || 0,
+        longitude: Number(item.longitud) || 0,
+      }));
+    } catch (err: any) {
+      console.error('[SupabaseRPCService] Error en getWeatherStations:', err);
+      throw err;
+    }
+  }
 }
 
 export default SupabaseRPCService;

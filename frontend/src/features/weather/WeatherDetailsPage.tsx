@@ -7,6 +7,7 @@ import { useExportPDF } from '../../hooks/useExportPDF';
 export const WeatherDetailsPage: React.FC = () => {
   const {
     stations,
+    stationsLoading,
     selectedStation,
     setSelectedStation,
     historical24h,
@@ -23,6 +24,23 @@ export const WeatherDetailsPage: React.FC = () => {
   const handleRefresh = () => {
     refreshSummary();
   };
+
+  if (stationsLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <span className="ml-2">Cargando estaciones...</span>
+      </div>
+    );
+  }
+
+  if (stations.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-gray-500">No hay estaciones meteorológicas configuradas</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">
