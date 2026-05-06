@@ -114,3 +114,7 @@ docs/*_users.md
 # Scripts con credenciales (nunca committear la versión real)
 scripts/actualizar-env.ps1
 *.env.local
+
+# Herramientas de limpieza de historial (no commitear)
+git-filter-repo
+.gitignore-filter
