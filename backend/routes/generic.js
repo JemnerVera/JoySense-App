@@ -5,74 +5,41 @@
 
 const express = require('express');
 const router = express.Router();
-const { db, dbSchema, supabase: baseSupabase } = require('../config/database');
+const { dbSchema, baseSupabase } = require('../config/database');
 const { paginateAndFilter, getTableMetadata, clearMetadataCache } = require('../utils/pagination');
 const { verifyAuth } = require('../middleware/auth');
 const logger = require('../utils/logger');
 const bcrypt = require('bcrypt');
+const ALLOWED_TABLES = require('../config/allowedTables');
 
 router.use(verifyAuth);
 
-// Lista de tablas permitidas para operaciones genéricas
-const ALLOWED_TABLES = [
-  'pais', 'empresa', 'fundo', 'ubicacion', 'localizacion', 
-  'entidad', 'entidad_localizacion',
-  'carpeta', 'carpeta_ubicacion', 'carpeta_usuario',
-  'nodo', 'sensor', 'tipo', 'metrica', 'metricasensor',
-  'umbral', 'alerta_regla', 'alerta_regla_consolidado', 'criticidad',
-  'audit_log_umbral', 'regla', 'regla_objeto', 'regla_perfil', 'regla_umbral',
-  'usuario', 'perfil', 'usuarioperfil',
-  'contacto', 'correo', 'codigotelefono',
-  'asociacion',
-  'permiso', 'fuente', 'origen', 'tipo_mensaje', // Nuevo sistema de permisos
-  'sensor_valor', 'sensor_valor_error',
-  'canal', 'usuario_canal', // Sistema de notificaciones
-  'msg_outbox' // Reportes administrativos
-];
-
-// Mapeo de PK por tabla
-const PK_MAPPING = {
-  pais: 'paisid',
-  empresa: 'empresaid',
-  fundo: 'fundoid',
-  ubicacion: 'ubicacionid',
-  localizacion: 'localizacionid',
-  entidad: 'entidadid',
-  carpeta: 'carpetaid',
-  carpeta_ubicacion: null, // PK compuesta
-  carpeta_usuario: null, // PK compuesta
-  nodo: 'nodoid',
-  sensor: 'sensorid',
-  tipo: 'tipoid',
-  metrica: 'metricaid',
-  umbral: 'umbralid',
-  alerta_regla: 'uuid_alerta_reglaid',
-  alerta_regla_consolidado: 'uuid_consolidadoid',
-  criticidad: 'criticidadid',
-  usuario: 'usuarioid',
-  perfil: 'perfilid',
-  contacto: 'contactoid',
-  correo: 'correoid',
-  codigotelefono: 'codigotelefonoid',
-  asociacion: 'asociacionid',
-  permiso: 'permisoid', // Nuevo sistema de permisos
-  fuente: 'fuenteid',
-  origen: 'origenid',
-  tipo_mensaje: 'tipo_mensajeid',
-  audit_log_umbral: 'auditid',
-  entidad_localizacion: null, // PK compuesta (entidadid, localizacionid)
-  metricasensor: null, // PK compuesta
-  usuarioperfil: null, // PK compuesta
-  regla: 'reglaid',
-  regla_objeto: 'regla_objetoid',
-  regla_perfil: 'regla_perfilid',
-  regla_umbral: 'regla_umbralid',
-  sensor_valor: null, // PK compuesta (id_device, fecha)
-  sensor_valor_error: 'sensorvalorerrorid',
-  canal: 'canalid', // Sistema de notificaciones
-  usuario_canal: 'usuario_canalid',
-  msg_outbox: 'msg_outboxid' // Reportes administrativos
-};
+// Obtener PK dinámicamente desde metadatos de tabla
+async function getTablePK(table, userSupabase) {
+  const metadata = await getTableMetadata(table, userSupabase);
+  
+  // Si los metadatos incluyen primaryKeys (desde fn_get_table_metadata)
+  if (metadata.primaryKeys && Array.isArray(metadata.primaryKeys)) {
+    if (metadata.primaryKeys.length === 1) {
+      return { pk: metadata.primaryKeys[0], isComposite: false };
+    }
+    return { pk: null, isComposite: true };
+  }
+  
+  // Fallback: buscar columnas con is_primary (si fn_get_table_metadata lo devuelve)
+  const pkColumns = metadata.columns 
+    ? metadata.columns.filter(col => col.is_primary).map(col => col.column_name)
+    : [];
+    
+  if (pkColumns.length === 1) {
+    return { pk: pkColumns[0], isComposite: false };
+  } else if (pkColumns.length > 1) {
+    return { pk: null, isComposite: true };
+  }
+  
+  // Si no hay PK identificada, asumir compuesta por seguridad
+  return { pk: null, isComposite: true };
+}
 
 // Validar tabla permitida
 function isTableAllowed(table) {
@@ -329,13 +296,16 @@ router.post('/:table', async (req, res) => {
   }
   
   try {
+    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
+    const userSupabase = req.supabase || baseSupabase;
+    
     // Preparar datos para inserción
     // Array = inserción masiva, Objeto = inserción simple
     let dataToInsert = Array.isArray(req.body) ? req.body : { ...req.body };
     
     // Limpiar PKs con valores 0 o null (dejar que identity las genere)
-    const pk = PK_MAPPING[table.toLowerCase()];
-    if (pk && pk !== null) {
+    const { pk, isComposite } = await getTablePK(table, userSupabase);
+    if (pk && !isComposite) {
       if (Array.isArray(dataToInsert)) {
         dataToInsert = dataToInsert.map(record => {
           const cleaned = { ...record };
@@ -435,9 +405,6 @@ router.post('/:table', async (req, res) => {
       
       req.tempPlainPassword = plainPassword;
     }
-    
-    // Usar el cliente de Supabase del request (con token del usuario) si está disponible
-    const userSupabase = req.supabase || baseSupabase;
     
     // Insertar datos
     const { data, error } = await userSupabase.schema(dbSchema).from(table).insert(dataToInsert).select();
@@ -545,15 +512,17 @@ router.put('/:table/:id', async (req, res) => {
     return res.status(400).json({ error: `Tabla '${table}' no permitida` });
   }
   
-  const pk = PK_MAPPING[table.toLowerCase()];
-  
-  if (!pk) {
-    return res.status(400).json({ 
-      error: `Tabla '${table}' tiene PK compuesta. Use el endpoint específico.` 
-    });
-  }
-  
   try {
+    // Obtener PK dinámicamente
+    const userSupabase = req.supabase || baseSupabase;
+    const { pk, isComposite } = await getTablePK(table, userSupabase);
+    
+    if (isComposite) {
+      return res.status(400).json({ 
+        error: `Tabla '${table}' tiene PK compuesta. Use el endpoint específico.` 
+      });
+    }
+    
     // Preparar datos para actualización
     let dataToUpdate = { ...req.body };
     
@@ -619,7 +588,6 @@ router.put('/:table/:id', async (req, res) => {
     }
     
     // Usar el cliente de Supabase del request (con token del usuario) si está disponible
-    const userSupabase = req.supabase || baseSupabase;
     const { data, error } = await userSupabase.schema(dbSchema).from(table).update(dataToUpdate).eq(pk, id).select();
     
     if (error) {
@@ -650,7 +618,7 @@ router.put('/:table/:id', async (req, res) => {
 router.get('/meta/tables', async (req, res) => {
   res.json({
     allowedTables: ALLOWED_TABLES,
-    pkMapping: PK_MAPPING,
+    pkMapping: 'dynamic (via getTableMetadata)',
     schema: dbSchema
   });
 });
