@@ -4,6 +4,7 @@ import {
   Contacto, Correo, Criticidad, CodigoTelefono, TableName, PaginatedResponse
 } from '../types';
 import { logger } from '../utils/logger';
+import { DB_SCHEMA } from './supabase-auth';
 
 // Declaración para TypeScript
 declare const process: any;
@@ -1064,7 +1065,7 @@ export class JoySenseService {
       // Llamar a la función RPC directamente desde Supabase
       // La función está en el schema 'joysense' y usa auth.uid() internamente
       const { data, error } = await supabaseAuth
-        .schema('joysense')
+        .schema(DB_SCHEMA)
         .rpc('fn_get_usuarioid_current_user');
 
       if (error) {
@@ -1089,7 +1090,7 @@ export class JoySenseService {
       
       // Llamar a la función RPC directamente desde Supabase
       const { data, error } = await supabaseAuth
-        .schema('joysense')
+        .schema(DB_SCHEMA)
         .rpc('fn_get_perfilid_current_user');
 
       if (error) {
@@ -1125,7 +1126,7 @@ export class JoySenseService {
       const { supabaseAuth } = await import('./supabase-auth');
       
       const { data, error } = await supabaseAuth
-        .schema('joysense')
+        .schema(DB_SCHEMA)
         .rpc('fn_get_user_menu_access', { perfilid_param: perfilid });
 
       if (error) {
@@ -1158,7 +1159,7 @@ export class JoySenseService {
       
       // Llamar a la función RPC directamente desde Supabase
       const { data, error } = await supabaseAuth
-        .schema('joysense')
+        .schema(DB_SCHEMA)
         .rpc('fn_get_user_permissions', { p_table_name: tableName });
 
       if (error) {
@@ -1473,7 +1474,7 @@ export class JoySenseService {
       
       // Llamar a la función RPC
       const { data, error } = await supabaseAuth
-        .schema('joysense')
+        .schema(DB_SCHEMA)
         .rpc('fn_crear_codigo_telegram', {
           p_usuarioid: usuarioid,
           p_minutos_validez: minutosValidez

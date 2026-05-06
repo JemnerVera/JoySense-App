@@ -4,7 +4,7 @@
  * Proporciona tipado TypeScript, validación y manejo centralizado de errores
  */
 
-import { supabaseAuth } from './supabase-auth';
+import { supabaseAuth, DB_SCHEMA } from './supabase-auth';
 import { logger } from '../utils/logger';
 import { SupabaseClient } from '@supabase/supabase-js';
 
@@ -218,7 +218,7 @@ export class SupabaseRPCService {
       }
 
       const { data, error } = await supabaseAuth
-        .schema('joysense')
+        .schema(DB_SCHEMA)
         .rpc('fn_get_mediciones_agregadas', {
           p_nodoid: params.nodoid,
           p_metricaid: params.metricaid || null,
@@ -269,7 +269,7 @@ export class SupabaseRPCService {
       }
 
       const { data, error } = await supabaseAuth
-        .schema('joysense')
+        .schema(DB_SCHEMA)
         .rpc('fn_get_alertas_por_nodo', {
           p_nodoid: params.nodoid,
           p_start_date: params.startDate ? `${params.startDate} 00:00:00` : null,
@@ -309,7 +309,7 @@ export class SupabaseRPCService {
       }
 
       const { data, error } = await supabaseAuth
-        .schema('joysense')
+        .schema(DB_SCHEMA)
         .rpc('fn_get_umbrales_por_nodo', {
           p_nodoid: params.nodoid
         });
@@ -350,7 +350,7 @@ export class SupabaseRPCService {
       }
 
       const { data, error } = await supabaseAuth
-        .schema('joysense')
+        .schema(DB_SCHEMA)
         .rpc('fn_get_kpis_nodo', {
           p_nodoid: params.nodoid,
           p_start_date: params.startDate ? `${params.startDate} 00:00:00` : null,
@@ -398,7 +398,7 @@ export class SupabaseRPCService {
       }
 
       const { data, error } = await supabaseAuth
-        .schema('joysense')
+        .schema(DB_SCHEMA)
         .rpc('fn_get_metricas_por_localizacion', {
           p_fundoid: params.fundoIds,
           p_metricaid: params.metricaId,
@@ -442,7 +442,7 @@ export class SupabaseRPCService {
       }
 
       const { data, error } = await supabaseAuth
-        .schema('joysense')
+        .schema(DB_SCHEMA)
         .rpc('fn_get_nodos_con_alertas', {});
 
       if (error) {
@@ -481,7 +481,7 @@ export class SupabaseRPCService {
       }
 
       const { data, error } = await supabaseAuth
-        .schema('joysense')
+        .schema(DB_SCHEMA)
         .rpc('fn_get_resumen_mapa_nodos', {
           p_ubicacionid: params?.ubicacionId || null
         });
@@ -530,7 +530,7 @@ export class SupabaseRPCService {
       }
 
       const query1 = supabaseAuth
-        .schema('joysense')
+        .schema(DB_SCHEMA)
         .rpc('fn_get_mediciones_agregadas_por_rango', {
           p_localizacionids: params.localizacionids,
           p_start_date: params.startDate,
@@ -592,7 +592,7 @@ export class SupabaseRPCService {
       }
 
       const query = supabaseAuth
-        .schema('joysense')
+        .schema(DB_SCHEMA)
         .rpc('fn_get_mediciones_nodo_detallado', {
           p_end_date: params.endDate ? `${params.endDate}` : null,
           p_metricaid: params.metricaid || null,
@@ -642,7 +642,7 @@ export class SupabaseRPCService {
       }
 
       const { data, error } = await supabaseAuth
-        .schema('joysense')
+        .schema(DB_SCHEMA)
         .rpc('fn_get_metricas_disponibles_nodo', {
           p_nodoid: params.nodoid,
           p_start_date: params.startDate ? `${params.startDate} 00:00:00` : null,
@@ -686,7 +686,7 @@ export class SupabaseRPCService {
       }
 
       const { data, error } = await supabaseAuth
-        .schema('joysense')
+        .schema(DB_SCHEMA)
         .rpc('fn_get_weather_stations', {});
 
       if (error) {

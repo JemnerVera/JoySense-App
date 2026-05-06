@@ -15,6 +15,9 @@ declare const process: any;
 // Ver: frontend/env.example para plantilla
 // ============================================================================
 
+// Obtener schema de base de datos desde variables de entorno
+const DB_SCHEMA = process.env.REACT_APP_DB_SCHEMA || 'joysense';
+
 /**
  * Lee y valida las variables de entorno requeridas
  * Lanza error claro si falta alguna configuración
@@ -77,8 +80,11 @@ function getSupabaseConfig() {
 // Obtener y validar configuración
 const config = getSupabaseConfig();
 
-// Crear cliente de Supabase con configuración validada ####################################################
+// Crear cliente de Supabase con configuración validada
 export const supabaseAuth = createClient(config.url, config.key);
+
+// Exportar schema para uso en otros servicios
+export { DB_SCHEMA };
 
 // Funciones de autenticación
 export const authService = {
