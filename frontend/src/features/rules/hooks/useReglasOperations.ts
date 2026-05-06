@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { JoySenseService } from '../../../services/backend-api';
 import { ReglaUpdateData, OperationResult, UmbralData } from '../types';
+import { ORIGEN } from '../../../constants/origen';
 
 interface UseReglasOperationsProps {
   formState: any;
@@ -223,7 +224,7 @@ export function useReglasOperations({
           // Crear regla_objeto global (objetoid=NULL significa scope global)
           const reglaObjetoRecord: Record<string, any> = {
             reglaid: reglaid,
-            origenid: 1, // 1 = GEOGRAFÍA
+            origenid: ORIGEN.GEOGRAFIA, // 1 = GEOGRAFÍA
             fuenteid: fuenteLocalizacion.fuenteid,
             objetoid: null, // NULL = scope global
             statusid: 1,

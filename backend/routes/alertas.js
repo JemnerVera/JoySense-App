@@ -10,6 +10,7 @@ const { dbSchema, supabase: baseSupabase } = require('../config/database');
 const { paginateAndFilter, getTableMetadata } = require('../utils/pagination');
 const { verifyAuth } = require('../middleware/auth');
 const logger = require('../utils/logger');
+const { ORIGEN } = require('../constants/origen');
 
 router.use(verifyAuth);
 
@@ -203,7 +204,7 @@ router.get('/umbral/por-nodo', async (req, res) => {
       .schema(dbSchema)
       .from('regla_objeto')
       .select('reglaid, origenid, fuenteid, objetoid')
-      .eq('origenid', 1)
+      .eq('origenid', ORIGEN.GEOGRAFIA)
       .eq('statusid', 1);
     
     // Construir condiciones OR para buscar en m├║ltiples niveles
@@ -239,7 +240,7 @@ router.get('/umbral/por-nodo', async (req, res) => {
           .schema(dbSchema)
           .from('regla_objeto')
           .select('reglaid')
-          .eq('origenid', 1)
+          .eq('origenid', ORIGEN.GEOGRAFIA)
           .eq('statusid', 1)
           .is('objetoid', null)
       );
@@ -251,7 +252,7 @@ router.get('/umbral/por-nodo', async (req, res) => {
             .schema(dbSchema)
             .from('regla_objeto')
             .select('reglaid')
-            .eq('origenid', 1)
+            .eq('origenid', ORIGEN.GEOGRAFIA)
             .eq('statusid', 1)
             .eq('fuenteid', fuenteLocalizacionId)
             .in('objetoid', localizacionIds)
@@ -265,7 +266,7 @@ router.get('/umbral/por-nodo', async (req, res) => {
             .schema(dbSchema)
             .from('regla_objeto')
             .select('reglaid')
-            .eq('origenid', 1)
+            .eq('origenid', ORIGEN.GEOGRAFIA)
             .eq('statusid', 1)
             .eq('fuenteid', fuenteNodoId)
             .eq('objetoid', nodoid)
@@ -279,7 +280,7 @@ router.get('/umbral/por-nodo', async (req, res) => {
             .schema(dbSchema)
             .from('regla_objeto')
             .select('reglaid')
-            .eq('origenid', 1)
+            .eq('origenid', ORIGEN.GEOGRAFIA)
             .eq('statusid', 1)
             .eq('fuenteid', fuenteUbicacionId)
             .eq('objetoid', ubicacionId)
@@ -703,7 +704,7 @@ router.get('/umbrales-por-lote', async (req, res) => {
       .select('reglaid, origenid, fuenteid, objetoid')
       .in('reglaid', reglaIds)
       .eq('statusid', 1)
-      .eq('origenid', 1); // origenid = 1 es GEOGRAFIA
+      .eq('origenid', ORIGEN.GEOGRAFIA);
     
     if (reglasObjetoError) {
       throw reglasObjetoError;

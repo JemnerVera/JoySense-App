@@ -521,12 +521,12 @@ export interface Correo {
 
 /**
  * Permiso - Sistema de permisos unificado
- * origenid: 1 = GEOGRAFÍA, 2 = TABLA
+ * origenid: ORIGEN.GEOGRAFIA = 1, ORIGEN.TABLA = 2 (ver constants/origen.ts)
  */
 export interface Permiso {
   permisoid: number;
   perfilid: number;
-  origenid: number; // 1 = GEOGRAFÍA, 2 = TABLA
+  origenid: number; // ORIGEN.GEOGRAFIA = 1, ORIGEN.TABLA = 2
   fuenteid: number;
   objetoid?: number; // NULL = global, valor = puntual
   puede_ver: boolean;
@@ -559,7 +559,7 @@ export interface Fuente {
 
 /**
  * Origen - Tipo de permiso
- * origenid: 1 = GEOGRAFÍA, 2 = TABLA
+ * origenid: ORIGEN.GEOGRAFIA = 1, ORIGEN.TABLA = 2 (ver constants/origen.ts)
  */
 export interface Origen {
   origenid: number;

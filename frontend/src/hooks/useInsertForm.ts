@@ -12,6 +12,7 @@ import { logger } from '../utils/logger'
 import { consolidateErrorMessages } from '../utils/messageConsolidation'
 import { AuthUser, Usuario } from '../types'
 import { JoySenseService, checkUserSyncStatus } from '../services/backend-api'
+import { ORIGEN } from '../constants/origen'
 
 interface Message {
   type: 'success' | 'error' | 'warning' | 'info'
@@ -1005,7 +1006,7 @@ setFormErrors(errors)
             // Crear regla_objeto global (objetoid=NULL significa scope global)
             const reglaObjetoRecord: Record<string, any> = {
               reglaid: reglaid,
-              origenid: 1, // 1 = GEOGRAFÍA
+              origenid: ORIGEN.GEOGRAFIA, // 1 = GEOGRAFÍA
               fuenteid: fuenteLocalizacion.fuenteid,
               objetoid: null, // NULL = scope global
               statusid: 1,
