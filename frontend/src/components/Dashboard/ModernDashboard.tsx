@@ -9,7 +9,8 @@ import { useFilters } from "../../contexts/FilterContext"
 import { filterNodesByGlobalFilters } from "../../utils/filterNodesUtils"
 import { transformMedicionData } from "../../utils/medicionTransform"
 import { useMedicionesLoader, useSystemData } from "./hooks"
-import { STATUS } from '../../constants/status'
+import { STATUS } from '../../constants/status';
+import { METRICS } from '../../constants/metrics';
 import { ErrorAlert, LoadingState, ThresholdRecommendationsModal, DetailedAnalysisModal } from "./components"
 import { MetricMiniChart } from "./components/MetricMiniChart"
 import {
@@ -449,7 +450,7 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
             medicion: 0, // No usamos el valor en resumen
             localizacion: {
               nodoid: nodo.nodoid,
-              metricaid: 1 // Métrica default
+              metricaid: METRICS.DEFAULT_ID // Métrica default
             }
           }));
           
