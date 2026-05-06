@@ -1,4 +1,6 @@
 import type { MedicionData, MetricConfig } from '../types'
+import { findMetricByName } from './metricUtils'
+import type { MetricMetadata } from '../../../types/metrics'
 
 // ============================================================================
 // HELPERS PARA MATCHING DE MÉTRICAS - Reutilizables y memoizables
@@ -18,12 +20,21 @@ function normalizeMetricName(rawName: string): string {
 
 /**
  * Verifica si un nombre de métrica coincide con un dataKey
+ * @param metricName - Nombre normalizado de la métrica
+ * @param dataKey - ID normalizado del dataKey a verificar (ej: 'temperatura')
+ * @param registry - Registry de métricas (opcional, para búsqueda avanzada)
  */
-function matchesDataKey(metricName: string, dataKey: string): boolean {
+function matchesDataKey(metricName: string, dataKey: string, registry?: Map<string, MetricMetadata>): boolean {
+  if (registry) {
+    const metric = findMetricByName(registry, metricName)
+    return metric ? metric.id === dataKey : false
+  }
+
+  // Fallback: matching simple por nombre (compatible con legacy)
   if (dataKey === 'temperatura' && (metricName.includes('temperatura') || metricName.includes('temp'))) return true
   if (dataKey === 'humedad' && (metricName.includes('humedad') || metricName.includes('humidity'))) return true
   if (dataKey === 'conductividad' && (
-    metricName.includes('conductividad') || 
+    metricName.includes('conductividad') ||
     metricName.includes('electroconductividad') ||
     metricName.includes('conductivity')
   )) return true
@@ -295,7 +306,8 @@ export function hasRecentData(
  */
 export function prepareChartData(
   mediciones: MedicionData[],
-  dataKey: string
+  dataKey: string,
+  registry?: Map<string, MetricMetadata>
 ): any[] {
   if (!mediciones || mediciones.length === 0) {
     return []
@@ -303,23 +315,8 @@ export function prepareChartData(
 
   // Filtrar mediciones que coincidan con la métrica
   const matchingMediciones = mediciones.filter(m => {
-    const metricName = m.localizacion?.metrica?.metrica?.toLowerCase() || ''
-    
-    if (dataKey === 'temperatura' && (
-      metricName.includes('temperatura') || metricName.includes('temp')
-    )) return true
-    
-    if (dataKey === 'humedad' && (
-      metricName.includes('humedad') || metricName.includes('humidity')
-    )) return true
-    
-    if (dataKey === 'conductividad' && (
-      metricName.includes('conductividad') || 
-      metricName.includes('electroconductividad') ||
-      metricName.includes('conductivity')
-    )) return true
-    
-    return false
+    const metricName = normalizeMetricName(m.localizacion?.metrica?.metrica || '')
+    return matchesDataKey(metricName, dataKey, registry)
   })
 
   if (matchingMediciones.length === 0) {

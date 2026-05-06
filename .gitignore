@@ -119,3 +119,4 @@ scripts/actualizar-env.ps1
 git-filter-repo
 .gitignore-filter
 HARDCODING_FIXES.md
+.claude\settings.local.json

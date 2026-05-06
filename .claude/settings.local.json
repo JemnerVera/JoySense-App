@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-Content \"c:\\\\Users\\\\jverac\\\\Documents\\\\Migiva\\\\Proyecto\\\\Apps\\\\JoySense\\\\frontend\\\\src\\\\components\\\\Dashboard\\\\utils\\\\metricUtils.ts\")",
+      "Bash(Measure-Object -Line)",
+      "Bash(Select-Object -ExpandProperty Lines)"
+    ]
+  }
+}

@@ -36,40 +36,7 @@ import type { MedicionData, MetricConfig, ModernDashboardProps } from "./types"
 import { NodeData } from "../../types/NodeData"
 import { useOptimizedChartData } from "./hooks/useOptimizedChartData"
 import { useMetricCache } from "./hooks/useMetricCache"
-
-// Mapeo de colores por nombre de métrica (puede extenderse por empresa)
-const METRIC_COLOR_MAP: { [key: string]: string } = {
-  'temperatura': '#f59e0b',      // Ámbar
-  'temp': '#f59e0b',
-  'humedad': '#3b82f6',           // Azul
-  'humidity': '#3b82f6',
-  'conductividad': '#10b981',     // Verde
-  'electroconductividad': '#10b981',
-  'conductivity': '#10b981',
-  'ph': '#ef4444',                // Rojo
-  'luz': '#fbbf24',               // Amarillo
-  'light': '#fbbf24',
-  'co2': '#6366f1',               // Índigo
-  'presion': '#8b5cf6',           // Púrpura
-  'pressure': '#8b5cf6',
-};
-
-// Rangos por defecto por nombre de métrica
-const METRIC_RANGES_MAP: { [key: string]: { min: number; max: number; optimal: [number, number] } } = {
-  'temperatura': { min: 15, max: 35, optimal: [20, 28] },
-  'temp': { min: 15, max: 35, optimal: [20, 28] },
-  'humedad': { min: 40, max: 90, optimal: [60, 75] },
-  'humidity': { min: 40, max: 90, optimal: [60, 75] },
-  'conductividad': { min: 0.5, max: 2.5, optimal: [1.0, 1.8] },
-  'electroconductividad': { min: 0.5, max: 2.5, optimal: [1.0, 1.8] },
-  'conductivity': { min: 0.5, max: 2.5, optimal: [1.0, 1.8] },
-  'ph': { min: 6, max: 8, optimal: [6.5, 7.5] },
-  'luz': { min: 0, max: 100000, optimal: [20000, 50000] },
-  'light': { min: 0, max: 100000, optimal: [20000, 50000] },
-  'co2': { min: 300, max: 2000, optimal: [800, 1200] },
-  'presion': { min: 900, max: 1100, optimal: [1000, 1020] },
-  'pressure': { min: 900, max: 1100, optimal: [1000, 1020] },
-};
+import { MetricsProvider } from "../../contexts/MetricsContext"
 
 /** Trunca la fecha fin a la hora actual cuando es hoy (redondeada a 15 min) */
 function getEffectiveEndDate(endDateStr: string): Date {
@@ -2013,9 +1980,10 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
   }, [])
 
   return (
-    <div className={`${showDetailedAnalysis && selectedMetricForAnalysis ? 'h-screen' : 'h-[calc(100vh-80px)]'} bg-gray-50 dark:bg-neutral-900 overflow-x-hidden overflow-hidden`}>
-      {/* Main Content - ancho completo y poco padding en vista análisis detallado */}
-      <main className={`${showDetailedAnalysis && selectedMetricForAnalysis ? 'w-full max-w-none px-2 py-2 h-full flex flex-col' : 'w-full px-2 py-1 h-full flex flex-col'}`}>
+    <MetricsProvider metricas={metricas}>
+      <div className={`${showDetailedAnalysis && selectedMetricForAnalysis ? 'h-screen' : 'h-[calc(100vh-80px)]'} bg-gray-50 dark:bg-neutral-900 overflow-x-hidden overflow-hidden`}>
+        {/* Main Content - ancho completo y poco padding en vista análisis detallado */}
+        <main className={`${showDetailedAnalysis && selectedMetricForAnalysis ? 'w-full max-w-none px-2 py-2 h-full flex flex-col' : 'w-full px-2 py-1 h-full flex flex-col'}`}>
 
         {/* Error State */}
         {error && (
@@ -2124,7 +2092,8 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
         />
 
       </main>
-    </div>
+      </div>
+    </MetricsProvider>
   )
 }
 
