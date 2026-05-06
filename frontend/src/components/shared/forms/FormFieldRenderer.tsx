@@ -9,6 +9,7 @@ import { useLanguage } from '../../../contexts/LanguageContext';
 import { getColumnDisplayNameTranslated } from '../../../utils/systemParametersUtils';
 import { LocationSelector } from './LocationSelector';
 import { UserSelector } from './UserSelector';
+import { THRESHOLD_OPERATORS } from '../../../constants/thresholdOperators';
 
 interface FormFieldRendererProps {
   col: any;
@@ -580,20 +581,7 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
 
   // Select para umbral - operador (con opciones válidas según constraint)
   if (col.columnName === 'operador' && selectedTable === 'umbral') {
-    const operadorOptions = [
-      { value: 'FUERA', label: 'FUERA' },
-      { value: 'OUTSIDE', label: 'OUTSIDE' },
-      { value: 'OUT_OF_RANGE', label: 'OUT_OF_RANGE' },
-      { value: 'RANGO', label: 'RANGO' },
-      { value: 'DENTRO', label: 'DENTRO' },
-      { value: 'INSIDE', label: 'INSIDE' },
-      { value: 'IN_RANGE', label: 'IN_RANGE' },
-      { value: 'BETWEEN', label: 'BETWEEN' },
-      { value: '>', label: '>' },
-      { value: '>=', label: '>=' },
-      { value: '<', label: '<' },
-      { value: '<=', label: '<=' }
-    ];
+    const operadorOptions = THRESHOLD_OPERATORS;
     
     return (
       <div key={col.columnName} className="mb-4">

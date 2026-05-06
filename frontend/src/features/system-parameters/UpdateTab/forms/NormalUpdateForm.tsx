@@ -14,6 +14,7 @@ import {
   UsuarioFormFields,
   UsuarioPerfilFormFields,
 } from '../../../../components/shared/forms';
+import { THRESHOLD_OPERATORS } from '../../../../constants/thresholdOperators';
 import PerfilGeografiaPermisoUpdateForm from '../../../../components/PerfilGeografiaPermisoUpdateForm';
 import type { TableConfig } from '../../../../config/tables.config';
 import type { RelatedData } from '../../../../utils/systemParametersUtils';
@@ -506,20 +507,7 @@ export const NormalUpdateForm: React.FC<NormalUpdateFormProps> = ({
           ) : field.name === 'operador' ? (
             // Campo operador - select con opciones válidas
             (() => {
-              const operadorOptions = [
-                { value: 'FUERA', label: 'FUERA' },
-                { value: 'OUTSIDE', label: 'OUTSIDE' },
-                { value: 'OUT_OF_RANGE', label: 'OUT_OF_RANGE' },
-                { value: 'RANGO', label: 'RANGO' },
-                { value: 'DENTRO', label: 'DENTRO' },
-                { value: 'INSIDE', label: 'INSIDE' },
-                { value: 'IN_RANGE', label: 'IN_RANGE' },
-                { value: 'BETWEEN', label: 'BETWEEN' },
-                { value: '>', label: '>' },
-                { value: '>=', label: '>=' },
-                { value: '<', label: '<' },
-                { value: '<=', label: '<=' }
-              ];
+              const operadorOptions = THRESHOLD_OPERATORS;
               
               return (
                 <SelectWithPlaceholder

@@ -118,3 +118,4 @@ scripts/actualizar-env.ps1
 # Herramientas de limpieza de historial (no commitear)
 git-filter-repo
 .gitignore-filter
+HARDCODING_FIXES.md

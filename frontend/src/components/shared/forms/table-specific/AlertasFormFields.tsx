@@ -7,6 +7,7 @@ import React from 'react';
 import { SelectWithPlaceholder } from '../../../selectors';
 import { useLanguage } from '../../../../contexts/LanguageContext';
 import { getColumnDisplayNameTranslated } from '../../../../utils/systemParametersUtils';
+import { THRESHOLD_OPERATORS } from '../../../../constants/thresholdOperators';
 
 interface AlertasFormFieldsProps {
   selectedTable: string;
@@ -81,20 +82,7 @@ export const AlertasFormFields: React.FC<AlertasFormFieldsProps> = ({
 
     // Campo operador - select con opciones válidas según constraint
     if (col.columnName === 'operador') {
-      const operadorOptions = [
-        { value: 'FUERA', label: 'FUERA' },
-        { value: 'OUTSIDE', label: 'OUTSIDE' },
-        { value: 'OUT_OF_RANGE', label: 'OUT_OF_RANGE' },
-        { value: 'RANGO', label: 'RANGO' },
-        { value: 'DENTRO', label: 'DENTRO' },
-        { value: 'INSIDE', label: 'INSIDE' },
-        { value: 'IN_RANGE', label: 'IN_RANGE' },
-        { value: 'BETWEEN', label: 'BETWEEN' },
-        { value: '>', label: '>' },
-        { value: '>=', label: '>=' },
-        { value: '<', label: '<' },
-        { value: '<=', label: '<=' }
-      ];
+      const operadorOptions = THRESHOLD_OPERATORS;
       
       return (
         <div key={col.columnName} className="mb-4">
