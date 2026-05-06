@@ -80,9 +80,9 @@ export interface UseTableCRUDReturn {
 // ============================================================================
 
 export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
-  const { tableName, pageSize = 25, autoLoad = false } = options;
+  let { tableName, pageSize = 25, autoLoad = false } = options;
   const { t } = useLanguage();
-
+  
   // Limpiar nombre de tabla si contiene operaciones (status, insert, update, massive)
   // Esto ocurre cuando activeTab incluye la operación pero tableName aún no se ha actualizado
   const validOperations = ['status', 'insert', 'update', 'massive'];
@@ -145,9 +145,9 @@ export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
 
   const loadData = useCallback(async (loadOptions?: { page?: number; pageSize?: number; search?: string; filters?: Record<string, any> }) => {
     if (!tableName) return;
-
+    
     setTableState(prev => ({ ...prev, loading: true, error: null }));
-
+    
     try {
       const requestParams = {
         page: loadOptions?.page || tableState.currentPage,
@@ -159,7 +159,7 @@ export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
       logger.debug('useTableCRUD', `Loading ${tableName}`, { page: requestParams.page });
       
       const result = await JoySenseService.getTableDataPaginated(tableName, requestParams);
-
+      
       logger.debug('useTableCRUD', `Response for ${tableName}`, {
         dataCount: result.data?.length || 0
       });
@@ -225,7 +225,7 @@ export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
     }
 
     setFormState(prev => ({ ...prev, isSubmitting: true }));
-
+    
     try {
       const result = await JoySenseService.insertTableRow(tableName, data);
       await refreshData();
@@ -238,14 +238,14 @@ export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
       return { success: false, error: errorResponse.message };
     }
   }, [tableName, config, refreshData]);
-
+  
   const updateRow = useCallback(async (id: string | Record<string, any>, data: Record<string, any>) => {
     if (!config?.allowUpdate) {
       return { success: false, error: 'Actualización no permitida para esta tabla' };
     }
 
     setFormState(prev => ({ ...prev, isSubmitting: true }));
-
+    
     try {
       let result;
       if (typeof id === 'object') {
@@ -265,7 +265,7 @@ export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
       return { success: false, error: errorResponse.message };
     }
   }, [tableName, config, refreshData]);
-
+  
   const deleteRow = useCallback(async (id: string | Record<string, any>) => {
     if (!config?.allowDelete) {
       return { success: false, error: 'Eliminación no permitida para esta tabla' };

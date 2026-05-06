@@ -84,29 +84,29 @@ export function useMenuStructure() {
             label: t('subtabs.dashboard'),
             icon: <IconDashboard />,
             subMenus: [
-              { id: 'mediciones', label: 'MEDICIONES', icon: <IconSensor /> },
-              { id: 'mapeo', label: 'MAPEO DE NODOS', icon: <IconMapeo /> },
-              { id: 'status-nodos', label: 'STATUS DE NODOS', icon: <IconStatusNodos /> },
-              { id: 'status-alertas', label: 'STATUS DE ALERTAS', icon: <IconAlertas /> },
-              { id: 'metrica', label: 'MÉTRICA POR LOCALIZACIÓN', icon: <IconMetricaSensor /> },
-              { id: 'umbrales', label: 'UMBRALES POR LOCALIZACIÓN', icon: <IconUmbralAlt /> },
-              { id: 'sensores-planta', label: 'SENSORES PLANTA', icon: <IconSensor /> },
+              { id: 'mediciones', label: t('menu.mediciones'), icon: <IconSensor /> },
+              { id: 'mapeo', label: t('menu.mapeo'), icon: <IconMapeo /> },
+              { id: 'status-nodos', label: t('menu.statusNodos'), icon: <IconStatusNodos /> },
+              { id: 'status-alertas', label: t('menu.statusAlertas'), icon: <IconAlertas /> },
+              { id: 'metrica', label: t('menu.metricaLocalizacion'), icon: <IconMetricaSensor /> },
+              { id: 'umbrales', label: t('menu.umbralesLocalizacion'), icon: <IconUmbralAlt /> },
+              { id: 'sensores-planta', label: t('menu.sensoresPlanta'), icon: <IconSensor /> },
             ],
           },
-          {
-            id: 'historial',
-            label: 'HISTORIAL',
-            icon: <IconHistorial />,
-            subMenus: [
-              { id: 'alertas', label: t('subtabs.alerts'), icon: <IconAlertas /> },
-              { id: 'mensajes', label: t('subtabs.messages'), icon: <IconMensajes /> },
-            ],
-          },
+      {
+        id: 'historial',
+        label: t('menu.historial'),
+        icon: <IconHistorial />,
+        subMenus: [
+          { id: 'alertas', label: t('subtabs.alerts'), icon: <IconAlertas /> },
+          { id: 'mensajes', label: t('subtabs.messages'), icon: <IconMensajes /> },
+        ],
+      },
         ],
       },
       {
         id: 'agrupacion',
-        label: 'CARPETA',
+        label: t('menu.carpeta'),
         icon: <IconAgrupacion />,
         color: 'green',
         requiresPermission: true,
@@ -114,14 +114,14 @@ export function useMenuStructure() {
         subMenus: [
           {
             id: 'entidad',
-            label: 'PERSONAL',
+            label: t('menu.personal'),
             icon: <IconUsuario />,
             hasOperations: true,
             subMenus: createOps('agrupacion-entidad'),
           },
           {
             id: 'carpeta',
-            label: 'COMPARTIDA',
+            label: t('menu.compartida'),
             icon: <IconUsuarios />,
             hasOperations: true,
             subMenus: createOps('agrupacion-carpeta'),
@@ -130,7 +130,7 @@ export function useMenuStructure() {
       },
       {
         id: 'configuracion',
-        label: 'CONFIGURACIÓN',
+        label: t('menu.configuracion'),
         icon: <IconConfiguracion />,
         color: 'orange',
         requiresPermission: true,
@@ -138,7 +138,7 @@ export function useMenuStructure() {
         subMenus: [
           {
             id: 'parametros-geo',
-            label: 'PARÁMETROS GEO',
+            label: t('menu.parametrosGeo'),
             icon: <IconPais />,
             subMenus: createTablesLevel3(
               parametrosGeoTables,
@@ -149,7 +149,7 @@ export function useMenuStructure() {
           },
           {
             id: 'dispositivos',
-            label: 'DISPOSITIVOS',
+            label: t('menu.dispositivos'),
             icon: <IconDispositivos />,
             subMenus: createTablesLevel3(
               dispositivosTables,
@@ -160,7 +160,29 @@ export function useMenuStructure() {
           },
           {
             id: 'usuarios',
-            label: 'USUARIOS',
+            label: t('menu.usuarios'),
+            icon: <IconUsuarios />,
+            subMenus: createTablesLevel3(
+              usuariosTables,
+              'configuracion-usuarios',
+              createOps,
+              getTableIcon
+            ),
+          },
+          {
+            id: 'dispositivos',
+            label: t('menu.dispositivos'),
+            icon: <IconDispositivos />,
+            subMenus: createTablesLevel3(
+              dispositivosTables,
+              'configuracion-dispositivos',
+              createOps,
+              getTableIcon
+            ),
+          },
+          {
+            id: 'usuarios',
+            label: t('menu.usuarios'),
             icon: <IconUsuarios />,
             subMenus: createTablesLevel3(
               usuariosTables,
@@ -171,25 +193,25 @@ export function useMenuStructure() {
           },
           {
             id: 'notificaciones',
-            label: 'NOTIFICACIONES',
+            label: t('menu.notificaciones'),
             icon: <IconNotificaciones />,
             subMenus: notificacionesTables.map((table): SubMenuLevel2 => {
               if (table.name === 'regla') {
                 return {
                   id: 'regla',
-                  label: 'ALERTAS',
+                  label: t('menu.alertas'),
                   icon: getTableIcon(table.name),
                   subMenus: [
                     {
                       id: 'regla',
-                      label: 'REGLAS',
+                      label: t('menu.alertas'),
                       icon: getTableIcon('regla'),
                       hasOperations: true,
                       subMenus: createOps('configuracion-notificaciones-regla-regla'),
                     },
                     {
                       id: 'regla_objeto',
-                      label: 'ALCANCE DE REGLA',
+                      label: t('menu.alcanceRegla'),
                       icon: getTableIcon('regla'),
                       hasOperations: true,
                       subMenus: createOps('configuracion-notificaciones-regla-regla_objeto'),
@@ -208,19 +230,19 @@ export function useMenuStructure() {
           },
           {
             id: 'permisos',
-            label: 'PERMISOS',
+            label: t('menu.permisos'),
             icon: <IconPermisos />,
             subMenus: [
               {
                 id: 'permisos-geo',
-                label: 'PERMISOS GEO',
+                label: t('menu.permisosGeo'),
                 icon: <IconPais />,
                 hasOperations: true,
                 subMenus: createOps('configuracion-permisos-permisos-geo'),
               },
               {
                 id: 'permisos-conf',
-                label: 'PERMISOS CONF',
+                label: t('menu.permisosConf'),
                 icon: <IconTable />,
                 hasOperations: true,
                 subMenus: createOps('configuracion-permisos-permisos-conf'),
@@ -229,20 +251,20 @@ export function useMenuStructure() {
           },
           {
             id: 'reportes-administrador',
-            label: 'REPORTES ADMINISTRADOR',
+            label: t('menu.reportesAdmin'),
             icon: <IconTable />,
             subMenus: [
-              { id: 'sensor_valor_error', label: 'SENSOR VALOR ERROR', icon: <IconSensor /> },
-              { id: 'audit_log_umbral', label: 'AUDIT LOG UMBRAL', icon: <IconCriticidad /> },
-              { id: 'msg_outbox', label: 'MSG OUTBOX', icon: <IconMensajes /> },
-              { id: 'auth_outbox', label: 'AUTH OUTBOX', icon: <IconMensajes /> },
+              { id: 'sensor_valor_error', label: t('menu.sensorValorError'), icon: <IconSensor /> },
+              { id: 'audit_log_umbral', label: t('menu.auditLogUmbral'), icon: <IconCriticidad /> },
+              { id: 'msg_outbox', label: t('menu.msgOutbox'), icon: <IconMensajes /> },
+              { id: 'auth_outbox', label: t('menu.authOutbox'), icon: <IconMensajes /> },
             ],
           },
         ],
       },
       {
         id: 'ajustes',
-        label: 'AJUSTES',
+        label: t('menu.ajustes'),
         icon: <IconAjustes />,
         color: 'gray',
         requiresPermission: true,
@@ -250,14 +272,14 @@ export function useMenuStructure() {
         subMenus: [
           {
             id: 'basicas',
-            label: 'AJUSTES GENERALES',
+            label: t('menu.ajustesGenerales'),
             icon: <IconConfiguracion />,
           },
         ],
       },
       {
         id: 'meteorologia',
-        label: 'METEOROLOGÍA',
+        label: t('menu.meteorologia'),
         icon: <IconWeather />,
         color: 'gray',
         requiresPermission: true,
@@ -265,17 +287,17 @@ export function useMenuStructure() {
         subMenus: [
           {
             id: 'conditions',
-            label: 'Condicion Actual',
+            label: t('menu.condicionActual'),
             icon: <IconWeatherConditions />,
           },
           {
             id: 'details',
-            label: 'Detalles',
+            label: t('menu.detalles'),
             icon: <IconWeatherDetails />,
           },
           {
             id: 'data-historica',
-            label: 'Data Histórica',
+            label: t('menu.dataHistorica'),
             icon: <IconWeatherHistory />,
           },
         ],
