@@ -124,11 +124,11 @@ export function ReglasStatusTab({ reglasData = [] }: ReglasStatusTabProps) {
                         {ru.agrupador_fin ? 'F' : ''}
                         {!ru.agrupador_inicio && !ru.agrupador_fin ? '-' : ''}
                       </td>
-                      <td className="px-6 py-4 text-xs font-mono text-gray-900 dark:text-white">
-                        <span className={ru.statusid === STATUS.ACTIVO ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold'}>
-                          {ru.statusid === STATUS.ACTIVO ? 'ACTIVO' : 'INACTIVO'}
-                        </span>
-                      </td>
+                       <td className="px-6 py-4 text-xs font-mono text-gray-900 dark:text-white">
+                         <span className={ru.statusid === STATUS.ACTIVO ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold'}>
+                           {ru.statusid === STATUS.ACTIVO ? t('status.active') : t('status.inactive')}
+                         </span>
+                       </td>
                     </tr>
                   ))}
                 </tbody>

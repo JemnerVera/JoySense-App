@@ -373,11 +373,11 @@ const PerfilTablePermisoForm: React.FC<PerfilTablePermisoFormProps> = ({
                 !isStatusEnabled ? 'opacity-50 cursor-not-allowed' : ''
               }`}
             />
-            <span className={`font-mono tracking-wider ${
-              isStatusEnabled ? 'text-white' : 'text-gray-500'
-            }`}>
-              {(formData.statusid ?? 1) === 1 ? 'ACTIVO' : 'INACTIVO'}
-            </span>
+             <span className={`font-mono tracking-wider ${
+               isStatusEnabled ? 'text-white' : 'text-gray-500'
+             }`}>
+               {(formData.statusid ?? 1) === 1 ? t('status.active') : t('status.inactive')}
+             </span>
           </div>
         </div>
 

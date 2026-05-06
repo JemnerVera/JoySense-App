@@ -1,12 +1,15 @@
 import { STATUS } from '../constants/status';
 import { useState, useCallback, useMemo } from 'react';
 import { getUserName, getDisplayValue } from '../utils/systemParametersUtils';
+import { useLanguage } from '../contexts/LanguageContext';
 
 /**
  * Hook para manejar búsquedas y filtros
  * Extraído de SystemParameters.tsx para reducir complejidad
  */
 export const useSearchAndFilter = () => {
+  const { t } = useLanguage();
+  
   // Estados para búsquedas
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [searchField, setSearchField] = useState<string>('');
@@ -128,9 +131,9 @@ export const useSearchAndFilter = () => {
               // Para filas agrupadas, verificar si al menos una fila original está activa
               if (row.originalRows && row.originalRows.length > 0) {
                 const hasActiveRow = row.originalRows.some((originalRow: any) => originalRow.statusid === STATUS.ACTIVO);
-                return hasActiveRow ? 'Activo' : 'Inactivo';
+                return hasActiveRow ? t('status.active') : t('status.inactive');
               }
-              return value === 1 ? 'Activo' : 'Inactivo';
+              return value === 1 ? t('status.active') : t('status.inactive');
             })()
           : value.toString();
 

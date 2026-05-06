@@ -427,11 +427,11 @@ const PerfilGeografiaPermisoUpdateForm: React.FC<PerfilGeografiaPermisoUpdateFor
                 !isStatusEnabled ? 'opacity-50 cursor-not-allowed' : ''
               }`}
             />
-            <span className={`font-mono tracking-wider ${
-              isStatusEnabled ? 'text-white' : 'text-gray-500'
-            }`}>
-              {(formData.statusid ?? STATUS.ACTIVO) === STATUS.ACTIVO ? 'ACTIVO' : 'INACTIVO'}
-            </span>
+             <span className={`font-mono tracking-wider ${
+               isStatusEnabled ? 'text-white' : 'text-gray-500'
+             }`}>
+               {(formData.statusid ?? STATUS.ACTIVO) === STATUS.ACTIVO ? t('status.active') : t('status.inactive')}
+             </span>
           </div>
         </div>
       </div>

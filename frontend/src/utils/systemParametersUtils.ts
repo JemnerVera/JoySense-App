@@ -3,8 +3,6 @@
  * Funciones sin estado ni efectos secundarios que pueden ser reutilizadas
  */
 
-import { useLanguage } from '../contexts/LanguageContext';
-
 // Tipos para las funciones de utilidad
 export interface RelatedData {
   paisesData?: any[];
@@ -304,7 +302,7 @@ const getRelatedDataArray = (tableName: string, relatedData: RelatedData): any[]
 /**
  * Obtiene el valor de display para una celda de tabla - VERSIÓN OPTIMIZADA
  */
-export const getDisplayValue = (row: any, columnName: string, relatedData: RelatedData = {}): string => {
+export const getDisplayValue = (row: any, columnName: string, relatedData: RelatedData = {}, t?: (key: string) => string): string => {
   // Validar que row no sea null o undefined
   if (!row) {
     return 'N/A';
@@ -461,6 +459,9 @@ export const getDisplayValue = (row: any, columnName: string, relatedData: Relat
   // Para campos de status
   if (columnName === 'statusid') {
     const statusValue = row[columnName];
+    if (t) {
+      return statusValue === 1 ? t('status.active') : statusValue === 0 ? t('status.inactive') : statusValue?.toString() || 'N/A';
+    }
     return statusValue === 1 ? 'Activo' : statusValue === 0 ? 'Inactivo' : statusValue?.toString() || 'N/A';
   }
 

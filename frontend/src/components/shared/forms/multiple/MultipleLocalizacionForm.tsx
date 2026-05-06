@@ -3,6 +3,7 @@
 // ============================================================================
 
 import React from 'react';
+import { useLanguage } from '../../../../contexts/LanguageContext';
 
 // ============================================================================
 // INTERFACES & TYPES
@@ -80,6 +81,7 @@ const MultipleLocalizacionForm: React.FC<MultipleLocalizacionFormProps> = ({
   referencia,
   setReferencia
 }) => {
+  const { t } = useLanguage();
 
   // ============================================================================
   // STATE MANAGEMENT
@@ -516,9 +518,9 @@ const MultipleLocalizacionForm: React.FC<MultipleLocalizacionFormProps> = ({
               onChange={(e) => setSelectedStatus(e.target.checked)}
               className="w-5 h-5 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
             />
-            <span className="text-white font-mono tracking-wider">
-              {selectedStatus ? 'ACTIVO' : 'INACTIVO'}
-            </span>
+             <span className="text-white font-mono tracking-wider">
+               {selectedStatus ? t('status.active') : t('status.inactive')}
+             </span>
           </div>
         </div>
       </div>

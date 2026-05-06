@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import { useSearchOperations } from './useSearchOperations';
 import { usePagination } from './usePagination';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export interface TableRenderingState {
   filteredData: any[];
@@ -36,6 +37,8 @@ export const useTableRendering = (
   data: any[] = [],
   itemsPerPage: number = 10
 ): TableRenderingState & TableRenderingActions => {
+  
+  const { t } = useLanguage();
   
   const {
     searchTerm,
@@ -118,7 +121,7 @@ export const useTableRendering = (
     
     if (columnName.includes('status')) {
       // Formatear estados
-      return value === 1 ? 'Activo' : 'Inactivo';
+      return value === 1 ? t('status.active') : t('status.inactive');
     }
     
     if (typeof value === 'boolean') {

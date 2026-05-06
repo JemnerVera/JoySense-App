@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useFormRendering } from '../../hooks/useFormRendering';
 import { useTableCRUD } from '../../hooks/useTableCRUD';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface ParameterFormProps {
   selectedTable: string;
@@ -28,6 +29,7 @@ export function ParameterForm({
   isUpdate = false,
   originalData = {}
 }: ParameterFormProps) {
+  const { t } = useLanguage();
   
   const [localFormData, setLocalFormData] = useState<Record<string, any>>(formData);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
@@ -232,8 +234,8 @@ export function ParameterForm({
           {renderField('lastname', 'text')}
           {renderField('password', 'password')}
           {renderField('statusid', 'select', [
-            { value: 1, label: 'Activo' },
-            { value: 2, label: 'Inactivo' }
+            { value: 1, label: t('status.active') },
+            { value: 2, label: t('status.inactive') }
           ])}
         </>
       )}

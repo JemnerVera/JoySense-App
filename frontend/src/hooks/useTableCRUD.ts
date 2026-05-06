@@ -9,6 +9,7 @@ import { getTableConfig, getPrimaryKey, hasCompositeKey, TableConfig, TableField
 import { TableName } from '../types';
 import { handleInsertError, handleUpdateError, BackendError } from '../utils/errorHandler';
 import { logger } from '../utils/logger';
+import { useLanguage } from '../contexts/LanguageContext';
 
 // ============================================================================
 // TYPES
@@ -79,7 +80,8 @@ export interface UseTableCRUDReturn {
 // ============================================================================
 
 export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
-  let { tableName, pageSize = 25, autoLoad = false } = options;
+  const { tableName, pageSize = 25, autoLoad = false } = options;
+  const { t } = useLanguage();
 
   // Limpiar nombre de tabla si contiene operaciones (status, insert, update, massive)
   // Esto ocurre cuando activeTab incluye la operación pero tableName aún no se ha actualizado
@@ -475,12 +477,12 @@ export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
 
   const getDisplayValue = useCallback((row: any, fieldName: string): string => {
     if (!config || !row) return '';
-
+    
     const field = config.fields.find(f => f.name === fieldName);
     if (!field) return String(row[fieldName] || '');
-
+    
     const value = row[fieldName];
-
+    
     // Si es un foreign key, buscar el valor en los datos relacionados
     if (field.foreignKey) {
       const relatedTable = relatedData[field.foreignKey.table];
@@ -495,7 +497,7 @@ export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
       }
       return String(value || '');
     }
-
+    
     // Formateo por tipo
     if (field.type === 'datetime' && value) {
       return new Date(value).toLocaleString();
@@ -504,11 +506,11 @@ export function useTableCRUD(options: UseTableCRUDOptions): UseTableCRUDReturn {
       return new Date(value).toLocaleDateString();
     }
     if (field.type === 'boolean') {
-      return value ? 'Sí' : 'No';
+      return value ? t('status.active') : t('status.inactive');
     }
-
+    
     return String(value ?? '');
-  }, [config, relatedData]);
+  }, [config, relatedData, t]);
 
   const getPrimaryKeyValue = useCallback((row: any): string | Record<string, any> => {
     const pk = getPrimaryKey(tableName);

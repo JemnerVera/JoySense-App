@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLanguage } from '../../../../contexts/LanguageContext';
 
 interface InsertedRecord {
   id: string;
@@ -38,6 +39,8 @@ const InsertionMessage: React.FC<InsertionMessageProps> = ({
   perfilesData = [],
   userData = []
 }) => {
+  const { t } = useLanguage();
+  
   if (insertedRecords.length === 0) return null;
 
   // Función para obtener el nombre de la tabla en español
@@ -215,7 +218,7 @@ const InsertionMessage: React.FC<InsertionMessageProps> = ({
     }
     
     if (typeof value === 'boolean') {
-      return value ? 'Activo' : 'Inactivo';
+      return value ? t('status.active') : t('status.inactive');
     }
     
     // Normalizar el valor para comparación (convertir a número si es posible)
@@ -286,7 +289,7 @@ const InsertionMessage: React.FC<InsertionMessageProps> = ({
     
     // Manejar statusid
     if (fieldKey === 'statusid') {
-      return normalizedValue === 1 ? 'Activo' : 'Inactivo';
+      return normalizedValue === 1 ? t('status.active') : t('status.inactive');
     }
     
     // Manejar usercreatedid (Creado Por)

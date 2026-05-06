@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { SelectWithPlaceholder } from '../../selectors';
+import { useLanguage } from '../../../contexts/LanguageContext';
 
 interface ReplicateModalProps {
   isOpen: boolean;
@@ -34,6 +35,7 @@ const ReplicateModal: React.FC<ReplicateModalProps> = ({
   originalTable = '',
   selectedEntidad
 }) => {
+  const { t } = useLanguage();
   const [selectedEntry, setSelectedEntry] = useState<any>(null);
 
   // Limpiar selección cuando se cierra el modal
@@ -131,7 +133,7 @@ const ReplicateModal: React.FC<ReplicateModalProps> = ({
     }
     
     if (columnName === 'statusid') {
-      return value === 1 ? 'Activo' : 'Inactivo';
+      return value === 1 ? t('status.active') : t('status.inactive');
     }
     
     if (columnName === 'nodoid') {
