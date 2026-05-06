@@ -10,6 +10,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useModal } from '../../contexts/ModalContext';
 import { useSidebar } from '../../contexts/SidebarContext';
+import { STATUS } from '../../constants/status';
 
 // Hooks
 import { useTableCRUD } from '../../hooks/useTableCRUD';
@@ -271,7 +272,7 @@ const AlertasTableMain = forwardRef<AlertasTableMainRef, AlertasTableMainProps>(
         origenid,
         fuenteid,
         objetoid,
-        statusid: 1,
+        statusid: STATUS.ACTIVO,
         usercreatedid: userId,
         datecreated: now,
         usermodifiedid: userId,

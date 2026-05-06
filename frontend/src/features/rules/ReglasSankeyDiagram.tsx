@@ -1,3 +1,4 @@
+import { STATUS } from '../../constants/status';
 /**
  * ReglasSankeyDiagram - Diagrama Sankey para visualizar relaciones de reglas
  * Muestra: Regla → Regla-Objeto, Regla → Regla-Umbral, Regla → Regla-Perfil
@@ -134,10 +135,10 @@ export function ReglasSankeyDiagram({ themeColor = 'red' }: ReglasSankeyDiagramP
         JoySenseService.getTableData('perfil', 500)
       ])
 
-      setReglasData(Array.isArray(reglas) ? reglas.filter((r: Regla) => r.statusid === 1) : [])
-      setReglaObjetosData(Array.isArray(reglaObjetos) ? reglaObjetos.filter((ro: ReglaObjeto) => ro.statusid === 1) : [])
-      setReglaUmbralesData(Array.isArray(reglaUmbrales) ? reglaUmbrales.filter((ru: ReglaUmbral) => ru.statusid === 1) : [])
-      setReglaPerfilesData(Array.isArray(reglaPerfiles) ? reglaPerfiles.filter((rp: ReglaPerfil) => rp.statusid === 1) : [])
+      setReglasData(Array.isArray(reglas) ? reglas.filter((r: Regla) => r.statusid === STATUS.ACTIVO) : [])
+      setReglaObjetosData(Array.isArray(reglaObjetos) ? reglaObjetos.filter((ro: ReglaObjeto) => ro.statusid === STATUS.ACTIVO) : [])
+      setReglaUmbralesData(Array.isArray(reglaUmbrales) ? reglaUmbrales.filter((ru: ReglaUmbral) => ru.statusid === STATUS.ACTIVO) : [])
+      setReglaPerfilesData(Array.isArray(reglaPerfiles) ? reglaPerfiles.filter((rp: ReglaPerfil) => rp.statusid === STATUS.ACTIVO) : [])
       setOrigenesData(Array.isArray(origenes) ? origenes : [])
       setFuentesData(Array.isArray(fuentes) ? fuentes : [])
       setUmbralesData(Array.isArray(umbrales) ? umbrales : [])

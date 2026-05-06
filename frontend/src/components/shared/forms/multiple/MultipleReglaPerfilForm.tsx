@@ -1,3 +1,4 @@
+import { STATUS } from '../../../../constants/status';
 import React from 'react';
 import ReplicateButton from '../../../shared/ui/buttons/ReplicateButton';
 import { useLanguage } from '../../../../contexts/LanguageContext';
@@ -143,12 +144,12 @@ const MultipleReglaPerfilForm: React.FC<MultipleReglaPerfilFormProps> = ({
 
   // Obtener reglas disponibles (solo activas)
   const getReglasDisponibles = () => {
-    return reglasData.filter(regla => regla.statusid === 1);
+    return reglasData.filter(regla => regla.statusid === STATUS.ACTIVO);
   };
 
   // Obtener perfiles disponibles (solo activos)
   const getPerfilesDisponibles = () => {
-    return perfilesData.filter(perfil => perfil.statusid === 1);
+    return perfilesData.filter(perfil => perfil.statusid === STATUS.ACTIVO);
   };
 
   // Filtrar reglas por término de búsqueda
@@ -380,7 +381,7 @@ const MultipleReglaPerfilForm: React.FC<MultipleReglaPerfilFormProps> = ({
       <div className="flex justify-center gap-4 mt-6">
         <button
           onClick={onInsertReglaPerfiles}
-          disabled={loading || multipleReglaPerfiles.filter(c => c.statusid === 1).length === 0}
+          disabled={loading || multipleReglaPerfiles.filter(c => c.statusid === STATUS.ACTIVO).length === 0}
           className="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 font-mono tracking-wider"
         >
           <span>➕</span>

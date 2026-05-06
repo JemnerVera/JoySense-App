@@ -20,6 +20,7 @@ import {
 } from '../../utils/geografiaHierarchy';
 import { useUserGeographyPermissions } from '../../hooks/useUserGeographyPermissions';
 import { filterObjectsByUserPermissions, userCanAssignPermissionToObject } from '../../utils/permissionValidation';
+import { STATUS } from '../../constants/status';
 
 // ============================================================================
 // INTERFACES
@@ -264,7 +265,7 @@ export function AsignarPermisosTab({
               p.perfilid === activeTabConfig.perfilid &&
               p.origenid === activeTabConfig.origenid &&
               p.fuenteid === activeTabConfig.fuenteid &&
-              p.statusid === 1
+              p.statusid === STATUS.ACTIVO
             )
           : [];
 
@@ -285,7 +286,7 @@ export function AsignarPermisosTab({
                 p.origenid === activeTabConfig.origenid &&
                 p.fuenteid === parentFuente.fuenteid &&
                 p.objetoid !== null &&
-                p.statusid === 1
+                p.statusid === STATUS.ACTIVO
               );
 
               // Agregar permisos padre a la lista (solo para referencia, no se muestran en la matriz)
@@ -326,7 +327,7 @@ export function AsignarPermisosTab({
           p.origenid === activeTabConfig.origenid &&
           p.fuenteid === parentFuente.fuenteid &&
           p.objetoid !== null &&
-          p.statusid === 1
+          p.statusid === STATUS.ACTIVO
         );
 
         permisosPadre.forEach((p: any) => {
@@ -606,7 +607,7 @@ export function AsignarPermisosTab({
                 puede_ver: permisos.puede_ver,
                 puede_insertar: permisos.puede_insertar,
                 puede_actualizar: permisos.puede_actualizar,
-                statusid: 1,
+                statusid: STATUS.ACTIVO,
                 usercreatedid: userId,
                 datecreated: now,
                 usermodifiedid: userId,
@@ -710,7 +711,7 @@ export function AsignarPermisosTab({
             puede_ver: permisos.puede_ver,
             puede_insertar: permisos.puede_insertar,
             puede_actualizar: permisos.puede_actualizar,
-            statusid: 1,
+            statusid: STATUS.ACTIVO,
             usercreatedid: userId,
             datecreated: now,
             usermodifiedid: userId,
@@ -767,7 +768,7 @@ export function AsignarPermisosTab({
                 puede_ver: permisos.puede_ver,
                 puede_insertar: permisos.puede_insertar,
                 puede_actualizar: permisos.puede_actualizar,
-                statusid: 1,
+                statusid: STATUS.ACTIVO,
                 usercreatedid: userId,
                 datecreated: now,
                 usermodifiedid: userId,
@@ -844,7 +845,7 @@ export function AsignarPermisosTab({
               puede_ver: firstPermisos.puede_ver,
               puede_insertar: firstPermisos.puede_insertar,
               puede_actualizar: firstPermisos.puede_actualizar,
-              statusid: 1,
+              statusid: STATUS.ACTIVO,
               usercreatedid: userId,
               datecreated: now,
               usermodifiedid: userId,
@@ -883,7 +884,7 @@ export function AsignarPermisosTab({
                 puede_ver: permisos.puede_ver,
                 puede_insertar: permisos.puede_insertar,
                 puede_actualizar: permisos.puede_actualizar,
-                statusid: 1,
+                statusid: STATUS.ACTIVO,
                 usercreatedid: userId,
                 datecreated: now,
                 usermodifiedid: userId,
@@ -894,7 +895,7 @@ export function AsignarPermisosTab({
             // Si no hay permisos activos pero existe un permiso, desactivarlo
             permisosToUpsert.push({
               ...existingPermiso,
-              statusid: 0,
+              statusid: STATUS.INACTIVO,
               usermodifiedid: userId,
               datemodified: now
             });
@@ -983,7 +984,7 @@ export function AsignarPermisosTab({
               p.perfilid === activeTabConfig.perfilid &&
               p.origenid === activeTabConfig.origenid &&
               p.fuenteid === activeTabConfig.fuenteid &&
-              p.statusid === 1
+              p.statusid === STATUS.ACTIVO
             )
           : [];
         setExistingPermisos(filtered);
@@ -1299,7 +1300,7 @@ export function AsignarPermisosTab({
                     {objetosData.map(obj => {
                       // Verificar si el objeto ya tiene permiso asignado
                       const existingPermiso = existingPermisos.find((p: any) => 
-                        p.objetoid === obj.objetoid && p.statusid === 1
+                        p.objetoid === obj.objetoid && p.statusid === STATUS.ACTIVO
                       );
                       const hasExistingPermission = !!existingPermiso;
                       

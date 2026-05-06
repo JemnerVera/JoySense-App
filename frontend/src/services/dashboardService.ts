@@ -1,5 +1,6 @@
 // Servicio modular para el Dashboard
 import { JoySenseService } from './backend-api';
+import { STATUS } from './constants/status';
 
 export interface DashboardFilters {
   ubicacionId?: number;
@@ -123,7 +124,7 @@ export class DashboardService {
       nodoid: nodoid,
       nodo: `rs485-ls-${nodoid}`,
       deveui: `rs485-ls-${nodoid}`,
-      statusid: 1,
+      statusid: STATUS.ACTIVO,
       entidad: 'Arándano' // Esto debería venir de la relación con entidad
     }));
 

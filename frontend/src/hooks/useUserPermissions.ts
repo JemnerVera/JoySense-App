@@ -1,3 +1,4 @@
+import { STATUS } from '../constants/status';
 /**
  * Hook para obtener y verificar permisos del usuario actual
  * Verifica permisos basados en la tabla seleccionada y el origen (GEOGRAFÍA o TABLA)
@@ -198,7 +199,7 @@ export function useUserPermissions({
         // Filtrar permisos del perfil para esta tabla
         const permisosRelevantes = permisosArray.filter((p: any) => 
           p.perfilid === perfilid &&
-          p.statusid === 1 &&
+          p.statusid === STATUS.ACTIVO &&
           (!finalOrigenid || p.origenid === finalOrigenid) &&
           (!finalFuenteid || p.fuenteid === finalFuenteid)
         );

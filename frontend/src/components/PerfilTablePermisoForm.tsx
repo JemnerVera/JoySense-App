@@ -7,6 +7,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { SelectWithPlaceholder } from './selectors';
 import { useLanguage } from '../contexts/LanguageContext';
+import { STATUS } from '../constants/status';
 
 interface PerfilTablePermisoFormProps {
   formData: Record<string, any>;
@@ -126,10 +127,10 @@ const PerfilTablePermisoForm: React.FC<PerfilTablePermisoFormProps> = ({
       }
     }
     if (!formData.statusid) {
-      const newData = { ...formData, statusid: 1 };
+      const newData = { ...formData, statusid: STATUS.ACTIVO };
       setFormData(newData);
       if (updateFormField) {
-        updateFormField('statusid', 1);
+        updateFormField('statusid', STATUS.ACTIVO);
       }
     }
   }, []); // Solo al montar

@@ -1,3 +1,4 @@
+import { STATUS } from '../../constants/status';
 // ============================================================================
 // GEOGRAFÍA VALIDATIONS
 // ============================================================================
@@ -143,7 +144,7 @@ export const validatePaisUpdate = async (
   }
   
   // 3. Validar relaciones padre-hijo (solo si se está inactivando)
-  if (formData.statusid === 0 && originalData.statusid !== 0) {
+  if (formData.statusid === STATUS.INACTIVO && originalData.statusid !== 0) {
     const hasDependentRecords = await checkPaisDependencies(originalData.paisid);
     
     if (hasDependentRecords) {
@@ -326,7 +327,7 @@ export const validateEmpresaUpdate = async (
   }
   
   // 3. Validar relaciones padre-hijo (solo si se está inactivando)
-  if (formData.statusid === 0 && originalData.statusid !== 0) {
+  if (formData.statusid === STATUS.INACTIVO && originalData.statusid !== 0) {
     const hasDependentRecords = await checkEmpresaDependencies(originalData.empresaid);
     
     if (hasDependentRecords) {
@@ -509,7 +510,7 @@ export const validateFundoUpdate = async (
   }
   
   // 3. Validar relaciones padre-hijo (solo si se está inactivando)
-  if (formData.statusid === 0 && originalData.statusid !== 0) {
+  if (formData.statusid === STATUS.INACTIVO && originalData.statusid !== 0) {
     const hasDependentRecords = await checkFundoDependencies(originalData.fundoid);
     
     if (hasDependentRecords) {
@@ -636,7 +637,7 @@ export const validateUbicacionUpdate = async (
   }
   
   // 3. Validar relaciones padre-hijo (solo si se está inactivando)
-  if (formData.statusid === 0 && originalData.statusid !== 0) {
+  if (formData.statusid === STATUS.INACTIVO && originalData.statusid !== 0) {
     const hasDependentRecords = await checkUbicacionDependencies(originalData.ubicacionid);
     
     if (hasDependentRecords) {

@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { SelectWithPlaceholder } from './selectors';
 import { useLanguage } from '../contexts/LanguageContext';
+import { STATUS } from '../constants/status';
 
 interface PerfilGeografiaPermisoUpdateFormProps {
   formData: Record<string, any>;
@@ -415,11 +416,11 @@ const PerfilGeografiaPermisoUpdateForm: React.FC<PerfilGeografiaPermisoUpdateFor
           <div className="flex items-center space-x-3">
             <input
               type="checkbox"
-              checked={(formData.statusid ?? 1) === 1}
+              checked={(formData.statusid ?? STATUS.ACTIVO) === STATUS.ACTIVO}
               disabled={!isStatusEnabled || loading}
               onChange={(e) => {
                 if (isStatusEnabled) {
-                  updateFormField('statusid', e.target.checked ? 1 : 0);
+                  updateFormField('statusid', e.target.checked ? STATUS.ACTIVO : STATUS.INACTIVO);
                 }
               }}
               className={`w-5 h-5 ${getThemeColor('text')} bg-neutral-800 border-neutral-600 rounded ${getThemeColor('focus')} focus:ring-2 ${
@@ -429,7 +430,7 @@ const PerfilGeografiaPermisoUpdateForm: React.FC<PerfilGeografiaPermisoUpdateFor
             <span className={`font-mono tracking-wider ${
               isStatusEnabled ? 'text-white' : 'text-gray-500'
             }`}>
-              {(formData.statusid ?? 1) === 1 ? 'ACTIVO' : 'INACTIVO'}
+              {(formData.statusid ?? STATUS.ACTIVO) === STATUS.ACTIVO ? 'ACTIVO' : 'INACTIVO'}
             </span>
           </div>
         </div>

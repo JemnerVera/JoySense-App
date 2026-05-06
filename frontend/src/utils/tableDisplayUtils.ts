@@ -1,3 +1,4 @@
+import { STATUS } from '../constants/status';
 /**
  * Utilidades para formateo de celdas en tablas
  * Funciones puras sin estado ni efectos secundarios
@@ -16,7 +17,7 @@ export const formatStatusCell = (
 ): { text: string; className: string } => {
   // Para filas agrupadas, verificar si al menos una fila original está activa
   if (row?.originalRows && row.originalRows.length > 0) {
-    const hasActiveRow = row.originalRows.some((originalRow: any) => originalRow.statusid === 1);
+    const hasActiveRow = row.originalRows.some((originalRow: any) => originalRow.statusid === STATUS.ACTIVO);
     return {
       text: hasActiveRow 
         ? (t ? t('status.active') : 'ACTIVO') 

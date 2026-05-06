@@ -1,3 +1,4 @@
+import { STATUS } from '../../../../constants/status';
 // ============================================================================
 // CONTACTO FORM FIELDS
 // ============================================================================
@@ -123,7 +124,7 @@ export const ContactoFormFields: React.FC<ContactoFormFieldsProps> = ({
         <div className="flex items-center space-x-3">
           <input
             type="checkbox"
-            checked={formData.statusid === 1}
+            checked={formData.statusid === STATUS.ACTIVO}
             onChange={(e) => setFormData({
               ...formData,
               statusid: e.target.checked ? 1 : 0
@@ -131,7 +132,7 @@ export const ContactoFormFields: React.FC<ContactoFormFieldsProps> = ({
             className="w-5 h-5 text-orange-500 bg-neutral-800 border-neutral-600 rounded focus:ring-orange-500 focus:ring-2"
           />
           <span className="text-white font-mono tracking-wider">
-            {formData.statusid === 1 ? t('create.active') : t('create.inactive')}
+            {formData.statusid === STATUS.ACTIVO ? t('create.active') : t('create.inactive')}
           </span>
         </div>
       </div>

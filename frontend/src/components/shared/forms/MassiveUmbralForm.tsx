@@ -31,6 +31,9 @@ import { MassiveUmbralMetricsTable } from '../../MassiveUmbralForm/components/Ma
 import { MassiveUmbralSummary } from '../../MassiveUmbralForm/components/MassiveUmbralSummary';
 import { MassiveUmbralActions } from '../../MassiveUmbralForm/components/MassiveUmbralActions';
 
+// Constants
+import { STATUS } from '../../../constants/status';
+
 // ============================================================================
 // COMPONENT DECLARATION
 // ============================================================================
@@ -364,7 +367,7 @@ export const MassiveUmbralForm = memo(function MassiveUmbralForm({
         setLoadingSourceUmbrales(true);
         const allUmbrales = await JoySenseService.getTableData('umbral', 1000);
         const umbralesDelNodo = allUmbrales.filter((u: any) => 
-          u.nodoid === sourceNodeId && u.statusid === 1
+          u.nodoid === sourceNodeId && u.statusid === STATUS.ACTIVO
         );
         setSourceUmbrales(umbralesDelNodo);
 
@@ -494,7 +497,7 @@ export const MassiveUmbralForm = memo(function MassiveUmbralForm({
             label: n.nodo || `Nodo ${n.nodoid}`
           }));
 
-        const umbralesActivos = allUmbrales.filter((u: any) => u.statusid === 1);
+        const umbralesActivos = allUmbrales.filter((u: any) => u.statusid === STATUS.ACTIVO);
         const nodoidsConUmbrales = new Set(umbralesActivos.map((u: any) => u.nodoid));
 
         const compatibleNodes = allNodes

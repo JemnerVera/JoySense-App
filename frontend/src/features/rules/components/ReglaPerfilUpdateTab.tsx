@@ -3,6 +3,7 @@ import { useLanguage } from '../../../contexts/LanguageContext';
 import { JoySenseService } from '../../../services/backend-api';
 import { SelectWithPlaceholder } from '../../../components/selectors';
 import { ReglaPerfilFormFields } from '../../../components/shared/forms/table-specific/ReglaPerfilFormFields';
+import { STATUS } from '../../../constants/status';
 
 interface ReglaPerfilUpdateTabProps {
   reglasData?: any[];
@@ -30,7 +31,7 @@ export function ReglaPerfilUpdateTab({
   // Opciones de reglas activas
   const reglaOptions = React.useMemo(() => {
     return reglasData
-      .filter(r => r.statusid === 1)
+      .filter(r => r.statusid === STATUS.ACTIVO)
       .map(regla => ({
         value: regla.reglaid,
         label: regla.nombre || `Regla ${regla.reglaid}`
@@ -59,7 +60,7 @@ export function ReglaPerfilUpdateTab({
       // Inicializar formData
       setFormData({
         reglaid: reglaid,
-        _perfilesSeleccionados: perfiles.filter(p => p.statusid === 1).map(p => p.perfilid),
+        _perfilesSeleccionados: perfiles.filter(p => p.statusid === STATUS.ACTIVO).map(p => p.perfilid),
         _perfilesStatus: Object.fromEntries(
           perfiles.map(p => [p.perfilid, p.statusid])
         )
@@ -95,18 +96,18 @@ export function ReglaPerfilUpdateTab({
         // Formato antiguo: objeto con statusid
         const perfilesStatus = formData._perfilesStatus as Record<number, number>;
         perfilesSeleccionados = Object.entries(perfilesStatus)
-          .filter(([_, statusid]) => statusid === 1)
+          .filter(([_, statusid]) => statusid === STATUS.ACTIVO)
           .map(([perfilid, _]) => parseInt(perfilid));
       }
 
       // Obtener lista de perfiles que están actualmente en la regla
       const perfilesActuales = reglaPerfiles
-        .filter(rp => rp.statusid === 1)
+        .filter(rp => rp.statusid === STATUS.ACTIVO)
         .map(rp => rp.perfilid);
 
       // Perfiles a eliminar (estaban activos pero ya no están seleccionados)
       const perfilesAEliminar = reglaPerfiles
-        .filter(rp => rp.statusid === 1 && !perfilesSeleccionados.includes(rp.perfilid));
+        .filter(rp => rp.statusid === STATUS.ACTIVO && !perfilesSeleccionados.includes(rp.perfilid));
 
       // Perfiles a agregar (nuevos seleccionados que no están en la regla)
       const perfilesAAgregar = perfilesSeleccionados
@@ -125,7 +126,7 @@ export function ReglaPerfilUpdateTab({
         const result = await JoySenseService.insertTableRow('regla_perfil', {
           reglaid: selectedReglaid,
           perfilid: perfilid,
-          statusid: 1,
+          statusid: STATUS.ACTIVO,
           usercreatedid: 1, // TODO: usar user actual
           datecreated: new Date().toISOString()
         });

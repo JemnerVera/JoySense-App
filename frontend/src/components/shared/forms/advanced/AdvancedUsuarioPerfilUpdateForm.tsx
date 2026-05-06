@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { STATUS } from '../../../../constants/status';
 
 interface AdvancedUsuarioPerfilUpdateFormProps {
   selectedRows: any[];
@@ -49,13 +50,13 @@ export function AdvancedUsuarioPerfilUpdateForm({
       // Si es una fila agrupada, buscar en originalRows
       if (row.originalRows && row.originalRows.length > 0) {
         row.originalRows.forEach((originalRow: any) => {
-          if (originalRow.perfilid && originalRow.statusid === 1) {
+          if (originalRow.perfilid && originalRow.statusid === STATUS.ACTIVO) {
             perfilesSet.add(originalRow.perfilid);
           }
         });
       } else {
         // Si es una fila individual, verificar directamente
-        if (row.perfilid && row.statusid === 1) {
+        if (row.perfilid && row.statusid === STATUS.ACTIVO) {
           perfilesSet.add(row.perfilid);
         }
       }
@@ -75,7 +76,7 @@ export function AdvancedUsuarioPerfilUpdateForm({
 
   // Obtener perfiles disponibles para el usuario
   const getPerfilesDisponibles = () => {
-    return perfilesData.filter(perfil => perfil.statusid === 1);
+    return perfilesData.filter(perfil => perfil.statusid === STATUS.ACTIVO);
   };
 
   // Filtrar perfiles por término de búsqueda
@@ -129,7 +130,7 @@ export function AdvancedUsuarioPerfilUpdateForm({
         updatedEntries.push({
           usuarioid: usuarioid,
           perfilid: parseInt(perfilId),
-          statusid: 1, // Nuevo perfil = activo
+          statusid: STATUS.ACTIVO, // Nuevo perfil = activo
           usercreatedid: null, // Se asignará en el backend
           datecreated: new Date().toISOString(),
           usermodifiedid: null, // Se asignará en el backend

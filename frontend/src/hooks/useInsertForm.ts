@@ -13,6 +13,7 @@ import { consolidateErrorMessages } from '../utils/messageConsolidation'
 import { AuthUser, Usuario } from '../types'
 import { JoySenseService, checkUserSyncStatus } from '../services/backend-api'
 import { ORIGEN } from '../constants/origen'
+import { STATUS } from '../constants/status'
 
 interface Message {
   type: 'success' | 'error' | 'warning' | 'info'
@@ -384,7 +385,7 @@ export const useInsertForm = ({
       
       const hasSelectedPerfiles = 
         (Array.isArray(perfilesSeleccionados) && perfilesSeleccionados.length > 0) ||
-        (perfilesStatus && Object.values(perfilesStatus).filter(statusid => statusid === 1).length > 0)
+        (perfilesStatus && Object.values(perfilesStatus).filter(statusid => statusid === STATUS.ACTIVO).length > 0)
       
       if (!hasSelectedPerfiles) {
         errors._perfilesSeleccionados = 'Debe seleccionar al menos un perfil'
@@ -407,7 +408,7 @@ export const useInsertForm = ({
       
       const hasSelectedPerfiles = 
         (Array.isArray(perfilesSeleccionados) && perfilesSeleccionados.length > 0) ||
-        (perfilesStatus && Object.values(perfilesStatus).filter(statusid => statusid === 1).length > 0)
+        (perfilesStatus && Object.values(perfilesStatus).filter(statusid => statusid === STATUS.ACTIVO).length > 0)
       
       if (!hasSelectedPerfiles) {
         errors._perfilesSeleccionados = 'Debe seleccionar al menos un perfil'
@@ -633,7 +634,7 @@ setFormErrors(errors)
 
         const carpetaData = {
           carpeta: (formData.carpeta || '').trim(),
-          statusid: 1,
+          statusid: STATUS.ACTIVO,
           usercreatedid: userId,
           datecreated: now,
           usermodifiedid: userId,
@@ -662,7 +663,7 @@ setFormErrors(errors)
           await JoySenseService.insertTableRow('carpeta_ubicacion', {
             carpetaid,
             ubicacionid: Number(ubicacionid),
-            statusid: 1,
+            statusid: STATUS.ACTIVO,
             usercreatedid: userId,
             datecreated: now,
             usermodifiedid: userId,
@@ -674,7 +675,7 @@ setFormErrors(errors)
           await JoySenseService.insertTableRow('carpeta_usuario', {
             carpetaid,
             usuarioid: Number(usuarioid),
-            statusid: 1,
+            statusid: STATUS.ACTIVO,
             usercreatedid: userId,
             datecreated: now,
             usermodifiedid: userId,
@@ -699,7 +700,7 @@ setFormErrors(errors)
 
         const entidadData = {
           entidad: (formData.entidad || '').trim(),
-          statusid: 1,
+          statusid: STATUS.ACTIVO,
           usercreatedid: userId,
           datecreated: now,
           usermodifiedid: userId,
@@ -727,7 +728,7 @@ setFormErrors(errors)
           await JoySenseService.insertTableRow('entidad_localizacion', {
             entidadid,
             localizacionid: Number(localizacionid),
-            statusid: 1,
+            statusid: STATUS.ACTIVO,
             usercreatedid: userId,
             datecreated: now,
             usermodifiedid: userId,
@@ -767,7 +768,7 @@ setFormErrors(errors)
           // Formato antiguo: objeto con statusid
           const perfilesStatus = formData._perfilesStatus as Record<number, number>;
           perfilesASeleccionar = Object.entries(perfilesStatus)
-            .filter(([_, statusid]) => statusid === 1)
+            .filter(([_, statusid]) => statusid === STATUS.ACTIVO)
             .map(([perfilid, _]) => parseInt(perfilid));
         }
         
@@ -779,7 +780,7 @@ setFormErrors(errors)
         const recordsToInsert = perfilesASeleccionar.map((perfilid) => ({
           usuarioid: usuarioid,
           perfilid: perfilid,
-          statusid: 1,
+          statusid: STATUS.ACTIVO,
           usercreatedid: userId,
           datecreated: now,
           usermodifiedid: userId,
@@ -826,7 +827,7 @@ setFormErrors(errors)
           // Formato antiguo: objeto con statusid
           const perfilesStatus = formData._perfilesStatus as Record<number, number>;
           perfilesASeleccionar = Object.entries(perfilesStatus)
-            .filter(([_, statusid]) => statusid === 1)
+            .filter(([_, statusid]) => statusid === STATUS.ACTIVO)
             .map(([perfilid, _]) => parseInt(perfilid));
         }
         
@@ -838,7 +839,7 @@ setFormErrors(errors)
         const recordsToInsert = perfilesASeleccionar.map((perfilid) => ({
           reglaid: reglaid,
           perfilid: perfilid,
-          statusid: 1,
+          statusid: STATUS.ACTIVO,
           usercreatedid: userId,
           datecreated: now,
           usermodifiedid: userId,
@@ -948,7 +949,7 @@ setFormErrors(errors)
             agrupador_inicio: row.agrupador_inicio ?? false,
             agrupador_fin: row.agrupador_fin ?? false,
             orden: row.orden,
-            statusid: 1,
+            statusid: STATUS.ACTIVO,
             usercreatedid: userId,
             usermodifiedid: userId
           };
@@ -999,7 +1000,7 @@ setFormErrors(errors)
           const fuentesData = await JoySenseService.getTableData('fuente', 100);
           const fuentesArray = Array.isArray(fuentesData) ? fuentesData : ((fuentesData as any)?.data || []);
           const fuenteLocalizacion = fuentesArray.find((f: any) => 
-            f.fuente?.toLowerCase() === 'localizacion' && f.statusid === 1
+            f.fuente?.toLowerCase() === 'localizacion' && f.statusid === STATUS.ACTIVO
           );
           
           if (fuenteLocalizacion?.fuenteid) {
@@ -1009,7 +1010,7 @@ setFormErrors(errors)
               origenid: ORIGEN.GEOGRAFIA, // 1 = GEOGRAFÍA
               fuenteid: fuenteLocalizacion.fuenteid,
               objetoid: null, // NULL = scope global
-              statusid: 1,
+              statusid: STATUS.ACTIVO,
               usercreatedid: userId,
               usermodifiedid: userId
             };
@@ -1050,7 +1051,7 @@ setFormErrors(errors)
             const reglaPerfilRecord: Record<string, any> = {
               reglaid: reglaid,
               perfilid: perfilid,
-              statusid: 1,
+              statusid: STATUS.ACTIVO,
               usercreatedid: userId,
               usermodifiedid: userId
             };
@@ -1069,7 +1070,7 @@ setFormErrors(errors)
         // Finalmente, activar la regla (statusid=1)
         // Ahora que tenemos regla_umbral y regla_objeto creados, los triggers de validación pasarán
         const activateResult = await JoySenseService.updateTableRow('regla', reglaid.toString(), {
-          statusid: 1,
+          statusid: STATUS.ACTIVO,
           usermodifiedid: userId,
           datemodified: new Date().toISOString()
         });
@@ -1107,7 +1108,7 @@ setFormErrors(errors)
           origenid: origenid,
           fuenteid: fuenteid,
           objetoid: objetoid,
-          statusid: 1,
+          statusid: STATUS.ACTIVO,
           usercreatedid: userId,
           datecreated: now,
           usermodifiedid: userId,
@@ -1157,7 +1158,7 @@ setFormErrors(errors)
             usuarioid: usuarioid,
             canalid: c.canalid,
             identificador: c.identificador.trim(),
-            statusid: 1,
+            statusid: STATUS.ACTIVO,
             usercreatedid: userId,
             datecreated: now,
             usermodifiedid: userId,

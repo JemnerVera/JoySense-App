@@ -9,6 +9,7 @@ import { useFilters } from "../../contexts/FilterContext"
 import { filterNodesByGlobalFilters } from "../../utils/filterNodesUtils"
 import { transformMedicionData } from "../../utils/medicionTransform"
 import { useMedicionesLoader, useSystemData } from "./hooks"
+import { STATUS } from '../../constants/status'
 import { ErrorAlert, LoadingState, ThresholdRecommendationsModal, DetailedAnalysisModal } from "./components"
 import { MetricMiniChart } from "./components/MetricMiniChart"
 import {
@@ -173,7 +174,7 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
 
     // Transformar métricas del backend a formato MetricConfig
     return metricas
-      .filter((m: any) => m.statusid === 1) // Solo métricas activas
+      .filter((m: any) => m.statusid === STATUS.ACTIVO) // Solo métricas activas
       .map((m: any) => transformBackendMetricaToConfig(m, t));
   }, [metricas, t])
   
@@ -1381,7 +1382,7 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
       const umbralesDelNodo = allUmbrales.filter((u: any) => 
         u.nodoid === umbralNodoSeleccionado && 
         u.metricaid === metricId &&
-        u.statusid === 1 // Solo umbrales activos
+        u.statusid === STATUS.ACTIVO // Solo umbrales activos
       )
 
       // Agrupar por tipoid

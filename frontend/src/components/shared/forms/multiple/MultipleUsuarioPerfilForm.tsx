@@ -1,3 +1,4 @@
+import { STATUS } from '../../../../constants/status';
 import React from 'react';
 import ReplicateButton from '../../../shared/ui/buttons/ReplicateButton';
 import { useLanguage } from '../../../../contexts/LanguageContext';
@@ -153,7 +154,7 @@ const MultipleUsuarioPerfilForm: React.FC<MultipleUsuarioPerfilFormProps> = ({
     // Usar los datos reales de usuarioperfil de la base de datos
     const usuariosConPerfil = new Set(
       usuarioperfilData
-        .filter(up => up.statusid === 1)
+        .filter(up => up.statusid === STATUS.ACTIVO)
         .map(up => up.usuarioid)
     );
     
@@ -162,8 +163,8 @@ const MultipleUsuarioPerfilForm: React.FC<MultipleUsuarioPerfilFormProps> = ({
       usuariosConPerfil: usuariosConPerfil.size,
       usuarioperfilData: usuarioperfilData.length,
       usuariosConPerfilIds: Array.from(usuariosConPerfil),
-      usuariosActivos: userData.filter(u => u.statusid === 1).length,
-      usuariosInactivos: userData.filter(u => u.statusid === 0).length
+      usuariosActivos: userData.filter(u => u.statusid === STATUS.ACTIVO).length,
+      usuariosInactivos: userData.filter(u => u.statusid === STATUS.INACTIVO).length
     });
 
     const usuariosSinPerfil = userData.filter(usuario => 
@@ -183,7 +184,7 @@ const MultipleUsuarioPerfilForm: React.FC<MultipleUsuarioPerfilFormProps> = ({
 
   // Obtener perfiles disponibles
   const getPerfilesDisponibles = () => {
-    return perfilesData.filter(perfil => perfil.statusid === 1);
+    return perfilesData.filter(perfil => perfil.statusid === STATUS.ACTIVO);
   };
 
   // Filtrar usuarios por término de búsqueda

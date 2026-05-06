@@ -1,3 +1,4 @@
+import { STATUS } from '../../constants/status';
 /**
  * ReglaObjetoUpdateForm - Componente para actualizar alcances de regla
  * Permite seleccionar un alcance de regla y editar los objetos asignados
@@ -72,7 +73,7 @@ export const ReglaObjetoUpdateForm: React.FC<ReglaObjetoUpdateFormProps> = ({
       return [];
     }
     return reglaObjetoData
-      .filter(ro => ro.statusid === 1)
+      .filter(ro => ro.statusid === STATUS.ACTIVO)
       .map(reglaObjeto => {
         // Intentar obtener el nombre de la regla
         const regla = reglasData?.find(r => r.reglaid === reglaObjeto.reglaid);

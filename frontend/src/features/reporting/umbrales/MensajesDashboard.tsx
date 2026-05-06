@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { JoySenseService } from '../../../services/backend-api';
+import { STATUS } from '../../../constants/status';
 
 interface Mensaje {
   alertaid: number;
@@ -192,7 +193,7 @@ const MensajesDashboard: React.FC = () => {
       // Por ahora solo actualizar el estado local
       setMensajes(prev => prev.map(m => 
         m.alertaid === alertaid 
-          ? { ...m, statusid: 1 } 
+          ? { ...m, statusid: STATUS.ACTIVO } 
           : m
       ));
     } catch (error) {

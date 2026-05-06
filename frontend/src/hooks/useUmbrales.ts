@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { JoySenseService } from '../services/backend-api';
+import { STATUS } from '../constants/status';
 
 interface Umbral {
   umbralid: number;
@@ -88,7 +89,7 @@ export const useUmbrales = () => {
         maximo: parseFloat(formData.maximo),
         minimo: parseFloat(formData.minimo),
         tipoid: parseInt(formData.tipoid),
-        statusid: 1,
+        statusid: STATUS.ACTIVO,
         usercreatedid: 1,
         datecreated: new Date().toISOString()
       };

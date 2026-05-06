@@ -1,3 +1,4 @@
+import { STATUS } from '../../../../constants/status';
 // ============================================================================
 // USUARIO PERFIL FORM FIELDS
 // ============================================================================
@@ -149,7 +150,7 @@ export const UsuarioPerfilFormFields: React.FC<UsuarioPerfilFormFieldsProps> = (
     
     // Actualizar formData con los perfiles seleccionados
     const perfilesActivos = Object.entries(perfilesStatus)
-      .filter(([_, statusid]) => statusid === 1)
+      .filter(([_, statusid]) => statusid === STATUS.ACTIVO)
       .map(([perfilid, _]) => parseInt(perfilid));
     
     // Usar función de actualización para evitar depender de formData
@@ -163,7 +164,7 @@ export const UsuarioPerfilFormFields: React.FC<UsuarioPerfilFormFieldsProps> = (
   // Filtrar y ordenar perfiles activos por perfilid ascendente
   const perfilesActivos = useMemo(() => {
     return perfilesData
-      .filter((p: any) => p.statusid === 1)
+      .filter((p: any) => p.statusid === STATUS.ACTIVO)
       .sort((a: any, b: any) => a.perfilid - b.perfilid);
   }, [perfilesData]);
 
@@ -173,7 +174,7 @@ export const UsuarioPerfilFormFields: React.FC<UsuarioPerfilFormFieldsProps> = (
     const perfilesAUsar = existingPerfiles.length > 0 ? existingPerfiles : perfilesExistentes;
     return new Set(
       perfilesAUsar
-        .filter((p: any) => p.statusid === 1)
+        .filter((p: any) => p.statusid === STATUS.ACTIVO)
         .map((p: any) => p.perfilid)
     );
   }, [existingPerfiles, perfilesExistentes]);

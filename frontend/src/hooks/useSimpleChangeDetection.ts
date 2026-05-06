@@ -1,3 +1,4 @@
+import { STATUS } from '../constants/status';
 import { useCallback } from 'react';
 import { getTableConfig } from '../config/tables.config';
 
@@ -259,8 +260,8 @@ export const useSimpleChangeDetection = () => {
       // Si solo hay statusid con valor 1 (ACTIVO por defecto) y ningún otro cambio, no hay cambios reales
       // Verificar si todos los cambios son solo statusid=1
       const hasOnlyStatusId = changes.length === 0 || 
-        (changes.length === 1 && changes.includes('statusid') && formData.statusid === 1) ||
-        (changes.length > 0 && changes.every(key => key === 'statusid') && formData.statusid === 1);
+        (changes.length === 1 && changes.includes('statusid') && formData.statusid === STATUS.ACTIVO) ||
+        (changes.length > 0 && changes.every(key => key === 'statusid') && formData.statusid === STATUS.ACTIVO);
       
       if (hasOnlyStatusId) {
         return false;

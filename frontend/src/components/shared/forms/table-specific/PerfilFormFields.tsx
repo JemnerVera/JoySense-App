@@ -1,3 +1,4 @@
+import { STATUS } from '../../../../constants/status';
 // ============================================================================
 // PERFIL FORM FIELDS
 // ============================================================================
@@ -198,7 +199,7 @@ export const PerfilFormFields: React.FC<PerfilFormFieldsProps> = ({
             <div className="flex items-center space-x-3">
               <input
                 type="checkbox"
-                checked={formData.statusid === 1}
+                checked={formData.statusid === STATUS.ACTIVO}
                 onChange={(e) => {
                   setFormData({
                     ...formData,
@@ -208,7 +209,7 @@ export const PerfilFormFields: React.FC<PerfilFormFieldsProps> = ({
                 className={`w-5 h-5 ${getThemeColor('text')} bg-neutral-800 border-neutral-600 rounded focus:ring-2 ${getThemeColor('focus')}`}
               />
               <span className="text-white font-mono tracking-wider">
-                {formData.statusid === 1 ? t('create.active') : t('create.inactive')}
+                {formData.statusid === STATUS.ACTIVO ? t('create.active') : t('create.inactive')}
               </span>
             </div>
           </div>

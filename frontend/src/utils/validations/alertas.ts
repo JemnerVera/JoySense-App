@@ -1,3 +1,4 @@
+import { STATUS } from '../../constants/status';
 // ============================================================================
 // ALERTAS VALIDATIONS
 // ============================================================================
@@ -281,7 +282,7 @@ export const validateCriticidadUpdate = async (
   }
   
   // 3. Validar relaciones padre-hijo (solo si se está inactivando)
-  if (formData.statusid === 0 && originalData.statusid !== 0) {
+  if (formData.statusid === STATUS.INACTIVO && originalData.statusid !== 0) {
     const hasDependentRecords = await checkCriticidadDependencies(originalData.criticidadid);
     
     if (hasDependentRecords) {

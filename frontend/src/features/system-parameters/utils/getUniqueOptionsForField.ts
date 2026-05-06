@@ -1,3 +1,4 @@
+import { STATUS } from '../../../constants/status';
 // ============================================================================
 // UTILITY: getUniqueOptionsForField - Obtener opciones únicas para campos de formulario
 // ============================================================================
@@ -171,7 +172,7 @@ export const getUniqueOptionsForField = ({
   if (columnName === 'jefeid' && selectedTable === 'perfil') {
     const perfiles = relatedDataForStatus.perfilesData || [];
     return perfiles
-      .filter((p: any) => p.statusid === 1) // Solo perfiles activos
+      .filter((p: any) => p.statusid === STATUS.ACTIVO) // Solo perfiles activos
       .map((item: any) => ({
         value: item.perfilid,
         label: `${item.nivel} - ${item.perfil}` || `ID: ${item.perfilid}`
@@ -192,7 +193,7 @@ export const getUniqueOptionsForField = ({
     
     const fundosMap = new Map(fundos.map((f: any) => [f.fundoid, f.fundo]));
     
-    let filteredUbicaciones = ubicaciones.filter((u: any) => u.statusid === 1);
+    let filteredUbicaciones = ubicaciones.filter((u: any) => u.statusid === STATUS.ACTIVO);
     
     // Si hay fundo seleccionado en filtros globales, filtrar solo ubicaciones de ese fundo
     if (fundoSeleccionado) {
@@ -224,7 +225,7 @@ export const getUniqueOptionsForField = ({
     const fundosMap = new Map(fundos.map((f: any) => [f.fundoid, f.fundo]));
     
     return nodos
-      .filter((n: any) => n.statusid === 1)
+      .filter((n: any) => n.statusid === STATUS.ACTIVO)
       .map((item: any) => {
         const ubicacionData = ubicacionesMap.get(item.ubicacionid);
         const fundoid = ubicacionData?.fundoid;
@@ -249,7 +250,7 @@ export const getUniqueOptionsForField = ({
     const tiposMap = new Map(tipos.map((t: any) => [t.tipoid, t.tipo]));
     
     return sensors
-      .filter((s: any) => s.statusid === 1) // Solo sensores activos
+      .filter((s: any) => s.statusid === STATUS.ACTIVO) // Solo sensores activos
       .map((item: any) => {
         const sensorName = item.sensor || '';
         const tipoName = tiposMap.get(item.tipoid) || '';
@@ -271,7 +272,7 @@ export const getUniqueOptionsForField = ({
     const tiposMap = new Map(tipos.map((t: any) => [t.tipoid, t.tipo]));
     
     return sensors
-      .filter((s: any) => s.statusid === 1) // Solo sensores activos
+      .filter((s: any) => s.statusid === STATUS.ACTIVO) // Solo sensores activos
       .map((item: any) => {
         const sensorName = item.sensor || '';
         const tipoName = tiposMap.get(item.tipoid) || '';
@@ -319,7 +320,7 @@ export const getUniqueOptionsForField = ({
     const localizacionesPorNombre = new Map<string, number[]>();
     
     localizaciones
-      .filter((l: any) => l.statusid === 1) // Solo activas
+      .filter((l: any) => l.statusid === STATUS.ACTIVO) // Solo activas
       .forEach((item: any) => {
         const locName = item.localizacion || '';
         if (!localizacionesPorNombre.has(locName)) {
@@ -381,7 +382,7 @@ export const getUniqueOptionsForField = ({
   let filteredByStatus = data.filter((item: any) => {
     // Para campos que tienen statusid, solo mostrar activos
     if (item.statusid !== undefined) {
-      return item.statusid === 1;
+      return item.statusid === STATUS.ACTIVO;
     }
     // Si no tiene statusid, incluir todos
     return true;

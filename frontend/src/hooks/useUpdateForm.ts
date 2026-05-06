@@ -1,11 +1,4 @@
-/**
- * Hook para manejar el formulario de actualización en SystemParameters
- * Encapsula la lógica de carga, validación y actualización de registros
- */
-
-import { useState, useEffect, useCallback } from 'react';
-import { validateTableUpdate } from '../utils/validations';
-import type { TableConfig } from '../config/tables.config';
+import { STATUS } from '../constants/status';
 import { logger } from '../utils/logger';
 
 interface UseUpdateFormProps {
@@ -297,7 +290,7 @@ export const useUpdateForm = ({
         for (const ubicacionid of ubicacionidsToRemove) {
           try {
             const pk = { carpetaid, ubicacionid };
-            await updateRow(pk, { statusid: 0, usermodifiedid: currentUserId, datemodified: now });
+            await updateRow(pk, { statusid: STATUS.INACTIVO, usermodifiedid: currentUserId, datemodified: now });
           } catch (error) {
             console.warn(`Error al desactivar ubicación ${ubicacionid}:`, error);
           }
@@ -310,7 +303,7 @@ export const useUpdateForm = ({
             await JoySenseService.insertTableRow('carpeta_ubicacion', {
               carpetaid,
               ubicacionid,
-              statusid: 1,
+              statusid: STATUS.ACTIVO,
               usercreatedid: currentUserId,
               datecreated: now,
               usermodifiedid: currentUserId,
@@ -325,7 +318,7 @@ export const useUpdateForm = ({
         for (const usuarioid of usuarioidesToRemove) {
           try {
             const pk = { carpetaid, usuarioid };
-            await updateRow(pk, { statusid: 0, usermodifiedid: currentUserId, datemodified: now });
+            await updateRow(pk, { statusid: STATUS.INACTIVO, usermodifiedid: currentUserId, datemodified: now });
           } catch (error) {
             console.warn(`Error al desactivar usuario ${usuarioid}:`, error);
           }
@@ -338,7 +331,7 @@ export const useUpdateForm = ({
             await JoySenseService.insertTableRow('carpeta_usuario', {
               carpetaid,
               usuarioid,
-              statusid: 1,
+              statusid: STATUS.ACTIVO,
               usercreatedid: currentUserId,
               datecreated: now,
               usermodifiedid: currentUserId,
@@ -403,7 +396,7 @@ export const useUpdateForm = ({
             await JoySenseService.upsertTableRowByCompositeKey(
               'entidad_localizacion',
               { entidadid, localizacionid },
-              { statusid: 0, usermodifiedid: currentUserId, datemodified: now }
+              { statusid: STATUS.INACTIVO, usermodifiedid: currentUserId, datemodified: now }
             );
             console.log(`[useUpdateForm] ✅ Desactivada localizacionid ${localizacionid}`);
           } catch (error) {
@@ -417,7 +410,7 @@ export const useUpdateForm = ({
             await JoySenseService.insertTableRow('entidad_localizacion', {
               entidadid,
               localizacionid,
-              statusid: 1,
+              statusid: STATUS.ACTIVO,
               usercreatedid: currentUserId,
               datecreated: now,
               usermodifiedid: currentUserId,
@@ -448,23 +441,23 @@ export const useUpdateForm = ({
 
         // Comparar perfiles seleccionados con existentes
         const perfilesSeleccionados = Object.entries(perfilesStatus)
-          .filter(([_, statusid]) => statusid === 1)
+          .filter(([_, statusid]) => statusid === STATUS.ACTIVO)
           .map(([perfilid, _]) => parseInt(perfilid));
 
         const perfilesExistentes = existingRows.map((r: any) => r.perfilid);
 
         // Perfiles a eliminar (estaban activos pero ahora están inactivos)
         const perfilesAEliminar = existingRows
-          .filter((r: any) => r.statusid === 1 && !perfilesSeleccionados.includes(r.perfilid))
+          .filter((r: any) => r.statusid === STATUS.ACTIVO && !perfilesSeleccionados.includes(r.perfilid))
           .map((r: any) => ({ usuarioid: r.usuarioid, perfilid: r.perfilid }));
 
         // Perfiles a agregar (nuevos o que estaban inactivos)
         const perfilesAAgregar = perfilesSeleccionados
-          .filter(perfilid => !existingRows.some((r: any) => r.perfilid === perfilid && r.statusid === 1))
+          .filter(perfilid => !existingRows.some((r: any) => r.perfilid === perfilid && r.statusid === STATUS.ACTIVO))
           .map(perfilid => ({
             usuarioid: usuarioid,
             perfilid: perfilid,
-            statusid: 1,
+            statusid: STATUS.ACTIVO,
             usercreatedid: currentUserId,
             datecreated: now,
             usermodifiedid: currentUserId,
@@ -495,7 +488,7 @@ export const useUpdateForm = ({
             // Para eliminar, se usa DELETE, pero como no está disponible en este contexto,
             // se actualiza statusid a 0
             const result = await updateRow(pk, {
-              statusid: 0,
+              statusid: STATUS.INACTIVO,
               usermodifiedid: currentUserId,
               datemodified: now
             });

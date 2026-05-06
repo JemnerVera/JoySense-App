@@ -6,6 +6,7 @@
 import { useCallback } from 'react';
 import { FormData, SelectedNodo, SelectedLocalizacion, LocalizacionDataToApply } from '../types';
 import { logger } from '../../../utils/logger';
+import { STATUS } from '../../../constants/status';
 
 interface UseMassiveLocalizacionApplicationProps {
   formData: FormData;
@@ -45,7 +46,7 @@ export const useMassiveLocalizacionApplication = ({
         sensorid: sm.sensorid,
         metricaid: sm.metricaid,
         localizacion: localizacionName,
-        statusid: 1
+        statusid: STATUS.ACTIVO
       }));
 
       logger.info(`Aplicando ${dataToApply.length} localizaciones masivas`, dataToApply);

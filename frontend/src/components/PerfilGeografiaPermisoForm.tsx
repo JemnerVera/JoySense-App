@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { SelectWithPlaceholder } from './selectors';
 import { useLanguage } from '../contexts/LanguageContext';
+import { STATUS } from '../constants/status';
 
 interface PerfilGeografiaPermisoFormProps {
   formData: Record<string, any>;
@@ -137,10 +138,10 @@ const PerfilGeografiaPermisoForm: React.FC<PerfilGeografiaPermisoFormProps> = ({
       }
     }
     if (!formData.statusid) {
-      const newData = { ...formData, statusid: 1 };
+      const newData = { ...formData, statusid: STATUS.ACTIVO };
       setFormData(newData);
       if (updateFormField) {
-        updateFormField('statusid', 1);
+        updateFormField('statusid', STATUS.ACTIVO);
       }
     }
   }, []); // Solo al montar
@@ -412,7 +413,7 @@ const PerfilGeografiaPermisoForm: React.FC<PerfilGeografiaPermisoFormProps> = ({
       const fieldName = `${geografiaType}id`;
       updateFormField(fieldName, value);
       if (!formData.statusid) {
-        updateFormField('statusid', 1);
+        updateFormField('statusid', STATUS.ACTIVO);
       }
     }
   };

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { STATUS } from '../../../../constants/status';
 
 interface AdvancedMetricaSensorUpdateFormProps {
   selectedRows: any[];
@@ -83,7 +84,7 @@ export function AdvancedMetricaSensorUpdateForm({
     const metricasSet = new Set(
       selectedRows
         .flatMap(row => row.originalRows || [row])
-        .filter(row => row.statusid === 1) // Solo métricas activas
+        .filter(row => row.statusid === STATUS.ACTIVO) // Solo métricas activas
         .map(row => row.metricaid?.toString())
         .filter(Boolean)
     );
@@ -130,7 +131,7 @@ export function AdvancedMetricaSensorUpdateForm({
             // Actualizar la entrada existente con status activo
             updatedEntries.push({
               ...existingRow,
-              statusid: 1, // Activo
+              statusid: STATUS.ACTIVO, // Activo
               usermodifiedid: firstRow?.usermodifiedid,
               datemodified: new Date().toISOString()
             });
@@ -140,7 +141,7 @@ export function AdvancedMetricaSensorUpdateForm({
               nodoid: parseInt(nodoId),
               tipoid: parseInt(tipoId),
               metricaid: parseInt(metricaId),
-              statusid: 1, // Activo
+              statusid: STATUS.ACTIVO, // Activo
               usercreatedid: firstRow?.usercreatedid,
               datecreated: new Date().toISOString(),
               usermodifiedid: firstRow?.usermodifiedid,
@@ -163,7 +164,7 @@ export function AdvancedMetricaSensorUpdateForm({
         // Esta entrada ya no está seleccionada, desactivarla
         updatedEntries.push({
           ...originalRow,
-          statusid: 0, // Inactivo
+          statusid: STATUS.INACTIVO, // Inactivo
           usermodifiedid: firstRow?.usermodifiedid,
           datemodified: new Date().toISOString()
         });

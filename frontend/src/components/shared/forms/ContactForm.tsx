@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { JoySenseService } from '../../../services/backend-api'
+import { STATUS } from '../../../constants/status'
 
 interface ContactFormProps {
   userId: number
@@ -67,7 +68,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
         // Insertar correo primero
         const correoData = {
           correo: correo,
-          statusid: 1,
+          statusid: STATUS.ACTIVO,
           usercreatedid: userId,
           datecreated: new Date().toISOString(),
           datemodified: new Date().toISOString()
@@ -80,7 +81,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
           usuarioid: userId,
           tipo_contacto: 'correo',
           correoid: correoResult[0].correoid,
-          statusid: 1,
+          statusid: STATUS.ACTIVO,
           usercreatedid: userId,
           datecreated: new Date().toISOString(),
           datemodified: new Date().toISOString()
@@ -107,7 +108,7 @@ export const ContactForm: React.FC<ContactFormProps> = ({
           tipo_contacto: 'telefono',
           codigotelefonoid: selectedCodigo,
           numero_telefono: numeroTelefono,
-          statusid: 1,
+          statusid: STATUS.ACTIVO,
           usercreatedid: userId,
           datecreated: new Date().toISOString(),
           datemodified: new Date().toISOString()

@@ -1,3 +1,4 @@
+import { STATUS } from '../../../constants/status';
 import React from 'react';
 import { ReglaObjetoUpdateForm } from '../ReglaObjetoUpdateForm';
 import { RelatedData, Message } from '../types';
@@ -33,7 +34,7 @@ export function ReglaObjetoUpdateTab({
   ubicacionesData,
   fuentesData
 }: ReglaObjetoUpdateTabProps) {
-  const activeReglaObjetos = reglaObjetoData.filter(ro => ro.statusid === 1);
+  const activeReglaObjetos = reglaObjetoData.filter(ro => ro.statusid === STATUS.ACTIVO);
 
   return (
     <div className="space-y-6">

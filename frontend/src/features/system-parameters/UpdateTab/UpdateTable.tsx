@@ -1,3 +1,4 @@
+import { STATUS } from '../../../constants/status';
 /**
  * Componente para renderizar la tabla de selección en el tab Actualizar
  * Similar a StatusTable pero con funcionalidad de selección de filas
@@ -305,7 +306,7 @@ export const UpdateTable: React.FC<UpdateTableProps> = ({
                     // Statusid - Formateo especial con colores
                     if (col.columnName === 'statusid') {
                       const hasActiveRow = row.originalRows && row.originalRows.length > 0
-                        ? row.originalRows.some((originalRow: any) => originalRow.statusid === 1)
+                        ? row.originalRows.some((originalRow: any) => originalRow.statusid === STATUS.ACTIVO)
                         : null;
                       const isActive = hasActiveRow !== null ? hasActiveRow : (row[col.columnName] === 1);
                       

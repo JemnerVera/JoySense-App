@@ -1,3 +1,4 @@
+import { STATUS } from '../../constants/status';
 /**
  * PermisosTreeView - Vista tipo árbol/skill tree para visualizar permisos
  * Muestra permisos organizados por: Perfil → Origen → Fuente → Permisos
@@ -104,9 +105,9 @@ export function PermisosTreeView({ themeColor = 'purple' }: PermisosTreeViewProp
         JoySenseService.getTableData('fuente', 500)
       ])
 
-      setPerfilesData(Array.isArray(perfiles) ? perfiles.filter((p: Perfil) => p.statusid === 1) : [])
-      setOrigenesData(Array.isArray(origenes) ? origenes.filter((o: Origen) => o.statusid === 1) : [])
-      setFuentesData(Array.isArray(fuentes) ? fuentes.filter((f: Fuente) => f.statusid === 1) : [])
+      setPerfilesData(Array.isArray(perfiles) ? perfiles.filter((p: Perfil) => p.statusid === STATUS.ACTIVO) : [])
+      setOrigenesData(Array.isArray(origenes) ? origenes.filter((o: Origen) => o.statusid === STATUS.ACTIVO) : [])
+      setFuentesData(Array.isArray(fuentes) ? fuentes.filter((f: Fuente) => f.statusid === STATUS.ACTIVO) : [])
     } catch (error) {
       console.error('Error cargando datos iniciales:', error)
     } finally {
@@ -122,7 +123,7 @@ export function PermisosTreeView({ themeColor = 'purple' }: PermisosTreeViewProp
       
       // Filtrar permisos del perfil seleccionado y activos
       const permisosFiltrados = permisosArray.filter(
-        (p: Permiso) => p.perfilid === perfilid && p.statusid === 1
+        (p: Permiso) => p.perfilid === perfilid && p.statusid === STATUS.ACTIVO
       )
       
       setPermisosData(permisosFiltrados)

@@ -12,6 +12,7 @@ import { SelectWithPlaceholder } from '../../components/selectors';
 import { MessageDisplay } from '../system-parameters/MessageDisplay';
 import { LoadingSpinner } from '../system-parameters/LoadingSpinner';
 import { getColumnDisplayNameTranslated } from '../../utils/systemParametersUtils';
+import { STATUS } from '../../constants/status';
 
 interface ReglaUpdateFormProps {
   reglasData: any[];
@@ -56,7 +57,7 @@ export const ReglaUpdateForm: React.FC<ReglaUpdateFormProps> = ({
       return [];
     }
     return reglasData
-      .filter(r => r.statusid === 1)
+      .filter(r => r.statusid === STATUS.ACTIVO)
       .map(regla => ({
         value: regla.reglaid,
         label: regla.nombre || `Regla ${regla.reglaid}`
@@ -114,16 +115,16 @@ export const ReglaUpdateForm: React.FC<ReglaUpdateFormProps> = ({
         return;
       }
 
-      // Cargar umbrales relacionados (regla_umbral) - solo activos (statusid: 1)
+      // Cargar umbrales relacionados (regla_umbral) - solo activos (statusid: STATUS.ACTIVO)
       const reglaUmbrales = await JoySenseService.getTableData('regla_umbral', 1000);
       const umbralesFiltrados = (reglaUmbrales || []).filter((ru: any) => 
-        ru.reglaid === reglaid && ru.statusid === 1
+        ru.reglaid === reglaid && ru.statusid === STATUS.ACTIVO
       );
 
-      // Cargar perfiles relacionados (regla_perfil) - solo activos (statusid: 1)
+      // Cargar perfiles relacionados (regla_perfil) - solo activos (statusid: STATUS.ACTIVO)
       const reglaPerfiles = await JoySenseService.getTableData('regla_perfil', 1000);
       const perfilesFiltrados = (reglaPerfiles || []).filter((rp: any) => 
-        rp.reglaid === reglaid && rp.statusid === 1
+        rp.reglaid === reglaid && rp.statusid === STATUS.ACTIVO
       );
 
       // Ordenar umbrales por orden
@@ -143,7 +144,7 @@ export const ReglaUpdateForm: React.FC<ReglaUpdateFormProps> = ({
       // Preparar datos de perfiles seleccionados
       const perfilesSeleccionados: Record<number, number> = {};
       perfilesFiltrados.forEach((rp: any) => {
-        perfilesSeleccionados[rp.perfilid] = 1; // statusid activo
+        perfilesSeleccionados[rp.perfilid] = STATUS.ACTIVO; // statusid activo
       });
 
       // No crear fila vacía automáticamente - solo si realmente no hay umbrales

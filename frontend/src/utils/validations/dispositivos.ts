@@ -1,3 +1,4 @@
+import { STATUS } from '../../constants/status';
 // ============================================================================
 // DISPOSITIVOS VALIDATIONS
 // ============================================================================
@@ -86,7 +87,7 @@ export const validateEntidadUpdate = async (
   }
   
   // 3. Validar relaciones padre-hijo (solo si se está inactivando)
-  if (formData.statusid === 0 && originalData.statusid !== 0) {
+  if (formData.statusid === STATUS.INACTIVO && originalData.statusid !== 0) {
     const hasDependentRecords = await checkEntidadDependencies(originalData.entidadid);
     
     if (hasDependentRecords) {
@@ -196,7 +197,7 @@ export const validateTipoUpdate = async (
   }
   
   // 3. Validar relaciones padre-hijo (solo si se está inactivando)
-  if (formData.statusid === 0 && originalData.statusid !== 0) {
+  if (formData.statusid === STATUS.INACTIVO && originalData.statusid !== 0) {
     const hasDependentRecords = await checkTipoDependencies(originalData.tipoid);
     
     if (hasDependentRecords) {
@@ -330,7 +331,7 @@ export const validateNodoUpdate = async (
   }
   
   // 4. Validar relaciones padre-hijo (solo si se está inactivando)
-  if (formData.statusid === 0 && originalData.statusid !== 0) {
+  if (formData.statusid === STATUS.INACTIVO && originalData.statusid !== 0) {
     const hasDependentRecords = await checkNodoDependencies(originalData.nodoid);
     
     if (hasDependentRecords) {
@@ -477,7 +478,7 @@ export const validateMetricaUpdate = async (
   }
   
   // 3. Validar relaciones padre-hijo (solo si se está inactivando)
-  if (formData.statusid === 0 && originalData.statusid !== 0) {
+  if (formData.statusid === STATUS.INACTIVO && originalData.statusid !== 0) {
     const hasDependentRecords = await checkMetricaDependencies(originalData.metricaid);
     
     if (hasDependentRecords) {

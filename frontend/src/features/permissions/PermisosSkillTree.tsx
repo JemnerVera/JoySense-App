@@ -1,3 +1,4 @@
+import { STATUS } from '../../constants/status';
 /**
  * PermisosSkillTree - Vista tipo skill tree de RPG para visualizar permisos
  * Diseño visual con nodos conectados: Perfil → Origen → Fuente → Permisos
@@ -107,9 +108,9 @@ export function PermisosSkillTree({ themeColor = 'purple' }: PermisosSkillTreePr
         JoySenseService.getTableData('fuente', 500)
       ])
 
-      setPerfilesData(Array.isArray(perfiles) ? perfiles.filter((p: Perfil) => p.statusid === 1) : [])
-      setOrigenesData(Array.isArray(origenes) ? origenes.filter((o: Origen) => o.statusid === 1) : [])
-      setFuentesData(Array.isArray(fuentes) ? fuentes.filter((f: Fuente) => f.statusid === 1) : [])
+      setPerfilesData(Array.isArray(perfiles) ? perfiles.filter((p: Perfil) => p.statusid === STATUS.ACTIVO) : [])
+      setOrigenesData(Array.isArray(origenes) ? origenes.filter((o: Origen) => o.statusid === STATUS.ACTIVO) : [])
+      setFuentesData(Array.isArray(fuentes) ? fuentes.filter((f: Fuente) => f.statusid === STATUS.ACTIVO) : [])
     } catch (error) {
       console.error('Error cargando datos iniciales:', error)
     } finally {
@@ -124,7 +125,7 @@ export function PermisosSkillTree({ themeColor = 'purple' }: PermisosSkillTreePr
       const permisosArray = Array.isArray(permisos) ? permisos : []
       
       const permisosFiltrados = permisosArray.filter(
-        (p: Permiso) => p.perfilid === perfilid && p.statusid === 1
+        (p: Permiso) => p.perfilid === perfilid && p.statusid === STATUS.ACTIVO
       )
       
       setPermisosData(permisosFiltrados)

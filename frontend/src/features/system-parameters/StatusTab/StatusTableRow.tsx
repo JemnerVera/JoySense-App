@@ -1,3 +1,4 @@
+import { STATUS } from '../../../constants/status';
 /**
  * Componente para renderizar una fila de la tabla de Estado
  * Maneja el formateo especial de campos (statusid, fechas, usuarios, contraseñas)
@@ -74,7 +75,7 @@ const StatusTableRowComponent: React.FC<StatusTableRowProps> = ({
         if (col.columnName === 'statusid') {
           // Para filas agrupadas, verificar si al menos una fila original está activa
           const hasActiveRow = row.originalRows && row.originalRows.length > 0
-            ? row.originalRows.some((originalRow: any) => originalRow.statusid === 1)
+            ? row.originalRows.some((originalRow: any) => originalRow.statusid === STATUS.ACTIVO)
             : null;
           const isActive = hasActiveRow !== null ? hasActiveRow : (row[col.columnName] === 1);
           

@@ -6,6 +6,7 @@ import React, { useState, useEffect, useMemo, memo } from 'react';
 import { SelectWithPlaceholder } from '../../shared/selectors';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { JoySenseService } from '../../../services/backend-api';
+import { STATUS } from '../../../constants/status';
 
 // ============================================================================
 // INTERFACES & TYPES
@@ -128,7 +129,7 @@ export const MassivePerfilUmbralForm = memo(function MassivePerfilUmbralForm({
         setLoadingUmbrales(true);
         const allUmbrales = await JoySenseService.getTableData('umbral', 1000);
         const umbralesFiltrados = allUmbrales.filter((u: any) => 
-          formData.nodoid.includes(u.nodoid) && u.statusid === 1 // Solo umbrales activos de los nodos seleccionados
+          formData.nodoid.includes(u.nodoid) && u.statusid === STATUS.ACTIVO // Solo umbrales activos de los nodos seleccionados
         );
 
         // Obtener perfiles ya asignados
@@ -137,7 +138,7 @@ export const MassivePerfilUmbralForm = memo(function MassivePerfilUmbralForm({
         
         umbralesFiltrados.forEach((umbral: any) => {
           const perfilesUmbral = allPerfilUmbrales.filter((pu: any) => 
-            pu.umbralid === umbral.umbralid && pu.statusid === 1
+            pu.umbralid === umbral.umbralid && pu.statusid === STATUS.ACTIVO
           );
           if (perfilesUmbral.length > 0) {
             asignadosMap.set(umbral.umbralid, perfilesUmbral.map((pu: any) => pu.perfilid));
@@ -377,7 +378,7 @@ export const MassivePerfilUmbralForm = memo(function MassivePerfilUmbralForm({
         dataToApply.push({
           perfilid,
           umbralid,
-          statusid: 1 // Activo por defecto
+          statusid: STATUS.ACTIVO // Activo por defecto
         });
       });
     });

@@ -1,3 +1,4 @@
+import { STATUS } from '../../../../constants/status';
 // ============================================================================
 // REGLA PERFIL FORM FIELDS
 // ============================================================================
@@ -47,7 +48,7 @@ export const ReglaPerfilFormFields: React.FC<ReglaPerfilFormFieldsProps> = ({
 
   // Filtrar perfiles activos
   const perfilesActivos = useMemo(() => {
-    return perfilesData.filter((p: any) => p.statusid === 1);
+    return perfilesData.filter((p: any) => p.statusid === STATUS.ACTIVO);
   }, [perfilesData]);
 
   // Convertir perfiles a opciones para DualListbox

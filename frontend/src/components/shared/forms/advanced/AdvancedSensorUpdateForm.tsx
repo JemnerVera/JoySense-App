@@ -3,6 +3,7 @@
 // ============================================================================
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { STATUS } from '../../../../constants/status';
 
 // ============================================================================
 // INTERFACES & TYPES
@@ -81,7 +82,7 @@ export function AdvancedSensorUpdateForm({
     const allOriginalRows = selectedRows.flatMap(row => row.originalRows || [row]);
     const tiposSet = new Set(
       allOriginalRows
-        .filter(row => row.statusid === 1) // Solo tipos activos
+        .filter(row => row.statusid === STATUS.ACTIVO) // Solo tipos activos
         .map(row => row.tipoid?.toString())
         .filter(Boolean)
     );
@@ -184,7 +185,7 @@ export function AdvancedSensorUpdateForm({
             // Actualizar la entrada existente con status activo
             updatedEntries.push({
               ...existingRow,
-              statusid: 1, // Activo
+              statusid: STATUS.ACTIVO, // Activo
               usermodifiedid: firstRow?.usermodifiedid,
               datemodified: new Date().toISOString()
             });
@@ -193,7 +194,7 @@ export function AdvancedSensorUpdateForm({
             updatedEntries.push({
               nodoid: parseInt(nodoId),
               tipoid: parseInt(tipoId),
-              statusid: 1, // Activo
+              statusid: STATUS.ACTIVO, // Activo
               usercreatedid: firstRow?.usercreatedid,
               datecreated: new Date().toISOString(),
               usermodifiedid: firstRow?.usermodifiedid,
@@ -214,7 +215,7 @@ export function AdvancedSensorUpdateForm({
           // Esta entrada ya no está seleccionada, desactivarla
           updatedEntries.push({
             ...originalRow,
-            statusid: 0, // Inactivo
+            statusid: STATUS.INACTIVO, // Inactivo
             usermodifiedid: firstRow?.usermodifiedid,
             datemodified: new Date().toISOString()
           });

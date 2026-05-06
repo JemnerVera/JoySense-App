@@ -1,3 +1,4 @@
+import { STATUS } from '../constants/status';
 import { useState, useCallback, useMemo } from 'react';
 import { getUserName, getDisplayValue } from '../utils/systemParametersUtils';
 
@@ -91,7 +92,7 @@ export const useSearchAndFilter = () => {
   const searchByActiveStatus = useCallback((data: any[]) => {
     return searchByCriteria(
       'entradas activas',
-      (dataRow) => dataRow.statusid === 1,
+      (dataRow) => dataRow.statusid === STATUS.ACTIVO,
       data
     );
   }, [searchByCriteria]);
@@ -126,7 +127,7 @@ export const useSearchAndFilter = () => {
           ? (() => {
               // Para filas agrupadas, verificar si al menos una fila original está activa
               if (row.originalRows && row.originalRows.length > 0) {
-                const hasActiveRow = row.originalRows.some((originalRow: any) => originalRow.statusid === 1);
+                const hasActiveRow = row.originalRows.some((originalRow: any) => originalRow.statusid === STATUS.ACTIVO);
                 return hasActiveRow ? 'Activo' : 'Inactivo';
               }
               return value === 1 ? 'Activo' : 'Inactivo';

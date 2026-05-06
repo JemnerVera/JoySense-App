@@ -9,6 +9,7 @@ import { UserSelector } from '../UserSelector';
 import { useLanguage } from '../../../../contexts/LanguageContext';
 import { getColumnDisplayNameTranslated } from '../../../../utils/systemParametersUtils';
 import { JoySenseService } from '../../../../services/backend-api';
+import { STATUS } from '../../../../constants/status';
 
 interface UsuarioCanalFormFieldsProps {
   visibleColumns: any[];
@@ -117,7 +118,7 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
           }
           
           // Inicializar el grid con todos los canales disponibles
-          const canalesActivos = canalesData.filter((c: any) => c.statusid === 1);
+          const canalesActivos = canalesData.filter((c: any) => c.statusid === STATUS.ACTIVO);
           console.log('[UsuarioCanalFormFields] Canales activos:', {
             total: canalesActivos.length,
             canales: canalesActivos.map((c: any) => ({ canalid: c.canalid, canal: c.canal }))
@@ -125,7 +126,7 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
           
           // Buscar contacto del usuario (para WhatsApp)
           const contactoUsuario = contactosData.find((c: any) => 
-            Number(c.usuarioid) === Number(formData.usuarioid) && c.statusid === 1
+            Number(c.usuarioid) === Number(formData.usuarioid) && c.statusid === STATUS.ACTIVO
           );
           console.log('[UsuarioCanalFormFields] Contacto encontrado:', {
             contacto: contactoUsuario ? { usuarioid: contactoUsuario.usuarioid, celular: contactoUsuario.celular } : null,
@@ -134,7 +135,7 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
           
           // Buscar correo activo del usuario (para CORREO)
           const correoUsuario = correosData.find((c: any) => 
-            Number(c.usuarioid) === Number(formData.usuarioid) && c.statusid === 1
+            Number(c.usuarioid) === Number(formData.usuarioid) && c.statusid === STATUS.ACTIVO
           );
           console.log('[UsuarioCanalFormFields] Correo encontrado:', {
             correo: correoUsuario ? { usuarioid: correoUsuario.usuarioid, correo: correoUsuario.correo, statusid: correoUsuario.statusid } : null,
@@ -397,7 +398,7 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
                   const mensaje = messagesTelegram[row.canalid];
                   
                   // Checkbox habilitado: si no tiene entrada O tiene entrada con statusid:0
-                  const canCheck = !row.tieneEntrada || row.statusIdReal === 0;
+                  const canCheck = !row.tieneEntrada || row.statusIdReal === STATUS.INACTIVO;
                   const isDisabled = !canCheck && !isUpdateMode;
                   const isCheckedAndExisting = row.existente && row.status && !isUpdateMode;
                   
@@ -407,7 +408,7 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
                   // Para WhatsApp/Email: editable si no hay entrada O entrada tiene statusid:0
                   // Para Telegram: es el botón de generar código (no editable directamente)
                   const canEditIdentificador = (isWhatsApp || isEmail) && 
-                    (!row.tieneEntrada || row.statusIdReal === 0);
+                    (!row.tieneEntrada || row.statusIdReal === STATUS.INACTIVO);
                   
                   // Mostrar mensaje de usar Crear solo si hay entrada activa (statusid=1)
                   const showUseCreateMessage = isUpdateMode && row.tieneEntrada && row.statusIdReal === 1;
@@ -454,7 +455,7 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
                                   </svg>
                                 </span>
                               </div>
-                            ) : !telegramCodigo && (!row.tieneEntrada || row.statusIdReal === 0) ? (
+                            ) : !telegramCodigo && (!row.tieneEntrada || row.statusIdReal === STATUS.INACTIVO) ? (
                               <button
                                 type="button"
                                 onClick={() => handleGenerarCodigoTelegram(row.canalid, formData.usuarioid)}

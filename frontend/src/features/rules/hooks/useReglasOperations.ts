@@ -2,6 +2,7 @@ import { useCallback } from 'react';
 import { JoySenseService } from '../../../services/backend-api';
 import { ReglaUpdateData, OperationResult, UmbralData } from '../types';
 import { ORIGEN } from '../../../constants/origen';
+import { STATUS } from '../../../constants/status';
 
 interface UseReglasOperationsProps {
   formState: any;
@@ -138,7 +139,7 @@ export function useReglasOperations({
           agrupador_inicio: row.agrupador_inicio ?? false,
           agrupador_fin: row.agrupador_fin ?? false,
           orden: row.orden || 1,
-          statusid: 1,
+          statusid: STATUS.ACTIVO,
           usercreatedid: userId,
           datecreated: now,
           usermodifiedid: userId,
@@ -183,7 +184,7 @@ export function useReglasOperations({
         } else if (typeof perfilesSeleccionados === 'object') {
           // Formato objeto {perfilId: 1, perfilId: 2}
           perfilesActivos = Object.entries(perfilesSeleccionados)
-            .filter(([_, statusid]) => statusid === 1)
+            .filter(([_, statusid]) => statusid === STATUS.ACTIVO)
             .map(([perfilid]) => parseInt(perfilid));
         }
       }
@@ -192,7 +193,7 @@ export function useReglasOperations({
           const reglaPerfilRecord: Record<string, any> = {
             reglaid: reglaid,
             perfilid: perfilid,
-            statusid: 1,
+            statusid: STATUS.ACTIVO,
             usercreatedid: userId,
             datecreated: now,
             usermodifiedid: userId,
@@ -217,7 +218,7 @@ export function useReglasOperations({
         const fuentesData = await JoySenseService.getTableData('fuente', 100);
         const fuentesArray = Array.isArray(fuentesData) ? fuentesData : ((fuentesData as any)?.data || []);
         const fuenteLocalizacion = fuentesArray.find((f: any) => 
-          f.fuente?.toLowerCase() === 'localizacion' && f.statusid === 1
+          f.fuente?.toLowerCase() === 'localizacion' && f.statusid === STATUS.ACTIVO
         );
         
         if (fuenteLocalizacion?.fuenteid) {
@@ -227,7 +228,7 @@ export function useReglasOperations({
             origenid: ORIGEN.GEOGRAFIA, // 1 = GEOGRAFÍA
             fuenteid: fuenteLocalizacion.fuenteid,
             objetoid: null, // NULL = scope global
-            statusid: 1,
+            statusid: STATUS.ACTIVO,
             usercreatedid: userId,
             usermodifiedid: userId
           };
@@ -274,7 +275,7 @@ export function useReglasOperations({
       if (tienePerfilesAsignados) {
         // Activar la regla (statusid=1) porque ya tiene perfiles
         const activateResult = await JoySenseService.updateTableRow('regla', reglaid.toString(), {
-          statusid: 1,
+          statusid: STATUS.ACTIVO,
           usermodifiedid: userId,
           datemodified: new Date().toISOString()
         });
@@ -377,10 +378,10 @@ export function useReglasOperations({
         return { success: false, error: `Error al actualizar regla: ${reglaResult.error || 'Error desconocido'}` };
       }
 
-      // 2. Obtener umbrales existentes de la regla - solo activos (statusid: 1)
+      // 2. Obtener umbrales existentes de la regla - solo activos (statusid: STATUS.ACTIVO)
       const existingUmbrales = await JoySenseService.getTableData('regla_umbral', 1000);
       const existingUmbralesFiltrados = (existingUmbrales || []).filter((ru: any) =>
-        ru.reglaid === reglaid && ru.statusid === 1
+        ru.reglaid === reglaid && ru.statusid === STATUS.ACTIVO
       );
 
       // 3. Preparar umbrales nuevos con tempId para identificar cuáles son nuevos y cuáles existentes
@@ -411,9 +412,9 @@ export function useReglasOperations({
 
       for (const existingUmbral of existingUmbralesFiltrados) {
         if (!umbralesIdsNuevos.includes(existingUmbral.regla_umbralid)) {
-          // Desactivar umbral que ya no está en la lista nueva (statusid: 0)
+          // Desactivar umbral que ya no está en la lista nueva (STATUS.INACTIVO)
           await JoySenseService.updateTableRow('regla_umbral', existingUmbral.regla_umbralid.toString(), {
-            statusid: 0,
+            statusid: STATUS.INACTIVO,
             usermodifiedid: user?.user_metadata?.usuarioid || 1,
             datemodified: new Date().toISOString()
           });
@@ -461,7 +462,7 @@ export function useReglasOperations({
             agrupador_inicio: nuevoUmbral.agrupador_inicio,
             agrupador_fin: nuevoUmbral.agrupador_fin,
             orden: nuevoUmbral.orden,
-            statusid: 1,
+            statusid: STATUS.ACTIVO,
             usercreatedid: userId,
             datecreated: now,
             usermodifiedid: userId,
@@ -481,15 +482,15 @@ export function useReglasOperations({
           perfilesActivos = perfilesSeleccionados;
         } else if (typeof perfilesSeleccionados === 'object') {
           perfilesActivos = Object.entries(perfilesSeleccionados)
-            .filter(([_, statusid]) => statusid === 1)
+            .filter(([_, statusid]) => statusid === STATUS.ACTIVO)
             .map(([perfilid]) => parseInt(perfilid));
         }
       }
 
-      // Obtener perfiles existentes de la regla - solo activos (statusid: 1)
+      // Obtener perfiles existentes de la regla - solo activos (statusid: STATUS.ACTIVO)
       const existingPerfiles = await JoySenseService.getTableData('regla_perfil', 1000);
       const existingPerfilesFiltrados = (existingPerfiles || []).filter((rp: any) =>
-        rp.reglaid === reglaid && rp.statusid === 1
+        rp.reglaid === reglaid && rp.statusid === STATUS.ACTIVO
       );
 
       // Desactivar perfiles que ya no están seleccionados
@@ -497,7 +498,7 @@ export function useReglasOperations({
       for (const existingPerfil of existingPerfilesFiltrados) {
         if (!perfilesActivos.includes(existingPerfil.perfilid)) {
           await JoySenseService.updateTableRow('regla_perfil', existingPerfil.regla_perfilid.toString(), {
-            statusid: 0,
+            statusid: STATUS.INACTIVO,
             usermodifiedid: userId,
             datemodified: now
           });
@@ -513,7 +514,7 @@ export function useReglasOperations({
           const reglaPerfilRecord: Record<string, any> = {
             reglaid: reglaid,
             perfilid: perfilid,
-            statusid: 1,
+            statusid: STATUS.ACTIVO,
             usercreatedid: userId,
             datecreated: now,
             usermodifiedid: userId,

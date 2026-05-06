@@ -4,6 +4,7 @@
 
 import { FormData, SelectedNode, UmbralDataToApply } from '../types';
 import { logger } from '../../../utils/logger';
+import { STATUS } from '../../../constants/status';
 
 interface UseMassiveUmbralApplicationProps {
   formData: FormData;
@@ -80,7 +81,7 @@ export const useMassiveUmbralApplication = ({
                   umbral: umbralDelTipo.umbral,
                   minimo: parseFloat(umbralDelTipo.minimo),
                   maximo: parseFloat(umbralDelTipo.maximo),
-                  statusid: 1 // Activo por defecto
+                  statusid: STATUS.ACTIVO // Activo por defecto
                 };
                 
                 dataToApply.push(umbralData);

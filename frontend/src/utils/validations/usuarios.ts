@@ -1,3 +1,4 @@
+import { STATUS } from '../../constants/status';
 // ============================================================================
 // USUARIOS VALIDATIONS
 // ============================================================================
@@ -144,7 +145,7 @@ export const validateUsuarioUpdate = async (
   }
   
   // 3. Validar relaciones padre-hijo (solo si se está inactivando)
-  if (formData.statusid === 0 && originalData.statusid !== 0) {
+  if (formData.statusid === STATUS.INACTIVO && originalData.statusid !== 0) {
     const hasDependentRecords = await checkUsuarioDependencies(originalData.usuarioid);
     
     if (hasDependentRecords) {
@@ -365,7 +366,7 @@ export const validatePerfilUpdate = async (
   }
   
   // 6. Validar relaciones padre-hijo (solo si se está inactivando)
-  if (formData.statusid === 0 && originalData.statusid !== 0) {
+  if (formData.statusid === STATUS.INACTIVO && originalData.statusid !== 0) {
     const hasDependentRecords = await checkPerfilDependencies(originalData.perfilid);
     
     if (hasDependentRecords) {
@@ -798,7 +799,7 @@ export const validateMedioUpdate = async (
   }
   
   // 3. Validar relaciones padre-hijo (solo si se está inactivando)
-  if (formData.statusid === 0 && originalData.statusid !== 0) {
+  if (formData.statusid === STATUS.INACTIVO && originalData.statusid !== 0) {
     const hasDependentRecords = await checkMedioDependencies(originalData.medioid);
     
     if (hasDependentRecords) {

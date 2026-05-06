@@ -1,3 +1,4 @@
+import { STATUS } from '../../../constants/status';
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { JoySenseService } from '../../../services/backend-api';
@@ -16,7 +17,7 @@ export function ReglasStatusTab({ reglasData = [] }: ReglasStatusTabProps) {
   // Opciones de reglas activas
   const reglaOptions = React.useMemo(() => {
     return reglasData
-      .filter(r => r.statusid === 1)
+      .filter(r => r.statusid === STATUS.ACTIVO)
       .map(regla => ({
         value: regla.reglaid,
         label: regla.nombre || `Regla ${regla.reglaid}`
@@ -124,8 +125,8 @@ export function ReglasStatusTab({ reglasData = [] }: ReglasStatusTabProps) {
                         {!ru.agrupador_inicio && !ru.agrupador_fin ? '-' : ''}
                       </td>
                       <td className="px-6 py-4 text-xs font-mono text-gray-900 dark:text-white">
-                        <span className={ru.statusid === 1 ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold'}>
-                          {ru.statusid === 1 ? 'ACTIVO' : 'INACTIVO'}
+                        <span className={ru.statusid === STATUS.ACTIVO ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold'}>
+                          {ru.statusid === STATUS.ACTIVO ? 'ACTIVO' : 'INACTIVO'}
                         </span>
                       </td>
                     </tr>
