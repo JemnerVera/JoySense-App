@@ -7,7 +7,7 @@
  * Esto permite que las políticas RLS usen auth.uid() correctamente.
  */
 
-const { supabase: baseSupabase, dbSchema } = require('../config/database');
+const { baseSupabase, dbSchema } = require('../config/database');
 const { createClient } = require('@supabase/supabase-js');
 const logger = require('../utils/logger');
 

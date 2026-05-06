@@ -1,7 +1,5 @@
 /**
  * Configuración de Base de Datos - Supabase API
- * Schema: joysense
- * Usuario: admin@joysense.com (autenticado vía Supabase Auth)
  * 
  * IMPORTANTE: Usa Supabase API directamente - RLS funciona automáticamente
  * El usuario backend_user ya no es necesario
@@ -40,6 +38,17 @@ if (isAzure || isProduction) {
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+
+// Cliente base para operaciones que no requieren contexto de usuario
+// Solo para uso interno (ej: búsqueda de usuario por useruuid)
+const baseSupabase = (supabaseUrl && supabaseAnonKey) 
+  ? createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false
+      }
+    })
+  : null;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('❌ ERROR: Se requiere SUPABASE_URL y SUPABASE_ANON_KEY');
@@ -86,6 +95,6 @@ console.log(`✅ Backend configurado para schema: ${dbSchema} (solo autenticados
 // ============================================================================
 
 module.exports = {
-  dbSchema
-  // NO exportar supabase - todo cliente debe usar req.supabase (autenticado)
+  dbSchema,
+  baseSupabase
 };
