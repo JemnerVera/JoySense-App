@@ -4,7 +4,5 @@
  */
 
 export const METRICS = {
-  DEFAULT_ID: 1, // Temperatura (métrica por defecto para dashboards)
+  DEFAULT_ID: 1,
 } as const;
-
-export type MetricsId = typeof METRICS[keyof typeof METRICS];

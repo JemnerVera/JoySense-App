@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode, useMemo } from 'react';
+import { createContext, ReactNode, useMemo } from 'react';
 import type { MetricMetadata, BackendMetric } from '../types/metrics';
 import { createMetricsRegistry } from '../components/Dashboard/utils/metricUtils';
 
@@ -32,7 +32,4 @@ export function MetricsProvider({ children, metricas = [] }: MetricsProviderProp
   );
 }
 
-export function useMetricsRegistry(): MetricsRegistry | null {
-  const context = useContext(MetricsContext);
-  return context.registry;
-}
+

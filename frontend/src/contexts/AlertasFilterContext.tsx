@@ -58,8 +58,4 @@ export const useAlertasFilter = () => {
   return context;
 };
 
-// Hook seguro que no lanza error si no hay contexto
-export const useAlertasFilterSafe = () => {
-  const context = useContext(AlertasFilterContext);
-  return context; // Puede ser undefined
-};
+

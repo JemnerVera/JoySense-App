@@ -11,10 +11,8 @@ export { default as UmbralesMain } from './umbrales/UmbralesMain';
 export { default as UmbralesPage } from './umbrales/UmbralesPage';
 export { default as UmbralesNavigation } from './umbrales/UmbralesNavigation';
 export { default as AlertasWithSidebar } from './umbrales/AlertasWithSidebar';
-export { default as AlertasDashboard } from './umbrales/AlertasDashboard';
 export { default as EstadoActualSensores } from './umbrales/EstadoActualSensores';
 export { default as DashboardUmbrales } from './umbrales/DashboardUmbrales';
-export { default as MensajesDashboard } from './umbrales/MensajesDashboard';
 
 // Notificaciones
 export { default as NotificacionesMain, type NotificacionesMainRef } from './notifications/NotificacionesMain';
