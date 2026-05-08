@@ -91,12 +91,12 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
           }}
         >
           {isExpanded ? (
-            <div className="flex items-center space-x-3">
-              <img src="/Logo - icono.png" alt="JoySense" className="w-8 h-8" />
+            <div className="flex items-center justify-center space-x-3 w-full">
+              <img src="/Logo - icono.png" alt="" className="w-8 h-8" />
               <img
                 src="/Logo - texto.png"
                 alt="JoySense"
-                className="h-6 w-auto overflow-hidden text-ellipsis whitespace-nowrap"
+                className="h-6 w-auto"
               />
             </div>
           ) : (
