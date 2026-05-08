@@ -170,28 +170,6 @@ export function useMenuStructure() {
             ),
           },
           {
-            id: 'dispositivos',
-            label: t('menu.dispositivos'),
-            icon: <IconDispositivos />,
-            subMenus: createTablesLevel3(
-              dispositivosTables,
-              'configuracion-dispositivos',
-              createOps,
-              getTableIcon
-            ),
-          },
-          {
-            id: 'usuarios',
-            label: t('menu.usuarios'),
-            icon: <IconUsuarios />,
-            subMenus: createTablesLevel3(
-              usuariosTables,
-              'configuracion-usuarios',
-              createOps,
-              getTableIcon
-            ),
-          },
-          {
             id: 'notificaciones',
             label: t('menu.notificaciones'),
             icon: <IconNotificaciones />,
