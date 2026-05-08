@@ -616,7 +616,7 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
         // Si la tabla es 'permiso', usar la vista de skill tree
         if (isPermisoTable) {
           return (
-            <PermisosSkillTree themeColor="purple" />
+            <PermisosSkillTree themeColor="purple" permisosTipo={permisosTipo} />
           );
         }
         // Para otras tablas, usar StatusTab normal
