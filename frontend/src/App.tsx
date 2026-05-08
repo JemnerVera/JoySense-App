@@ -153,6 +153,20 @@ const AppContentInternal: React.FC<{
   const ajustesMainRef = useRef<AjustesMainRef | null>(null);
 
   // ============================================================================
+  // GLOBAL ERROR SUPPRESSION (ResizeObserver loop)
+  // ============================================================================
+  useEffect(() => {
+    const handler = (e: ErrorEvent) => {
+      if (e.message?.includes('ResizeObserver loop')) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    window.addEventListener('error', handler);
+    return () => window.removeEventListener('error', handler);
+  }, []);
+
+  // ============================================================================
   // STATE MANAGEMENT
   // ============================================================================
 

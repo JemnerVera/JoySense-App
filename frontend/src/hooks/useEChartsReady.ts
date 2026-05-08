@@ -19,7 +19,9 @@ export const useEChartsReady = () => {
             setIsReady(true);
           }
           if (chartRef.current) {
-            chartRef.current.getEchartsInstance?.()?.resize();
+            requestAnimationFrame(() => {
+              chartRef.current.getEchsartsInstance?.()?.resize();
+            });
           }
         }
       }
