@@ -1212,7 +1212,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="w-full h-screen flex flex-col">
+    <div className="w-full flex flex-col" style={{ height: 'calc(100vh - 56px)' }}>
       <div className="bg-gray-200 dark:bg-neutral-700 rounded-lg p-3 mb-4 mx-6 mt-6 flex-shrink-0 min-w-0 overflow-hidden">
         <div 
           ref={scrollContainerRef}
@@ -1657,7 +1657,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
       </div>
 
       {/* Gráfico */}
-      <div className="flex-1 min-h-0 flex flex-col mx-6 mb-6" style={{ maxHeight: 'calc(100vh - 220px)' }}>
+      <div className="flex-1 min-h-0 flex flex-col mx-6 mb-6">
         {loading || isLoadingInitialData ? (
           <div className="flex items-center justify-center flex-1 bg-white dark:bg-neutral-800 rounded-lg p-6">
             <div className="flex flex-col items-center gap-4">
