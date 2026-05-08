@@ -2794,6 +2794,9 @@ const AppContentInternal: React.FC<{
           {/* Contenido de bienvenida o contenido dinámico */}
               {showWelcomeIntegrated ? (
                 <div className="flex items-center justify-center h-full min-h-screen bg-white dark:bg-black">
+                  <div className="absolute top-0 right-0 h-16 flex items-center px-6 z-10">
+                    <UserControls activeTab="" />
+                  </div>
                   <div className="text-center max-w-2xl mx-auto px-6">
                     {/* Logo táctico */}
                     <div className="mb-12">
@@ -2918,6 +2921,9 @@ const AppContentInternal: React.FC<{
               >
                 {showWelcomeIntegrated ? (
                   <div className="flex items-center justify-center h-full min-h-screen bg-white dark:bg-black">
+                    <div className="absolute top-0 right-0 h-16 flex items-center px-6 z-10">
+                      <UserControls activeTab="" />
+                    </div>
                     <div className="text-center max-w-2xl mx-auto px-6">
                       <div className="mb-12">
                         <div className="w-32 h-32 bg-gray-200 dark:bg-neutral-900 border-2 border-orange-500 rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl">
