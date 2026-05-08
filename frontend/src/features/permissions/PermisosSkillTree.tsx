@@ -8,6 +8,14 @@ import { SelectWithPlaceholder } from '../../components/shared/selectors'
 interface PermisosSkillTreeProps {
   themeColor?: 'purple'
   permisosTipo?: 'permisos-geo' | 'permisos-conf'
+  paisesData?: any[]
+  empresasData?: any[]
+  fundosData?: any[]
+  ubicacionesData?: any[]
+  nodosData?: any[]
+  localizacionesData?: any[]
+  fuentesData?: any[]
+  perfilesData?: any[]
 }
 
 interface Permiso {
@@ -30,12 +38,6 @@ interface Perfil {
   statusid: number
 }
 
-interface Origen {
-  origenid: number
-  origen: string
-  statusid: number
-}
-
 interface Fuente {
   fuenteid: number
   fuente: string
@@ -43,12 +45,31 @@ interface Fuente {
   statusid: number
 }
 
-export function PermisosSkillTree({ themeColor = 'purple', permisosTipo }: PermisosSkillTreeProps) {
+const GEO_DATA_MAP: Record<string, { data: any[]; idField: string; nameField: string }> = {
+  pais: { data: [], idField: 'paisid', nameField: 'pais' },
+  empresa: { data: [], idField: 'empresaid', nameField: 'empresa' },
+  fundo: { data: [], idField: 'fundoid', nameField: 'fundo' },
+  ubicacion: { data: [], idField: 'ubicacionid', nameField: 'ubicacion' },
+  nodo: { data: [], idField: 'nodoid', nameField: 'nodo' },
+  localizacion: { data: [], idField: 'localizacionid', nameField: 'localizacion' },
+}
+
+export function PermisosSkillTree({
+  themeColor = 'purple',
+  permisosTipo,
+  paisesData = [],
+  empresasData = [],
+  fundosData = [],
+  ubicacionesData = [],
+  nodosData = [],
+  localizacionesData = [],
+  fuentesData = [],
+  perfilesData: perfilesDataProp = []
+}: PermisosSkillTreeProps) {
 
   const [selectedPerfilId, setSelectedPerfilId] = useState<number | null>(null)
   const [perfilesData, setPerfilesData] = useState<Perfil[]>([])
-  const [origenesData, setOrigenesData] = useState<Origen[]>([])
-  const [fuentesData, setFuentesData] = useState<Fuente[]>([])
+  const [origenesData, setOrigenesData] = useState<any[]>([])
   const [permisosData, setPermisosData] = useState<Permiso[]>([])
   const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
@@ -70,15 +91,13 @@ export function PermisosSkillTree({ themeColor = 'purple', permisosTipo }: Permi
   async function loadInitialData() {
     try {
       setLoading(true)
-      const [perfiles, origenes, fuentes] = await Promise.all([
+      const [perfiles, origenes] = await Promise.all([
         JoySenseService.getTableData('perfil', 500),
-        JoySenseService.getTableData('origen', 100),
-        JoySenseService.getTableData('fuente', 500)
+        JoySenseService.getTableData('origen', 100)
       ])
 
       setPerfilesData(Array.isArray(perfiles) ? perfiles.filter((p: Perfil) => p.statusid === STATUS.ACTIVO) : [])
-      setOrigenesData(Array.isArray(origenes) ? origenes.filter((o: Origen) => o.statusid === STATUS.ACTIVO) : [])
-      setFuentesData(Array.isArray(fuentes) ? fuentes.filter((f: Fuente) => f.statusid === STATUS.ACTIVO) : [])
+      setOrigenesData(Array.isArray(origenes) ? origenes.filter((o: any) => o.statusid === STATUS.ACTIVO) : [])
     } catch (error) {
       console.error('Error cargando datos iniciales:', error)
     } finally {
@@ -115,30 +134,68 @@ export function PermisosSkillTree({ themeColor = 'purple', permisosTipo }: Permi
     return (nombre: string) => nombre.toUpperCase().trim() === 'TABLA'
   }, [permisosTipo])
 
-  const permisosConOrigen = useMemo(() => {
+  const fuentesMap = useMemo(() => {
+    const map: Record<string, Fuente> = {}
+    const arr = Array.isArray(fuentesData) ? fuentesData : []
+    arr.forEach((f: Fuente) => {
+      if (f.fuenteid) map[f.fuenteid] = f
+    })
+    return map
+  }, [fuentesData])
+
+  const geoLookup = useMemo(() => {
+    const map = { ...GEO_DATA_MAP }
+    map.pais = { ...map.pais, data: paisesData || [] }
+    map.empresa = { ...map.empresa, data: empresasData || [] }
+    map.fundo = { ...map.fundo, data: fundosData || [] }
+    map.ubicacion = { ...map.ubicacion, data: ubicacionesData || [] }
+    map.nodo = { ...map.nodo, data: nodosData || [] }
+    map.localizacion = { ...map.localizacion, data: localizacionesData || [] }
+    return map
+  }, [paisesData, empresasData, fundosData, ubicacionesData, nodosData, localizacionesData])
+
+  function getObjetoNombre(fuenteid: number, objetoid: number | null): string {
+    if (objetoid === null || objetoid === undefined) return '-'
+    const fuente = fuentesMap[fuenteid]
+    if (!fuente) return String(objetoid)
+    const fuenteNombre = fuente.fuente?.toLowerCase().trim()
+    const entry = geoLookup[fuenteNombre]
+    if (!entry) return String(objetoid)
+    const item = entry.data.find((d: any) => d[entry.idField] === objetoid)
+    return item ? item[entry.nameField] : String(objetoid)
+  }
+
+  const permisosConInfo = useMemo(() => {
     return permisosData.map(p => {
-      const origen = origenesData.find(o => o.origenid === p.origenid)
-      const fuente = fuentesData.find(f => f.fuenteid === p.fuenteid)
-      return { ...p, origenNombre: origen?.origen || 'Desconocido', fuenteNombre: fuente?.fuente || 'Desconocido' }
+      const origen = origenesData.find((o: any) => o.origenid === p.origenid)
+      const fuente = fuentesMap[p.fuenteid]
+      return {
+        ...p,
+        origenNombre: origen?.origen || 'Desconocido',
+        fuenteNombre: fuente?.fuente || 'Desconocido',
+        objetoNombre: getObjetoNombre(p.fuenteid, p.objetoid)
+      }
     }).filter(p => {
       if (!origenFiltro) return true
       return origenFiltro(p.origenNombre)
     })
-  }, [permisosData, origenesData, fuentesData, origenFiltro])
+  }, [permisosData, origenesData, fuentesMap, origenFiltro])
 
-  const totalPages = Math.ceil(permisosConOrigen.length / itemsPerPage)
+  const totalPages = Math.ceil(permisosConInfo.length / itemsPerPage)
 
   const paginatedPermisos = useMemo(() => {
     const startIndex = (currentPage - 1) * itemsPerPage
-    return permisosConOrigen.slice(startIndex, startIndex + itemsPerPage)
-  }, [permisosConOrigen, currentPage])
+    return permisosConInfo.slice(startIndex, startIndex + itemsPerPage)
+  }, [permisosConInfo, currentPage])
+
+  const perfilesList = perfilesData.length > 0 ? perfilesData : perfilesDataProp
 
   const perfilOptions = useMemo(() => {
-    return perfilesData.map(p => ({
+    return perfilesList.map((p: Perfil) => ({
       value: p.perfilid,
       label: `${p.perfil} (Nivel ${p.nivel})`
     }))
-  }, [perfilesData])
+  }, [perfilesList])
 
   function getStatusBadge(activo: boolean) {
     if (activo) {
@@ -197,7 +254,7 @@ export function PermisosSkillTree({ themeColor = 'purple', permisosTipo }: Permi
         </div>
       )}
 
-      {selectedPerfilId && !loading && permisosConOrigen.length === 0 && (
+      {selectedPerfilId && !loading && permisosConInfo.length === 0 && (
         <div className="text-center py-8 text-gray-500 dark:text-neutral-400">
           <p className="font-mono">
             {origenFilterLabel
@@ -207,15 +264,16 @@ export function PermisosSkillTree({ themeColor = 'purple', permisosTipo }: Permi
         </div>
       )}
 
-      {selectedPerfilId && !loading && permisosConOrigen.length > 0 && (
+      {selectedPerfilId && !loading && permisosConInfo.length > 0 && (
         <div className="bg-gray-200 dark:bg-neutral-800 rounded-lg border border-gray-300 dark:border-neutral-700">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-300 dark:border-neutral-700">
-                  <th className="text-left py-3 px-4 font-bold text-purple-500 font-mono tracking-wider">ORIGEN</th>
                   <th className="text-left py-3 px-4 font-bold text-purple-500 font-mono tracking-wider">FUENTE</th>
-                  <th className="text-left py-3 px-4 font-bold text-purple-500 font-mono tracking-wider">OBJETO ID</th>
+                  <th className="text-left py-3 px-4 font-bold text-purple-500 font-mono tracking-wider">
+                    {permisosTipo === 'permisos-geo' ? 'OBJETO' : 'OBJETO ID'}
+                  </th>
                   <th className="text-center py-3 px-4 font-bold text-purple-500 font-mono tracking-wider">VER</th>
                   <th className="text-center py-3 px-4 font-bold text-purple-500 font-mono tracking-wider">INSERTAR</th>
                   <th className="text-center py-3 px-4 font-bold text-purple-500 font-mono tracking-wider">ACTUALIZAR</th>
@@ -226,29 +284,36 @@ export function PermisosSkillTree({ themeColor = 'purple', permisosTipo }: Permi
               <tbody>
                 {paginatedPermisos.map((permiso) => (
                   <tr key={permiso.permisoid} className="border-b border-gray-200 dark:border-neutral-800 hover:bg-gray-200 dark:hover:bg-neutral-800/50">
-                    <td className="py-3 px-4 text-gray-800 dark:text-white font-mono text-xs">
-                      {permiso.origenNombre}
-                    </td>
-                    <td className="py-3 px-4 text-gray-800 dark:text-white font-mono text-xs">
+                    <td className="py-3 px-4 text-gray-800 dark:text-white font-mono text-xs align-middle">
                       {permiso.fuenteNombre}
                     </td>
-                    <td className="py-3 px-4 text-gray-800 dark:text-white font-mono text-xs">
-                      {permiso.objetoid ?? '-'}
+                    <td className="py-3 px-4 text-gray-800 dark:text-white font-mono text-xs align-middle">
+                      {permisosTipo === 'permisos-geo' ? permiso.objetoNombre : (permiso.objetoid ?? '-')}
                     </td>
-                    <td className="py-3 px-4 text-center">
-                      {PermissionIcon(permiso.puede_ver)}
+                    <td className="py-3 px-4 text-center align-middle">
+                      <div className="flex items-center justify-center">
+                        {PermissionIcon(permiso.puede_ver)}
+                      </div>
                     </td>
-                    <td className="py-3 px-4 text-center">
-                      {PermissionIcon(permiso.puede_insertar)}
+                    <td className="py-3 px-4 text-center align-middle">
+                      <div className="flex items-center justify-center">
+                        {PermissionIcon(permiso.puede_insertar)}
+                      </div>
                     </td>
-                    <td className="py-3 px-4 text-center">
-                      {PermissionIcon(permiso.puede_actualizar)}
+                    <td className="py-3 px-4 text-center align-middle">
+                      <div className="flex items-center justify-center">
+                        {PermissionIcon(permiso.puede_actualizar)}
+                      </div>
                     </td>
-                    <td className="py-3 px-4 text-center">
-                      {PermissionIcon(permiso.puede_eliminar)}
+                    <td className="py-3 px-4 text-center align-middle">
+                      <div className="flex items-center justify-center">
+                        {PermissionIcon(permiso.puede_eliminar)}
+                      </div>
                     </td>
-                    <td className="py-3 px-4 text-center">
-                      {getStatusBadge(permiso.statusid === STATUS.ACTIVO)}
+                    <td className="py-3 px-4 text-center align-middle">
+                      <div className="flex items-center justify-center">
+                        {getStatusBadge(permiso.statusid === STATUS.ACTIVO)}
+                      </div>
                     </td>
                   </tr>
                 ))}
