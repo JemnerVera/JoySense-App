@@ -163,19 +163,21 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     if (hasLora && !hasPlc) {
       return { data, isLora: true };
     } else if (hasPlc && !hasLora) {
-      const filtered = data.filter((m: any) => m.localizacionid === selectedLocalizacion.localizacionid);
-      return { 
+      const ids = selectedLocalizacion.localizacionids ?? [selectedLocalizacion.localizacionid];
+      const filtered = data.filter((m: any) => ids.includes(m.localizacionid));
+      return {
         data: filtered,
-        isLora: false 
+        isLora: false
       };
     } else if (hasLora && hasPlc) {
       return { data, isLora: true };
     }
-    
-    const filtered = data.filter((m: any) => m.localizacionid === selectedLocalizacion.localizacionid);
-    return { 
+
+    const ids = selectedLocalizacion.localizacionids ?? [selectedLocalizacion.localizacionid];
+    const filtered = data.filter((m: any) => ids.includes(m.localizacionid));
+    return {
       data: filtered,
-      isLora: false 
+      isLora: false
     };
   }, []);
 
@@ -284,7 +286,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   // Esto permite mantener múltiples nodos bajo la misma localización
   useEffect(() => {
     const localizacionesMap = new Map<string, any>();
-    
+
     localizaciones.forEach((loc: Localizacion) => {
       if (loc.localizacion && loc.nodoid) {
         const key = `${loc.localizacion}__${loc.nodoid}`;
@@ -292,6 +294,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
           const tipoid = localizacionTipoidMap.get(loc.localizacionid);
           localizacionesMap.set(key, {
             localizacionid: loc.localizacionid,
+            localizacionids: [loc.localizacionid],
             localizacion: loc.localizacion,
             nodoid: loc.nodoid,
             latitud: loc.latitud,
@@ -299,17 +302,22 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
             nodo: loc.nodo,
             tipoid: tipoid
           });
+        } else {
+          const existing = localizacionesMap.get(key);
+          if (!existing.localizacionids.includes(loc.localizacionid)) {
+            existing.localizacionids.push(loc.localizacionid);
+          }
         }
       }
     });
-    
+
     setUniqueLocalizaciones(Array.from(localizacionesMap.values()));
   }, [localizaciones, localizacionTipoidMap]);
 
   // Agrupar TODAS las localizaciones sin filtro global (para contador del dropdown)
   const allUniqueLocalizaciones = useMemo(() => {
     const localizacionesMap = new Map<string, any>();
-    
+
     allLocalizaciones.forEach((loc: Localizacion) => {
       if (loc.localizacion && loc.nodoid) {
         const key = `${loc.localizacion}__${loc.nodoid}`;
@@ -317,6 +325,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
           const tipoid = localizacionTipoidMap.get(loc.localizacionid);
           localizacionesMap.set(key, {
             localizacionid: loc.localizacionid,
+            localizacionids: [loc.localizacionid],
             localizacion: loc.localizacion,
             nodoid: loc.nodoid,
             latitud: loc.latitud,
@@ -324,10 +333,15 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
             nodo: loc.nodo,
             tipoid: tipoid
           });
+        } else {
+          const existing = localizacionesMap.get(key);
+          if (!existing.localizacionids.includes(loc.localizacionid)) {
+            existing.localizacionids.push(loc.localizacionid);
+          }
         }
       }
     });
-    
+
     return Array.from(localizacionesMap.values());
   }, [allLocalizaciones, localizacionTipoidMap]);
 
