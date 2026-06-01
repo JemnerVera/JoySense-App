@@ -21,29 +21,30 @@ JoySense Dashboard es una aplicación web moderna para el monitoreo y análisis 
 ### 🎯 **Tecnologías Utilizadas**
 - **Frontend:** React 18, TypeScript, Tailwind CSS, Chart.js, Recharts, Leaflet
 - **Backend:** Node.js, Express.js
-- **Base de datos:** Supabase (PostgreSQL) con schema `sense`
+- **Base de datos:** Supabase (PostgreSQL)
 - **Autenticación:** Supabase Auth
 - **Despliegue:** Azure App Service
 
 ## 📁 Estructura del Proyecto
 
 ```
-Sensores/
+JoySense/
 ├── frontend/                 # Aplicación React
 │   ├── src/
 │   │   ├── components/       # Componentes React
 │   │   ├── services/         # Servicios API
 │   │   ├── contexts/         # Contextos React
-│   │   ├── hooks/           # Custom hooks
-│   │   └── App.tsx          # Componente principal
+│   │   ├── hooks/            # Custom hooks
+│   │   └── App.tsx           # Componente principal
 │   ├── public/
 │   └── package.json
 ├── backend/                  # Servidor Node.js
 │   ├── server.js            # Servidor Express
+│   ├── env-example.txt      # Ejemplo de variables de entorno
 │   └── package.json
-├── deployment/              # Scripts de deployment
-│   └── iniciar-local.bat    # Iniciar aplicación local
-└── docs/                    # Documentación
+├── deployment/               # Scripts de deployment
+│   └── iniciar-local.bat     # Iniciar aplicación local
+└── docs/                     # Documentación
     └── AZURE_DEPLOYMENT_GUIDE.md  # Guía de despliegue Azure
 ```
 
@@ -59,7 +60,7 @@ Sensores/
 1. **Clonar el repositorio:**
    ```bash
    git clone [repository-url]
-   cd Sensores
+   cd JoySense
    ```
 
 2. **Instalar dependencias:**
@@ -75,18 +76,17 @@ Sensores/
 
 3. **Configurar variables de entorno:**
 
-   **Frontend** (`.env` en carpeta `frontend/`):
+   **Frontend** (`.env.local` o `.env` en carpeta `frontend/`):
    ```bash
    REACT_APP_SUPABASE_URL=https://your-project-id.supabase.co
    REACT_APP_SUPABASE_PUBLISHABLE_KEY=your-supabase-anon-key
    REACT_APP_BACKEND_URL=http://localhost:3001/api
    ```
 
-   **Backend** (`.env` en carpeta `backend/`):
+   **Backend** (`backend/env-example.txt` o `.env` en carpeta `backend/`):
    ```bash
    SUPABASE_URL=https://your-project-id.supabase.co
    SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-   DB_SCHEMA=sense
    PORT=3001
    NODE_ENV=development
    ```
@@ -169,32 +169,10 @@ node server.js                    # Iniciar servidor
 
 ## 📊 Base de Datos
 
-### **Esquema Supabase (sense)**
+El backend utiliza Supabase/PostgreSQL como persistencia y autenticación. 
+La estructura interna de tablas y el schema se gestionan directamente en Supabase y no se documentan con detalle en este README.
 
-**Ubicación:**
-- `pais`, `empresa`, `fundo`, `ubicacion`, `entidad`
-- `localizacion` - Coordenadas GPS
-
-**Dispositivos:**
-- `nodo`, `tipo`, `sensor`, `metricasensor`
-- `metrica` - Definiciones de métricas
-
-**Datos:**
-- `medicion` - Lecturas de sensores
-
-**Alertas:**
-- `umbral`, `criticidad`, `alerta`
-- `alertaconsolidado` - Alertas agrupadas
-
-**Usuarios:**
-- `usuario`, `perfil`, `usuarioperfil`
-- `contacto`, `correo`, `mensaje`
-
-### **Funcionalidades de Base de Datos:**
-- Row Level Security (RLS) habilitado
-- Stored procedures para metadatos dinámicos
-- Triggers para generación automática de alertas
-- Sistema de consolidación de alertas
+La aplicación consulta los datos desde el backend y aplica la seguridad a través de Supabase y las reglas del proyecto.
 
 ## 🧪 Testing
 
