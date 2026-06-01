@@ -1,3 +1,6 @@
+import { useState, useEffect, useCallback } from 'react';
+import type { TableConfig } from '../config/tables.config';
+import { validateTableUpdate } from '../utils/validations';
 import { STATUS } from '../constants/status';
 import { logger } from '../utils/logger';
 
