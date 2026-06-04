@@ -1,6 +1,6 @@
 /**
  * Utilidades para manejar la jerarquía geográfica y cascada de permisos
- * Jerarquía: pais -> empresa -> fundo -> ubicacion -> nodo -> localizacion
+ * Jerarquía: pais -> empresa -> fundo -> zona -> ubicacion -> nodo -> localizacion
  */
 
 // Mapeo de niveles geográficos a su orden en la jerarquía
@@ -8,9 +8,10 @@ export const GEOGRAFIA_HIERARCHY_ORDER: Record<string, number> = {
   'pais': 1,
   'empresa': 2,
   'fundo': 3,
-  'ubicacion': 4,
-  'nodo': 5,
-  'localizacion': 6
+  'zona': 4,
+  'ubicacion': 5,
+  'nodo': 6,
+  'localizacion': 7
 };
 
 // Mapeo de nombres de fuente a niveles
@@ -18,6 +19,7 @@ export const FUENTE_TO_LEVEL: Record<string, string> = {
   'pais': 'pais',
   'empresa': 'empresa',
   'fundo': 'fundo',
+  'zona': 'zona',
   'ubicacion': 'ubicacion',
   'nodo': 'nodo',
   'localizacion': 'localizacion'
@@ -67,6 +69,7 @@ export interface GeografiaHierarchy {
   paisid?: number;
   empresaid?: number;
   fundoid?: number;
+  zonaid?: number;
   ubicacionid?: number;
   nodoid?: number;
   localizacionid?: number;
@@ -82,6 +85,7 @@ export function getObjectHierarchy(
     paisesData?: any[];
     empresasData?: any[];
     fundosData?: any[];
+    zonasData?: any[];
     ubicacionesData?: any[];
     nodosData?: any[];
     localizacionesData?: any[];
@@ -117,14 +121,18 @@ export function getObjectHierarchy(
     case 'ubicacion':
       hierarchy.ubicacionid = objetoid;
       const ubicacion = data.ubicacionesData?.find(u => u.ubicacionid === objetoid);
-      if (ubicacion?.fundoid) {
-        hierarchy.fundoid = ubicacion.fundoid;
-        const fundo = data.fundosData?.find(f => f.fundoid === ubicacion.fundoid);
-        if (fundo?.empresaid) {
-          hierarchy.empresaid = fundo.empresaid;
-          const empresa = data.empresasData?.find(e => e.empresaid === fundo.empresaid);
-          if (empresa?.paisid) {
-            hierarchy.paisid = empresa.paisid;
+      if (ubicacion?.zonaid) {
+        hierarchy.zonaid = ubicacion.zonaid;
+        const zona = data.zonasData?.find(z => z.zonaid === ubicacion.zonaid);
+        if (zona?.fundoid) {
+          hierarchy.fundoid = zona.fundoid;
+          const fundo = data.fundosData?.find(f => f.fundoid === zona.fundoid);
+          if (fundo?.empresaid) {
+            hierarchy.empresaid = fundo.empresaid;
+            const empresa = data.empresasData?.find(e => e.empresaid === fundo.empresaid);
+            if (empresa?.paisid) {
+              hierarchy.paisid = empresa.paisid;
+            }
           }
         }
       }
@@ -136,14 +144,18 @@ export function getObjectHierarchy(
       if (nodo?.ubicacionid) {
         hierarchy.ubicacionid = nodo.ubicacionid;
         const ubicacion = data.ubicacionesData?.find(u => u.ubicacionid === nodo.ubicacionid);
-        if (ubicacion?.fundoid) {
-          hierarchy.fundoid = ubicacion.fundoid;
-          const fundo = data.fundosData?.find(f => f.fundoid === ubicacion.fundoid);
-          if (fundo?.empresaid) {
-            hierarchy.empresaid = fundo.empresaid;
-            const empresa = data.empresasData?.find(e => e.empresaid === fundo.empresaid);
-            if (empresa?.paisid) {
-              hierarchy.paisid = empresa.paisid;
+        if (ubicacion?.zonaid) {
+          hierarchy.zonaid = ubicacion.zonaid;
+          const zona = data.zonasData?.find(z => z.zonaid === ubicacion.zonaid);
+          if (zona?.fundoid) {
+            hierarchy.fundoid = zona.fundoid;
+            const fundo = data.fundosData?.find(f => f.fundoid === zona.fundoid);
+            if (fundo?.empresaid) {
+              hierarchy.empresaid = fundo.empresaid;
+              const empresa = data.empresasData?.find(e => e.empresaid === fundo.empresaid);
+              if (empresa?.paisid) {
+                hierarchy.paisid = empresa.paisid;
+              }
             }
           }
         }
@@ -159,14 +171,18 @@ export function getObjectHierarchy(
         if (nodo?.ubicacionid) {
           hierarchy.ubicacionid = nodo.ubicacionid;
           const ubicacion = data.ubicacionesData?.find(u => u.ubicacionid === nodo.ubicacionid);
-          if (ubicacion?.fundoid) {
-            hierarchy.fundoid = ubicacion.fundoid;
-            const fundo = data.fundosData?.find(f => f.fundoid === ubicacion.fundoid);
-            if (fundo?.empresaid) {
-              hierarchy.empresaid = fundo.empresaid;
-              const empresa = data.empresasData?.find(e => e.empresaid === fundo.empresaid);
-              if (empresa?.paisid) {
-                hierarchy.paisid = empresa.paisid;
+          if (ubicacion?.zonaid) {
+            hierarchy.zonaid = ubicacion.zonaid;
+            const zona = data.zonasData?.find(z => z.zonaid === ubicacion.zonaid);
+            if (zona?.fundoid) {
+              hierarchy.fundoid = zona.fundoid;
+              const fundo = data.fundosData?.find(f => f.fundoid === zona.fundoid);
+              if (fundo?.empresaid) {
+                hierarchy.empresaid = fundo.empresaid;
+                const empresa = data.empresasData?.find(e => e.empresaid === fundo.empresaid);
+                if (empresa?.paisid) {
+                  hierarchy.paisid = empresa.paisid;
+                }
               }
             }
           }
@@ -190,6 +206,7 @@ export function filterObjectsByParentHierarchy(
     paisesData?: any[];
     empresasData?: any[];
     fundosData?: any[];
+    zonasData?: any[];
     ubicacionesData?: any[];
     nodosData?: any[];
     localizacionesData?: any[];
@@ -212,7 +229,7 @@ export function filterObjectsByParentHierarchy(
       
       case 'ubicacion':
         return obj.ubicacionid === parentHierarchy.ubicacionid &&
-               (!parentHierarchy.fundoid || obj.fundoid === parentHierarchy.fundoid);
+               (!parentHierarchy.zonaid || obj.zonaid === parentHierarchy.zonaid);
       
       case 'nodo':
         return obj.nodoid === parentHierarchy.nodoid &&
@@ -239,6 +256,7 @@ export function getChildObjects(
     paisesData?: any[];
     empresasData?: any[];
     fundosData?: any[];
+    zonasData?: any[];
     ubicacionesData?: any[];
     nodosData?: any[];
     localizacionesData?: any[];
@@ -253,13 +271,18 @@ export function getChildObjects(
       );
     
     case 'fundo':
-      return (data.fundosData || []).filter(f => 
+      return (data.fundosData || []).filter(f =>
         parentHierarchy.empresaid ? f.empresaid === parentHierarchy.empresaid : true
       );
-    
+
+    case 'zona':
+      return (data.zonasData || []).filter(z =>
+        parentHierarchy.fundoid ? z.fundoid === parentHierarchy.fundoid : true
+      );
+
     case 'ubicacion':
-      return (data.ubicacionesData || []).filter(u => 
-        parentHierarchy.fundoid ? u.fundoid === parentHierarchy.fundoid : true
+      return (data.ubicacionesData || []).filter(u =>
+        parentHierarchy.zonaid ? u.zonaid === parentHierarchy.zonaid : true
       );
     
     case 'nodo':

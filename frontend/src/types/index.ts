@@ -662,8 +662,8 @@ export interface BaseEntity extends AuditFields {
 }
 
 // Tipos de tablas disponibles
-export type TableName = 
-  | 'pais' | 'empresa' | 'fundo' | 'ubicacion' | 'entidad' | 'entidad_localizacion'
+export type TableName =
+  | 'pais' | 'empresa' | 'fundo' | 'zona' | 'ubicacion' | 'entidad' | 'entidad_localizacion'
   | 'carpeta' | 'carpeta_ubicacion' | 'carpeta_usuario'
   | 'tipo' | 'metrica' | 'sensor' | 'metricasensor' | 'nodo' | 'localizacion' | 'asociacion'
   | 'medicion' | 'sensor_valor' | 'sensor_valor_error'
@@ -679,6 +679,7 @@ export const PRIMARY_KEY_MAP: Record<TableName, string | string[]> = {
   pais: 'paisid',
   empresa: 'empresaid',
   fundo: 'fundoid',
+  zona: 'zonaid',
   ubicacion: 'ubicacionid',
   entidad: 'entidadid',
   entidad_localizacion: ['entidadid', 'localizacionid'],

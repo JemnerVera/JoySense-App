@@ -116,10 +116,29 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     ]
   },
 
+  zona: {
+    name: 'zona',
+    displayName: 'Zona',
+    description: 'Zonas dentro de los fundos',
+    icon: '🗺️',
+    category: 'geografia',
+    primaryKey: 'zonaid',
+    allowInsert: true,
+    allowUpdate: true,
+    allowDelete: false,
+    sortField: 'zona',
+    fields: [
+      { name: 'zonaid', label: 'ID', type: 'number', hidden: true, readonly: true },
+      { name: 'fundoid', label: 'Fundo', type: 'select', required: true, foreignKey: { table: 'fundo', valueField: 'fundoid', labelField: 'fundo' } },
+      { name: 'zona', label: 'Zona', type: 'text', required: true },
+      { name: 'statusid', label: 'Estado', type: 'number', defaultValue: STATUS.ACTIVO, hidden: false }
+    ]
+  },
+
   ubicacion: {
     name: 'ubicacion',
     displayName: 'Ubicación',
-    description: 'Ubicaciones dentro de los fundos',
+    description: 'Ubicaciones dentro de las zonas',
     icon: '📍',
     category: 'geografia',
     primaryKey: 'ubicacionid',
@@ -129,7 +148,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
     sortField: 'ubicacion',
     fields: [
       { name: 'ubicacionid', label: 'ID', type: 'number', hidden: true, readonly: true },
-      { name: 'fundoid', label: 'Fundo', type: 'select', required: true, foreignKey: { table: 'fundo', valueField: 'fundoid', labelField: 'fundo' } },
+      { name: 'zonaid', label: 'Zona', type: 'select', required: true, foreignKey: { table: 'zona', valueField: 'zonaid', labelField: 'zona' } },
       { name: 'ubicacion', label: 'Ubicación', type: 'text', required: true },
       { name: 'statusid', label: 'Estado', type: 'number', defaultValue: STATUS.ACTIVO, hidden: false }
     ]

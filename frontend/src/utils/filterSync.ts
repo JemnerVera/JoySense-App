@@ -27,10 +27,10 @@ function unwrap<T>(val: T | T[] | undefined): T | undefined {
 
 /**
  * Deriva la jerarquía (pais, empresa, fundo, ubicacion) desde un objeto Localizacion.
- * La Localizacion tiene: nodo -> ubicacion -> fundoid
+ * La Localizacion tiene: nodo -> ubicacion -> zona -> fundoid
  * Usa fundosInfo como fuente primaria para empresa/pais
  *
- * @param localizacion - Objeto localizacion con nodo.ubicacion.fundoid
+ * @param localizacion - Objeto localizacion con nodo.ubicacion.zona.fundoid
  * @param fundosInfo - Mapa fundoid -> fundo (con empresaid y empresa.paisid)
  */
 export function deriveHierarchyFromLocalizacion(
@@ -51,8 +51,9 @@ export function deriveHierarchyFromLocalizacion(
     return null;
   }
 
-  // Obtener fundoId desde ubicacion (el campo más confiable)
-  const fundoId = ubicacion.fundoid;
+  // Obtener fundoId desde zona (navegando: ubicacion -> zona -> fundoid)
+  const zona = unwrap(ubicacion.zona);
+  const fundoId = zona?.fundoid;
   if (!fundoId) {
     return null;
   }
@@ -65,14 +66,13 @@ export function deriveHierarchyFromLocalizacion(
     const fundoInfo = fundosInfo.get(Number(fundoId));
     if (fundoInfo) {
       empresaId = fundoInfo.empresaid?.toString();
-      // El fundo puede tener empresa con paisid, o directamente paisid
       paisId = fundoInfo.empresa?.paisid?.toString() ?? fundoInfo.paisid?.toString();
     }
   }
 
   // Fallback: intentar obtener desde estructura anidada
   if (!empresaId || !paisId) {
-    const fundo = unwrap(ubicacion.fundo);
+    const fundo = unwrap(zona?.fundo);
     if (fundo) {
       empresaId = empresaId ?? fundo.empresaid?.toString();
       const empresa = unwrap(fundo.empresa);
@@ -88,7 +88,7 @@ export function deriveHierarchyFromLocalizacion(
     paisId: paisId ?? '',
     empresaId: empresaId ?? '',
     fundoId: fundoId.toString(),
-    ubicacion: ubicacion, // Retornar el objeto ubicacion completo, no un subset
+    ubicacion: ubicacion,
   };
 
   return result;
@@ -97,18 +97,20 @@ export function deriveHierarchyFromLocalizacion(
 /**
  * Deriva la jerarquía (pais, empresa, fundo) desde un objeto Ubicacion.
  *
- * @param ubicacion - Objeto ubicacion con fundoid
+ * @param ubicacion - Objeto ubicacion con zonaid y zona.fundoid
  * @param fundosInfo - Mapa fundoid -> fundo (con empresaid, paisid) - fuente primaria
  */
 export function deriveHierarchyFromUbicacion(
   ubicacion: any,
   fundosInfo?: Map<number, any>
 ): DerivedHierarchy | null {
-  if (!ubicacion?.fundoid) {
+  // Obtener fundoId desde zona (ubicacion -> zona -> fundoid)
+  const zona = unwrap(ubicacion?.zona);
+  if (!zona?.fundoid) {
     return null;
   }
 
-  const fundoId = Number(ubicacion.fundoid);
+  const fundoId = Number(zona.fundoid);
 
   let empresaId: string | undefined;
   let paisId: string | undefined;
@@ -124,7 +126,7 @@ export function deriveHierarchyFromUbicacion(
 
   // Fallback: estructura anidada
   if (!empresaId || !paisId) {
-    const fundo = unwrap(ubicacion.fundo);
+    const fundo = unwrap(zona?.fundo);
     if (fundo) {
       empresaId = empresaId ?? fundo.empresaid?.toString();
       const empresa = unwrap(fundo.empresa);
@@ -140,7 +142,7 @@ export function deriveHierarchyFromUbicacion(
     paisId: paisId ?? '',
     empresaId: empresaId ?? '',
     fundoId: fundoId.toString(),
-    ubicacion: ubicacion, // Retornar el objeto ubicacion completo, no un subset
+    ubicacion: ubicacion,
   };
 
   return result;
@@ -149,7 +151,7 @@ export function deriveHierarchyFromUbicacion(
 /**
  * Verifica si una localización cumple con los filtros globales.
  *
- * @param loc - Objeto localizacion con nodo.ubicacion.fundo
+ * @param loc - Objeto localizacion con nodo.ubicacion.zona.fundo
  * @param filters - Filtros globales activos
  * @param fundosInfo - Mapa opcional para resolver empresa/pais desde fundoid
  */
@@ -170,7 +172,7 @@ export function localizacionMatchesGlobalFilters(
   if (!nodo?.ubicacion) return false;
 
   const ubicacion = unwrap(nodo.ubicacion);
-  
+
   // Filtro por ubicación - verificar antes que fundo
   if (ubicacionSeleccionada?.ubicacionid) {
     const locUbicacionId = ubicacion?.ubicacionid;
@@ -178,12 +180,12 @@ export function localizacionMatchesGlobalFilters(
       return false;
     }
   }
-  
-  if (!ubicacion?.fundo) return false;
 
-  const fundo = unwrap(ubicacion.fundo);
-  const fundoId = fundo?.fundoid;
+  // Obtener fundo desde zona
+  const zona = unwrap(ubicacion?.zona);
+  if (!zona) return false;
 
+  const fundoId = zona?.fundoid;
   if (!fundoId) return false;
 
   // Filtro por fundo
@@ -193,6 +195,7 @@ export function localizacionMatchesGlobalFilters(
 
   // Para empresa y pais usar fundosInfo
   const fundoInfo = fundosInfo?.get(Number(fundoId));
+  const fundo = unwrap(zona?.fundo);
 
   if (empresaSeleccionada && empresaSeleccionada !== '') {
     const empresaId = fundo?.empresa ? unwrap(fundo.empresa)?.empresaid : fundoInfo?.empresaid;
