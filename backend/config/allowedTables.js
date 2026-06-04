@@ -1,5 +1,5 @@
 module.exports = [
-  'pais', 'empresa', 'fundo', 'ubicacion', 'localizacion',
+  'pais', 'empresa', 'fundo', 'ubicacion', 'localizacion', 'zona',
   'entidad', 'entidad_localizacion',
   'carpeta', 'carpeta_ubicacion', 'carpeta_usuario',
   'nodo', 'sensor', 'tipo', 'metrica', 'metricasensor',
