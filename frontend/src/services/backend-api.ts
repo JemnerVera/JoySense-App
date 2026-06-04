@@ -171,6 +171,26 @@ export async function checkUserSyncStatus(usuarioid: number): Promise<{
 }
 
 // ============================================================================
+// SESSION DEDUPLICATION HELPER
+// ============================================================================
+
+let _sessionPromise: Promise<string | null> | null = null;
+let _sessionTimer: ReturnType<typeof setTimeout> | null = null;
+
+async function getAuthToken(): Promise<string | null> {
+  if (!_sessionPromise) {
+    _sessionPromise = (async () => {
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      return session?.access_token || null;
+    })();
+    if (_sessionTimer) clearTimeout(_sessionTimer);
+    _sessionTimer = setTimeout(() => { _sessionPromise = null; }, 30_000);
+  }
+  return _sessionPromise;
+}
+
+// ============================================================================
 // JOYSENSE SERVICE
 // ============================================================================
 
@@ -196,12 +216,11 @@ export class JoySenseService {
 
   static async getPaises(): Promise<Pais[]> {
     try {
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       const data = await backendAPI.get('/geografia/pais', token || undefined);
       return data || [];
     } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return [];
       console.error('Error in getPaises:', error);
       throw error;
     }
@@ -209,12 +228,11 @@ export class JoySenseService {
 
   static async getEmpresas(): Promise<Empresa[]> {
     try {
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       const data = await backendAPI.get('/geografia/empresa', token || undefined);
       return data || [];
     } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return [];
       console.error('Error in getEmpresas:', error);
       throw error;
     }
@@ -223,12 +241,11 @@ export class JoySenseService {
 
   static async getFundos(): Promise<Fundo[]> {
     try {
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       const data = await backendAPI.get('/geografia/fundo', token || undefined);
       return data || [];
     } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return [];
       console.error('Error in getFundos:', error);
       throw error;
     }
@@ -237,12 +254,11 @@ export class JoySenseService {
 
   static async getUbicaciones(): Promise<Ubicacion[]> {
     try {
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       const data = await backendAPI.get('/geografia/ubicacion', token || undefined);
       return data || [];
     } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return [];
       console.error('Error in getUbicaciones:', error);
       throw error;
     }
@@ -263,14 +279,13 @@ export class JoySenseService {
 
   static async getEntidades(ubicacionId?: number): Promise<any[]> {
     try {
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       let endpoint = '/geografia/entidad';
       if (ubicacionId) endpoint += `?ubicacionid=${ubicacionId}`;
       const data = await backendAPI.get(endpoint, token || undefined);
       return data || [];
     } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return [];
       console.error('Error in getEntidades:', error);
       throw error;
     }

@@ -614,6 +614,7 @@ const AppContentInternal: React.FC<{
 
   // Cargar todos los datos iniciales en un solo useEffect
   useEffect(() => {
+    let cancelled = false;
     const loadAllData = async () => {
       try {
         const [paisesData, empresasData, fundosData, ubicacionesData, entidadesData] = await Promise.all([
@@ -624,17 +625,20 @@ const AppContentInternal: React.FC<{
           JoySenseService.getEntidades()
         ]);
 
+        if (cancelled) return;
         if (paisesData) setPaises(paisesData);
         if (empresasData) setEmpresas(empresasData);
         if (fundosData) setFundos(fundosData);
         if (ubicacionesData) setUbicaciones(ubicacionesData);
         if (entidadesData) setEntidades(entidadesData);
       } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
         console.error('Error cargando datos iniciales:', error);
       }
     };
 
     loadAllData();
+    return () => { cancelled = true; };
   }, []);
 
   // Función para verificar si hay cambios significativos en el formulario actual

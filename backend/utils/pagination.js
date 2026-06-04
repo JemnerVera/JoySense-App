@@ -102,8 +102,21 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
       }
       
       try {
-        const { count, error: countError } = await countQuery;
-        
+        const countController = new AbortController();
+        const countTimeout = setTimeout(() => countController.abort(), 2000);
+
+        let result;
+        try {
+          result = await Promise.race([
+            countQuery,
+            new Promise((_, reject) => countTimeout)
+          ]);
+        } finally {
+          clearTimeout(countTimeout);
+        }
+
+        const { count, error: countError } = result;
+
         if (countError) {
           logger.warn(`⚠️ Count falló para ${tableName}: ${countError.message}`);
           totalRecords = null;
