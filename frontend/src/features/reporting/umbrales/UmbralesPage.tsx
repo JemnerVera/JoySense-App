@@ -238,7 +238,7 @@ const UmbralesPage: React.FC = () => {
                 >
                   <option value="">Seleccionar ubicación</option>
                   {Array.isArray(ubicaciones) && ubicaciones.map(ubicacion => {
-                    const fundo = Array.isArray(fundos) ? fundos.find(f => f.fundoid === ubicacion.fundoid) : null;
+                    const fundo = Array.isArray(fundos) ? fundos.find(f => f.fundoid === ubicacion.zona?.fundoid) : null;
                     const empresa = fundo && Array.isArray(empresas) ? empresas.find(e => e.empresaid === fundo.empresaid) : null;
                     const displayName = empresa && fundo 
                       ? `${empresa.empresa} - ${fundo.fundo} - ${ubicacion.ubicacion}`

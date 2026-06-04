@@ -534,8 +534,13 @@ export const validateFundoUpdate = async (
 
 export const checkFundoDependencies = async (fundoid: number): Promise<boolean> => {
   try {
+    const zonas = await JoySenseService.getZonas?.() || [];
+    const hasDependentZonas = zonas.some(zona => zona.fundoid === fundoid);
+    if (hasDependentZonas) return true;
+
     const ubicaciones = await JoySenseService.getUbicaciones();
-    return ubicaciones.some(ubicacion => ubicacion.fundoid === fundoid);
+    const zonaIds = zonas.map(z => z.zonaid);
+    return ubicaciones.some(ubicacion => zonaIds.includes(ubicacion.zonaid));
   } catch (error) {
     logger.error('Error checking fundo dependencies:', error);
     return false;
@@ -547,11 +552,11 @@ export const checkFundoDependencies = async (fundoid: number): Promise<boolean> 
 // ============================================================================
 
 export const validateUbicacionData = async (
-  formData: Record<string, any>, 
+  formData: Record<string, any>,
   existingData?: any[]
 ): Promise<EnhancedValidationResult> => {
   const errors: ValidationError[] = [];
-  
+
   // 1. Validar campos obligatorios
   if (!formData.ubicacion || formData.ubicacion.trim() === '') {
     errors.push({
@@ -560,34 +565,34 @@ export const validateUbicacionData = async (
       type: 'required'
     });
   }
-  
-  if (!formData.fundoid) {
+
+  if (!formData.zonaid) {
     errors.push({
-      field: 'fundoid',
-      message: 'Debe seleccionar un fundo',
+      field: 'zonaid',
+      message: 'Debe seleccionar una zona',
       type: 'required'
     });
   }
-  
+
   // 2. Validar duplicados si hay datos existentes
   if (existingData && existingData.length > 0) {
-    const ubicacionExists = existingData.some(item => 
+    const ubicacionExists = existingData.some(item =>
       item.ubicacion && item.ubicacion.toLowerCase() === formData.ubicacion?.toLowerCase() &&
-      item.fundoid && item.fundoid.toString() === formData.fundoid?.toString()
+      item.zonaid && item.zonaid.toString() === formData.zonaid?.toString()
     );
-    
+
     if (ubicacionExists) {
       errors.push({
         field: 'ubicacion',
-        message: 'La ubicación ya existe en este fundo',
+        message: 'La ubicación ya existe en esta zona',
         type: 'duplicate'
       });
     }
   }
-  
+
   // 3. Generar mensaje amigable
   const userFriendlyMessage = generateUserFriendlyMessage(errors);
-  
+
   return {
     isValid: errors.length === 0,
     errors,
@@ -610,11 +615,11 @@ export const validateUbicacionUpdate = async (
       type: 'required'
     });
   }
-  
-  if (!formData.fundoid || formData.fundoid === '') {
+
+  if (!formData.zonaid || formData.zonaid === '') {
     errors.push({
-      field: 'fundoid',
-      message: 'El fundo es obligatorio',
+      field: 'zonaid',
+      message: 'La zona es obligatoria',
       type: 'required'
     });
   }

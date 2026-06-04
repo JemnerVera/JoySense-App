@@ -43,7 +43,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
   const [tipos, setTipos] = useState<any[]>([])
   const searchDropdownRef = useRef<HTMLDivElement>(null)
   const lastProcessedUbicacionId = useRef<number | null>(null)
-  const pendingUbicacion = useRef<{ ubicacionid: number; ubicacion: string; ubicacionabrev: string; fundoid: number } | null>(null)
+  const pendingUbicacion = useRef<{ ubicacionid: number; ubicacion: string; ubicacionabrev: string; zonaid: number } | null>(null)
   const nodeMedicionesLoadedRef = useRef<boolean>(false)
 
 
@@ -108,10 +108,10 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
   // Esto asegura que el mapa siempre muestre los nodos correctos del filtro global
   useEffect(() => {
     // Solo limpiar si realmente cambiaron los filtros y no es por selección de nodo
-    if (selectedNode && selectedNode.ubicacion?.fundo?.empresa?.pais?.paisid && selectedNode.ubicacion.fundo.empresa.empresaid && selectedNode.ubicacion.fundoid) {
-      const selectedPais = selectedNode.ubicacion.fundo.empresa.pais.paisid.toString();
-      const selectedEmpresa = selectedNode.ubicacion.fundo.empresa.empresaid.toString();
-      const selectedFundo = selectedNode.ubicacion.fundoid.toString();
+    if (selectedNode && selectedNode.ubicacion?.zona?.fundo?.empresa?.pais?.paisid && selectedNode.ubicacion.zona.fundo.empresa.empresaid && selectedNode.ubicacion.zona.fundoid) {
+      const selectedPais = selectedNode.ubicacion.zona.fundo.empresa.pais.paisid.toString();
+      const selectedEmpresa = selectedNode.ubicacion.zona.fundo.empresa.empresaid.toString();
+      const selectedFundo = selectedNode.ubicacion.zona.fundoid.toString();
       
       // Si el nodo seleccionado aún pertenece a los filtros actuales, no limpiar
       if (paisSeleccionado === selectedPais && 
@@ -264,16 +264,16 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     }
 
     // 1. Actualizar filtros del sidebar (país, empresa, fundo)
-    if (node.ubicacion.fundo.empresa.pais.paisid) {
-      setPaisSeleccionado(node.ubicacion.fundo.empresa.pais.paisid.toString())
+    if (node.ubicacion.zona?.fundo?.empresa?.pais?.paisid) {
+      setPaisSeleccionado(node.ubicacion.zona.fundo.empresa.pais.paisid.toString())
     }
 
-    if (node.ubicacion.fundo.empresa.empresaid) {
-      setEmpresaSeleccionada(node.ubicacion.fundo.empresa.empresaid.toString())
+    if (node.ubicacion.zona?.fundo?.empresa?.empresaid) {
+      setEmpresaSeleccionada(node.ubicacion.zona.fundo.empresa.empresaid.toString())
     }
 
-    if (node.ubicacion.fundoid) {
-      setFundoSeleccionado(node.ubicacion.fundoid.toString())
+    if (node.ubicacion.zona?.fundoid) {
+      setFundoSeleccionado(node.ubicacion.zona.fundoid.toString())
     }
 
     // 2. Actualizar ubicación usando contexto global
@@ -281,7 +281,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
       ubicacionid: node.ubicacionid,
       ubicacion: node.ubicacion.ubicacion,
       ubicacionabrev: node.ubicacion.ubicacionabrev,
-      fundoid: node.ubicacion.fundoid
+      zonaid: node.ubicacion.zonaid
     })
 
     // 3. Actualizar localización para que MEDICIONES y STATUS DE NODOS la tengan preseleccionada

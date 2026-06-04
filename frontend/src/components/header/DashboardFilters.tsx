@@ -166,9 +166,9 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
         
         const ubicacionesData = await JoySenseService.getTableData('ubicacion');
         
-        // Filtrar ubicaciones del fundo seleccionado
+        // Filtrar ubicaciones del fundo seleccionado (navegando por zona)
         let ubicacionesFiltradas = ubicacionesData.filter((ubicacion: any) =>
-          ubicacion.fundoid === parseInt(fundoSeleccionado)
+          ubicacion.zona?.fundoid === parseInt(fundoSeleccionado)
         );
 
         // Obtener nodos con GPS usando función optimizada con caché

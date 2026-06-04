@@ -964,6 +964,23 @@ export class JoySenseService {
   }
 
   /**
+   * Obtiene zonas filtradas por fundo
+   */
+  static async getZonasByFundo(fundoId: number): Promise<any[]> {
+    try {
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+
+      const data = await backendAPI.get(`/geografia/zona?fundoId=${fundoId}`, token || undefined);
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error('Error in getZonasByFundo:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Obtiene ubicaciones filtradas por fundo
    */
   static async getUbicacionesByFundo(fundoId: number): Promise<any[]> {
@@ -971,7 +988,7 @@ export class JoySenseService {
       const { supabaseAuth } = await import('./supabase-auth');
       const { data: { session } } = await supabaseAuth.auth.getSession();
       const token = session?.access_token || null;
-      
+
       // El backend acepta tanto fundoId como fundoid
       const data = await backendAPI.get(`/geografia/ubicacion?fundoId=${fundoId}`, token || undefined);
       return Array.isArray(data) ? data : [];

@@ -414,8 +414,8 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
       return false;
     }
 
-    const fundoId = node.ubicacion.fundoid;
-    
+    const fundoId = node.ubicacion.zona?.fundoid;
+
     // Verificar filtro de fundo (el más específico)
     if (fundoSeleccionado && fundoSeleccionado !== '') {
       if (fundoId?.toString() !== fundoSeleccionado) {

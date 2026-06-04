@@ -164,8 +164,8 @@ export const useReferenceData = () => {
 
     const ubicacion = ubicaciones.find(u => u.ubicacionid === ubicacionid);
     if (!ubicacion) return 'N/A';
-    
-    const fundo = fundos.find(f => f.fundoid === ubicacion.fundoid);
+
+    const fundo = fundos.find(f => f.fundoid === ubicacion.zona?.fundoid);
     if (!fundo) return ubicacion.ubicacion;
     
     const empresa = empresas.find(e => e.empresaid === fundo.empresaid);

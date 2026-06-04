@@ -93,9 +93,9 @@ export const useFormValidation = (selectedTable: string): UseFormValidationRetur
             return fundos.some(fundo => fundo.empresaid === id);
             
           case 'fundo':
-            // Verificar si hay ubicaciones que referencian este fundo
-            const ubicaciones = await JoySenseService.getTableData('ubicacion');
-            return ubicaciones.some(ubicacion => ubicacion.fundoid === id);
+            // Verificar si hay zonas que referencian este fundo
+            const zonas = await JoySenseService.getTableData('zona');
+            return zonas.some(zona => zona.fundoid === id);
             
           case 'ubicacion':
             // Verificar si hay localizaciones que referencian esta ubicación

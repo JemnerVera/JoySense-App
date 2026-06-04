@@ -45,7 +45,7 @@ const SidebarFilters: React.FC<SidebarFiltersProps> = ({ authToken }) => {
     }));
 
   const ubicacionesOptions = ubicaciones
-    .filter(ubicacion => !fundoSeleccionado || ubicacion.fundoid === parseInt(fundoSeleccionado))
+    .filter(ubicacion => !fundoSeleccionado || ubicacion.zona?.fundoid === parseInt(fundoSeleccionado))
     .map(ubicacion => ({
       id: ubicacion.ubicacionid,
       name: ubicacion.ubicacion

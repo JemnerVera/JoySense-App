@@ -85,8 +85,9 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
         const nodoToFundoMap = new Map<number, number>();
         nodosData.forEach((nodo: any) => {
           const ubicacion = ubicacionesData.find((u: any) => u.ubicacionid === nodo.ubicacionid);
-          if (ubicacion && selectedFundos.includes(ubicacion.fundoid)) {
-            nodoToFundoMap.set(nodo.nodoid, ubicacion.fundoid);
+          const fundoId = ubicacion?.zona?.fundoid;
+          if (ubicacion && fundoId && selectedFundos.includes(fundoId)) {
+            nodoToFundoMap.set(nodo.nodoid, fundoId);
           }
         });
         
