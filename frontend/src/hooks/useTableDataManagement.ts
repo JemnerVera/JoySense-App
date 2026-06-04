@@ -18,6 +18,7 @@ export const useTableDataManagement = () => {
   const [paisesData, setPaisesData] = useState<any[]>([]);
   const [empresasData, setEmpresasData] = useState<any[]>([]);
   const [fundosData, setFundosData] = useState<any[]>([]);
+  const [zonasData, setZonasData] = useState<any[]>([]);
   const [ubicacionesData, setUbicacionesData] = useState<any[]>([]);
   const [localizacionesData, setLocalizacionesData] = useState<any[]>([]);
   const [entidadesData, setEntidadesData] = useState<any[]>([]);
@@ -85,6 +86,7 @@ export const useTableDataManagement = () => {
         paisesResponse,
         empresasResponse,
         fundosResponse,
+        zonasResponse,
         entidadesResponse,
         carpetasResponse,
         tiposResponse,
@@ -106,6 +108,7 @@ export const useTableDataManagement = () => {
         safeLoad('pais', 500),
         safeLoad('empresa', 500),
         safeLoad('fundo', 500),
+        safeLoad('zona', 500),
         safeLoad('entidad', 500),
         safeLoad('carpeta', 500),
         safeLoad('tipo', 500), // CRÍTICO: tipos debe cargarse
@@ -140,7 +143,8 @@ export const useTableDataManagement = () => {
       const paises = Array.isArray(paisesResponse) ? paisesResponse : ((paisesResponse as any)?.data || []);
       const empresas = Array.isArray(empresasResponse) ? empresasResponse : ((empresasResponse as any)?.data || []);
       const fundos = Array.isArray(fundosResponse) ? fundosResponse : ((fundosResponse as any)?.data || []);
-      
+      const zonas = Array.isArray(zonasResponse) ? zonasResponse : ((zonasResponse as any)?.data || []);
+
       // Para fundo, extraer paisid de la relación con empresa si no está presente
       const processedFundos = fundos.map((fundo: any) => ({
         ...fundo,
@@ -190,6 +194,7 @@ export const useTableDataManagement = () => {
       setPaisesData(paises);
       setEmpresasData(empresas);
       setFundosData(processedFundos);
+      setZonasData(zonas);
       setUbicacionesData(ubicaciones);
       setLocalizacionesData(localizaciones);
       setEntidadesData(entidades);
@@ -530,6 +535,7 @@ export const useTableDataManagement = () => {
     paisesData,
     empresasData,
     fundosData,
+    zonasData,
     ubicacionesData,
     localizacionesData,
     entidadesData,
@@ -564,6 +570,7 @@ export const useTableDataManagement = () => {
     setPaisesData,
     setEmpresasData,
     setFundosData,
+    setZonasData,
     setUbicacionesData,
     setLocalizacionesData,
     setEntidadesData,

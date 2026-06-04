@@ -22,7 +22,8 @@ export const filterColumnsByTable = (
     'pais': ['pais', 'paisabrev', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'empresa': ['paisid', 'empresa', 'empresabrev', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'fundo': ['paisid', 'empresaid', 'fundo', 'fundoabrev', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
-    'ubicacion': ['paisid', 'empresaid', 'zonaid', 'ubicacion', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
+    'zona': ['fundoid', 'zona', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
+    'ubicacion': ['fundoid', 'zonaid', 'ubicacion', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'entidad': ['entidad', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'entidad_localizacion': ['entidadid', 'localizacionid', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'metrica': ['metrica', 'unidad', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
@@ -197,8 +198,12 @@ export const reorderColumns = (
       reordered.push(...otherColumns.filter(col => ['fundo'].includes(col.columnName)));
       reordered.push(...otherColumns.filter(col => ['fundoabrev'].includes(col.columnName)));
     }
+  } else if (tableName === 'zona') {
+    reordered.push(...otherColumns.filter(col => ['fundoid'].includes(col.columnName)));
+    reordered.push(...otherColumns.filter(col => ['zona'].includes(col.columnName)));
   } else if (tableName === 'ubicacion') {
     reordered.push(...otherColumns.filter(col => ['fundoid'].includes(col.columnName)));
+    reordered.push(...otherColumns.filter(col => ['zonaid'].includes(col.columnName)));
     reordered.push(...otherColumns.filter(col => ['ubicacion'].includes(col.columnName)));
   } else if (tableName === 'localizacion') {
     // Orden para tablas: localizacionid, nodoid, sensorid, metricaid, latitud, longitud, referencia

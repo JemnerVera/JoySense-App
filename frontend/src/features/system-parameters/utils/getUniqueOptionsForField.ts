@@ -7,6 +7,7 @@ interface RelatedData {
   paisesData?: any[];
   empresasData?: any[];
   fundosData?: any[];
+  zonasData?: any[];
   ubicacionesData?: any[];
   localizacionesData?: any[];
   entidadesData?: any[];
@@ -50,6 +51,7 @@ export const getUniqueOptionsForField = ({
   
   const empresas = relatedDataForStatus.empresasData || [];
   const fundos = relatedDataForStatus.fundosData || [];
+  const zonas = relatedDataForStatus.zonasData || [];
   const ubicaciones = relatedDataForStatus.ubicacionesData || [];
   const nodos = relatedDataForStatus.nodosData || [];
   const localizaciones = relatedDataForStatus.localizacionesData || [];
@@ -97,6 +99,9 @@ export const getUniqueOptionsForField = ({
       if (columnName === 'fundoid' && paisSeleccionado && !empresaSeleccionada) {
         const empresaIds = getEmpresasIdsPorPais(paisSeleccionado);
         return empresaIds.includes(item.empresaid?.toString());
+      }
+      if (columnName === 'zonaid' && fundoSeleccionado) {
+        return item.fundoid?.toString() === fundoSeleccionado;
       }
       if (columnName === 'ubicacionid' && fundoSeleccionado) {
         return item.fundoid?.toString() === fundoSeleccionado;
@@ -184,6 +189,35 @@ export const getUniqueOptionsForField = ({
         if (nivelA !== nivelB) return nivelA - nivelB;
         return a.label.localeCompare(b.label);
       });
+  }
+
+  // Caso especial para zonaid en tabla ubicacion: mostrar "FUNDO - ZONA"
+  if (columnName === 'zonaid' && selectedTable === 'ubicacion') {
+    const zonas = relatedDataForStatus.zonasData || [];
+    const fundos = relatedDataForStatus.fundosData || [];
+
+    const fundosMap = new Map(fundos.map((f: any) => [f.fundoid, f.fundo]));
+
+    let filteredZonas = zonas.filter((z: any) => z.statusid === STATUS.ACTIVO);
+
+    // Si hay fundo seleccionado en filtros globales, filtrar solo zonas de ese fundo
+    if (fundoSeleccionado) {
+      filteredZonas = filteredZonas.filter((z: any) =>
+        z.fundoid?.toString() === fundoSeleccionado
+      );
+    }
+
+    return filteredZonas
+      .map((item: any) => {
+        const fundoName = fundosMap.get(item.fundoid) || '';
+        const zonaName = item.zona || '';
+        const label = fundoName ? `${fundoName} - ${zonaName}` : zonaName || `ID: ${item.zonaid}`;
+        return {
+          value: item.zonaid,
+          label: label
+        };
+      })
+      .sort((a: any, b: any) => a.label.localeCompare(b.label));
   }
 
   // Caso especial para ubicacionid en tabla nodo: mostrar "FUNDO - UBICACION"
@@ -350,6 +384,7 @@ export const getUniqueOptionsForField = ({
     'paisid': { table: 'paisesData', key: 'paisid', label: 'pais' },
     'empresaid': { table: 'empresasData', key: 'empresaid', label: 'empresa' },
     'fundoid': { table: 'fundosData', key: 'fundoid', label: 'fundo' },
+    'zonaid': { table: 'zonasData', key: 'zonaid', label: 'zona' },
     'ubicacionid': { table: 'ubicacionesData', key: 'ubicacionid', label: 'ubicacion' },
     'localizacionid': { table: 'localizacionesData', key: 'localizacionid', label: 'localizacion' },
     'entidadid': { table: 'entidadesData', key: 'entidadid', label: 'entidad' },
@@ -389,7 +424,7 @@ export const getUniqueOptionsForField = ({
   });
 
   // Aplicar filtros globales para campos de jerarquía geográfica
-  const fieldsWithGlobalFilter = ['empresaid', 'fundoid', 'ubicacionid', 'nodoid', 'localizacionid'];
+  const fieldsWithGlobalFilter = ['empresaid', 'fundoid', 'zonaid', 'ubicacionid', 'nodoid', 'localizacionid'];
   if (fieldsWithGlobalFilter.includes(columnName)) {
     filteredByStatus = filterDataByGlobalFilters(filteredByStatus, mapping.key);
   }

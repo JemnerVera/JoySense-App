@@ -260,30 +260,32 @@ export const GeografiaFormFields: React.FC<GeografiaFormFieldsProps> = ({
   // Función para renderizar campos de Ubicación
   const renderUbicacionFields = (): React.ReactNode[] => {
     const result: React.ReactNode[] = [];
-    
+
     const contextualRow = renderContextualRow(['pais', 'empresa', 'fundo']);
     if (contextualRow) {
       result.push(
         <React.Fragment key="contextual-row">{contextualRow}</React.Fragment>
       );
     }
-    
+
     const fundoField = visibleColumns.find(c => c.columnName === 'fundoid');
+    const zonaField = visibleColumns.find(c => c.columnName === 'zonaid');
     const ubicacionField = visibleColumns.find(c => c.columnName === 'ubicacion');
     const statusField = visibleColumns.find(c => c.columnName === 'statusid');
-    
+
     const shouldShowFundoField = fundoField && !fundoSeleccionado;
-    
-    if (shouldShowFundoField || ubicacionField || statusField) {
+
+    if (shouldShowFundoField || zonaField || ubicacionField || statusField) {
       result.push(
         <div key="first-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           {shouldShowFundoField && renderField(fundoField)}
+          {zonaField && renderField(zonaField)}
           {ubicacionField && renderField(ubicacionField)}
           {statusField && renderField(statusField)}
         </div>
       );
     }
-    
+
     return result;
   };
 

@@ -199,6 +199,8 @@ export const getColumnDisplayNameTranslated = (columnName: string, t: (key: stri
     'empresa': t('table_headers.company'),
     'fundoid': t('table_headers.fund'),
     'fundo': t('table_headers.fund'),
+    'zonaid': t('table_headers.zone'),
+    'zona': t('table_headers.zone'),
     'ubicacionid': t('table_headers.location'),
     'ubicacion': t('table_headers.location'),
     'entidadid': t('table_headers.entity'),
@@ -279,6 +281,7 @@ const getRelatedDataArray = (tableName: string, relatedData: RelatedData): any[]
     case 'pais': return relatedData.paisesData || [];
     case 'empresa': return relatedData.empresasData || [];
     case 'fundo': return relatedData.fundosData || [];
+    case 'zona': return relatedData.zonasData || [];
     case 'ubicacion': return relatedData.ubicacionesData || [];
     case 'entidad': return relatedData.entidadesData || [];
     case 'nodo': return relatedData.nodosData || [];
@@ -313,6 +316,7 @@ export const getDisplayValue = (row: any, columnName: string, relatedData: Relat
     'paisid': { table: 'pais', nameField: 'pais' },
     'empresaid': { table: 'empresa', nameField: 'empresa' },
     'fundoid': { table: 'fundo', nameField: 'fundo' },
+    'zonaid': { table: 'zona', nameField: 'zona' },
     'ubicacionid': { table: 'ubicacion', nameField: 'ubicacion' },
     'entidadid': { table: 'entidad', nameField: 'entidad' },
     'nodoid': { table: 'nodo', nameField: 'nodo' },

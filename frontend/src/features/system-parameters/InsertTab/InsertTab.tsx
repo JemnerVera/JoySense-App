@@ -31,6 +31,7 @@ interface InsertTabProps {
     paisesData?: any[];
     empresasData?: any[];
     fundosData?: any[];
+    zonasData?: any[];
     ubicacionesData?: any[];
     localizacionesData?: any[];
     entidadesData?: any[];
@@ -220,6 +221,7 @@ export const InsertTab: React.FC<InsertTabProps> = ({
         paisesData={relatedData.paisesData || []}
         empresasData={relatedData.empresasData || []}
         fundosData={relatedData.fundosData || []}
+        zonasData={relatedData.zonasData || []}
         ubicacionesData={relatedData.ubicacionesData || []}
         codigotelefonosData={relatedData.codigotelefonosData}
         contactosData={relatedData.contactosData}

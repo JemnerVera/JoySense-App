@@ -130,6 +130,16 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
     return renderSelectField(`${t('buttons.select')} ${t('fields.fund')}`);
   }
 
+  // Campos de relación para zona
+  if (col.columnName === 'fundoid' && selectedTable === 'zona') {
+    return renderSelectField(`${t('buttons.select')} ${t('fields.fund')}`);
+  }
+
+  // Campos de relación para ubicacion - zona
+  if (col.columnName === 'zonaid' && selectedTable === 'ubicacion') {
+    return renderSelectField(`${t('buttons.select')} ${t('fields.zone')}`);
+  }
+
   // Campos de relación para nodo
   if (col.columnName === 'ubicacionid' && selectedTable === 'nodo') {
     const options = getUniqueOptionsForField(col.columnName);

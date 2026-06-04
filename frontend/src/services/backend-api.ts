@@ -248,6 +248,18 @@ export class JoySenseService {
     }
   }
 
+  static async getZonas(): Promise<any[]> {
+    try {
+      const { supabaseAuth } = await import('./supabase-auth');
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      const token = session?.access_token || null;
+      const data = await backendAPI.get('/zona', token || undefined);
+      return data || [];
+    } catch (error) {
+      console.error('Error in getZonas:', error);
+      return [];
+    }
+  }
 
   static async getEntidades(ubicacionId?: number): Promise<any[]> {
     try {
