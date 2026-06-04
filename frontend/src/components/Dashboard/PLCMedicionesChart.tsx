@@ -95,12 +95,12 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
         
         const nodesWithInfo = (nodosData || []).map((nodo: any) => {
           const ubicacion = ubicacionesData?.find((u: any) => u.ubicacionid === nodo.ubicacionid);
-          const fundo = fundosData?.find((f: any) => f.fundoid === ubicacion?.fundoid);
+          const fundo = fundosData?.find((f: any) => f.fundoid === ubicacion?.zona?.fundoid);
           return {
             ...nodo,
             fundo_nombre: fundo?.fundo || '',
             ubicacion_nombre: ubicacion?.ubicacion || '',
-            fundoid: ubicacion?.fundoid
+            fundoid: ubicacion?.zona?.fundoid
           };
         });
         

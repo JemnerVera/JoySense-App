@@ -197,11 +197,11 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     
     // DEBUG: Log de los primeros nodos para diagnóstico
     if (filteredNodes.length > 0) {
-      console.log('[NodeSelector] Diagnóstico PLC - filteredNodes:', filteredNodes.length, 
-        '| Primer nodo - ubicacionid:', filteredNodes[0].ubicacionid, 
-        'latitud:', filteredNodes[0].latitud, 
+      console.log('[NodeSelector] Diagnóstico PLC - filteredNodes:', filteredNodes.length,
+        '| Primer nodo - ubicacionid:', filteredNodes[0].ubicacionid,
+        'latitud:', filteredNodes[0].latitud,
         'longitud:', filteredNodes[0].longitud,
-        'fundoid:', filteredNodes[0].ubicacion?.fundoid)
+        'fundoid:', filteredNodes[0].ubicacion?.zona?.fundoid)
     }
     
     // Filtrar nodos PLC (en ubicaciones SVG con coordenadas relativas 0-100)
@@ -217,9 +217,9 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     
     // DEBUG: Log de nodos PLC encontrados
     if (plcNodes.length > 0) {
-      console.log('[NodeSelector] Nodos PLC encontrados:', plcNodes.length, 
+      console.log('[NodeSelector] Nodos PLC encontrados:', plcNodes.length,
         '| Primer PLC - ubicacionid:', plcNodes[0].ubicacionid,
-        'fundoid:', plcNodes[0].ubicacion?.fundoid)
+        'fundoid:', plcNodes[0].ubicacion?.zona?.fundoid)
     }
     
     // Filtrar nodos LoRaWAN (con coordenadas GPS válidas fuera del rango 0-100)
@@ -238,7 +238,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     
     const plcUbicacionIds = Array.from(new Set(plcNodes.map(n => n.ubicacionid)))
     // Obtener fundoid desde el nodo PLC (no desde ubicación anidada)
-    const fundoid = plcNodes.length > 0 ? (plcNodes[0].ubicacion?.fundoid ?? null) : null
+    const fundoid = plcNodes.length > 0 ? (plcNodes[0].ubicacion?.zona?.fundoid ?? null) : null
     
     // DEBUG: Log del resultado
     console.log('[NodeSelector] Resultado PLC - isPurePlc:', isPurePlc, 
@@ -315,9 +315,9 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     // Actualizar filtros del dashboard
     onFiltersUpdate({
       ubicacionId: node.ubicacionid,
-      fundoId: node.ubicacion?.fundoid || 0,
-      empresaId: node.ubicacion?.fundo?.empresa?.empresaid || 0,
-      paisId: node.ubicacion?.fundo?.empresa?.pais?.paisid || 0
+      fundoId: node.ubicacion?.zona?.fundoid || 0,
+      empresaId: node.ubicacion?.zona?.fundo?.empresa?.empresaid || 0,
+      paisId: node.ubicacion?.zona?.fundo?.empresa?.pais?.paisid || 0
     })
   }
 
@@ -368,9 +368,9 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     // Actualizar filtros del dashboard
     onFiltersUpdate({
       ubicacionId: node.ubicacionid,
-      fundoId: node.ubicacion?.fundoid || 0,
-      empresaId: node.ubicacion?.fundo?.empresa?.empresaid || 0,
-      paisId: node.ubicacion?.fundo?.empresa?.pais?.paisid || 0
+      fundoId: node.ubicacion?.zona?.fundoid || 0,
+      empresaId: node.ubicacion?.zona?.fundo?.empresa?.empresaid || 0,
+      paisId: node.ubicacion?.zona?.fundo?.empresa?.pais?.paisid || 0
     })
   }
 

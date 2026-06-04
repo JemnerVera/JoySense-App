@@ -1840,7 +1840,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
                             setShowMapModal(false);
                           }}
                           loading={loadingMapNodes}
-                          fundoid={plcNodes[0]?.ubicacion?.fundoid}
+                          fundoid={plcNodes[0]?.ubicacion?.zona?.fundoid}
                           defaultNodeColor="#3b82f6"
                         />
                       );

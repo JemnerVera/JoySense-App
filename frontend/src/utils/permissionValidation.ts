@@ -44,7 +44,7 @@ export function objectBelongsToParentHierarchy(
       }
       case 'ubicacion': {
         const ubicacion = data.ubicacionesData?.find(u => u.ubicacionid === obj.objetoid);
-        return ubicacion?.fundoid === parentHierarchy.fundoid;
+        return ubicacion?.zona?.fundoid === parentHierarchy.fundoid;
       }
       case 'nodo': {
         const nodo = data.nodosData?.find(n => n.nodoid === obj.objetoid);

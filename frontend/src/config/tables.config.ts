@@ -1006,7 +1006,7 @@ export const TABLE_CATEGORIES = {
 
 /**
  * Obtener tablas de GEOGRAFÍA
- * Incluye: pais, empresa, fundo, ubicacion, carpeta, carpeta_ubicacion, carpeta_usuario
+ * Incluye: pais, empresa, fundo, zona, ubicacion, carpeta, carpeta_ubicacion, carpeta_usuario
  * NOTA: localizacion y nodo son dispositivos, no geografía
  * NOTA: entidad, entidad_localizacion se mantienen para Dashboard (legacy)
  */
@@ -1015,6 +1015,7 @@ export function getGeografiaTables(): TableConfig[] {
     'pais',
     'empresa',
     'fundo',
+    'zona',
     'ubicacion',
     'entidad',
     'entidad_localizacion',
@@ -1114,13 +1115,14 @@ export function getUsuariosTables(): TableConfig[] {
 
 /**
  * Obtener tablas de PARAMETROS GEO
- * Incluye: pais, empresa, fundo, ubicacion, nodo, localizacion, asociacion
+ * Incluye: pais, empresa, fundo, zona, ubicacion, nodo, localizacion, asociacion
  */
 export function getParametrosGeoTables(): TableConfig[] {
   const parametrosGeoTablesNames: TableName[] = [
     'pais',
     'empresa',
     'fundo',
+    'zona',
     'ubicacion',
     'nodo',
     'localizacion',
@@ -1135,7 +1137,7 @@ export function getParametrosGeoTables(): TableConfig[] {
  * Excluye: mediciones, alertas, permisos, usuarios, tipo_mensaje, codigotelefono (auxiliar)
  */
 export function getTablaTables(): TableConfig[] {
-  const geografiaTableNames: TableName[] = ['pais', 'empresa', 'fundo', 'ubicacion', 'entidad', 'entidad_localizacion', 'carpeta', 'carpeta_ubicacion', 'carpeta_usuario'];
+  const geografiaTableNames: TableName[] = ['pais', 'empresa', 'fundo', 'zona', 'ubicacion', 'entidad', 'entidad_localizacion', 'carpeta', 'carpeta_ubicacion', 'carpeta_usuario'];
   const parametrosTableNames: TableName[] = ['origen', 'fuente', 'criticidad', 'tipo', 'umbral'];
   const permisosTableNames: TableName[] = ['permiso', 'usuario', 'perfil', 'usuarioperfil', 'contacto', 'correo'];
   

@@ -807,12 +807,12 @@ const AppContentInternal: React.FC<{
     const currentTab = activeTabRef.current;
     
     // Calcular el nuevo activeTab que se generaría
-    const geografiaTables = ['pais', 'empresa', 'fundo', 'ubicacion', 'entidad', 'entidad_localizacion', 'carpeta', 'carpeta_ubicacion', 'carpeta_usuario'];
+    const geografiaTables = ['pais', 'empresa', 'fundo', 'zona', 'ubicacion', 'entidad', 'entidad_localizacion', 'carpeta', 'carpeta_ubicacion', 'carpeta_usuario'];
     const parametrosTables = ['origen', 'fuente', 'criticidad', 'tipo', 'umbral'];
     const permisosTables = ['permiso', 'usuario', 'perfil', 'usuarioperfil', 'contacto', 'correo'];
     const dispositivosTables = ['tipo', 'metrica', 'sensor', 'metricasensor'];
     const usuariosTables = ['usuario', 'correo', 'codigotelefono', 'contacto', 'perfil', 'usuarioperfil', 'usuario_canal'];
-    const parametrosGeoTables = ['pais', 'empresa', 'fundo', 'ubicacion', 'nodo', 'localizacion', 'asociacion'];
+    const parametrosGeoTables = ['pais', 'empresa', 'fundo', 'zona', 'ubicacion', 'nodo', 'localizacion', 'asociacion'];
     const notificacionesTables = ['criticidad', 'umbral', 'regla'];
     
     let newActiveTab = '';

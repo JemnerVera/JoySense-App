@@ -468,7 +468,7 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
       }
       case 'ubicacion': {
         const ubicacion = ubicacionesData?.find(u => u.ubicacionid === objetoid);
-        const fundoid = ubicacion?.fundoid;
+        const fundoid = ubicacion?.zona?.fundoid;
         const fundo = fundoid != null ? fundosData?.find(f => f.fundoid === fundoid) : null;
         const empresaid = fundo?.empresaid;
         const empresa = empresaid != null ? empresasData?.find(e => e.empresaid === empresaid) : null;

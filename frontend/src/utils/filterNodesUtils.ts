@@ -30,7 +30,7 @@ export const filterNodesByGlobalFilters = (
   // Filtrar por país
   if (paisSeleccionado && paisSeleccionado !== '') {
     filtered = filtered.filter((node) => {
-      const paisId = node.ubicacion?.fundo?.empresa?.pais?.paisid;
+      const paisId = node.ubicacion?.zona?.fundo?.empresa?.pais?.paisid;
       return paisId?.toString() === paisSeleccionado;
     });
   }
@@ -38,7 +38,7 @@ export const filterNodesByGlobalFilters = (
   // Filtrar por empresa
   if (empresaSeleccionada && empresaSeleccionada !== '') {
     filtered = filtered.filter((node) => {
-      const empresaId = node.ubicacion?.fundo?.empresa?.empresaid;
+      const empresaId = node.ubicacion?.zona?.fundo?.empresa?.empresaid;
       return empresaId?.toString() === empresaSeleccionada;
     });
   }
@@ -46,7 +46,7 @@ export const filterNodesByGlobalFilters = (
   // Filtrar por fundo
   if (fundoSeleccionado && fundoSeleccionado !== '') {
     filtered = filtered.filter((node) => {
-      const fundoId = node.ubicacion?.fundoid;
+      const fundoId = node.ubicacion?.zona?.fundoid;
       return fundoId?.toString() === fundoSeleccionado;
     });
   }
@@ -66,7 +66,7 @@ export const getNodeFilterFn = (
   return (node: NodeData | any): boolean => {
     // Filtrar por país
     if (paisSeleccionado && paisSeleccionado !== '') {
-      const paisId = node.ubicacion?.fundo?.empresa?.pais?.paisid;
+      const paisId = node.ubicacion?.zona?.fundo?.empresa?.pais?.paisid;
       if (paisId?.toString() !== paisSeleccionado) {
         return false;
       }
@@ -74,7 +74,7 @@ export const getNodeFilterFn = (
 
     // Filtrar por empresa
     if (empresaSeleccionada && empresaSeleccionada !== '') {
-      const empresaId = node.ubicacion?.fundo?.empresa?.empresaid;
+      const empresaId = node.ubicacion?.zona?.fundo?.empresa?.empresaid;
       if (empresaId?.toString() !== empresaSeleccionada) {
         return false;
       }
@@ -82,7 +82,7 @@ export const getNodeFilterFn = (
 
     // Filtrar por fundo
     if (fundoSeleccionado && fundoSeleccionado !== '') {
-      const fundoId = node.ubicacion?.fundoid;
+      const fundoId = node.ubicacion?.zona?.fundoid;
       if (fundoId?.toString() !== fundoSeleccionado) {
         return false;
       }

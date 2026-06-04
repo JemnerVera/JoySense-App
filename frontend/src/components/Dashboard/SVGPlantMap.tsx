@@ -255,7 +255,7 @@ export const SVGPlantMap: React.FC<SVGPlantMapProps> = ({
         Number(n.latitud) > 0 &&
         Number(n.longitud) > 0
       
-      return n.ubicacion?.fundoid === fundoid && hasValidCoordinates
+      return n.ubicacion?.zona?.fundoid === fundoid && hasValidCoordinates
     })
   }, [nodes, fundoid])
 
