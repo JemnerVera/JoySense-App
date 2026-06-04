@@ -372,14 +372,24 @@ exports.getSensorValorError = async (supabase, { limit = 100 }) => {
  */
 exports.getUltimasMedicionesPorLote = async (supabase, { fundoIds, metricaId, startDate, endDate }) => {
   const fundoIdArray = String(fundoIds).split(',').map(Number);
-  
+
+  const { data: zonas, error: zonaError } = await supabase
+    .schema(dbSchema)
+    .from('zona')
+    .select('zonaid')
+    .in('fundoid', fundoIdArray);
+
+  if (zonaError) throw zonaError;
+  const zonaIds = (zonas || []).map(z => z.zonaid);
+  if (!zonaIds.length) return [];
+
   const { data: ubicaciones, error: ubicError } = await supabase
     .schema(dbSchema)
     .from('ubicacion')
     .select('ubicacionid')
-    .in('fundoid', fundoIdArray)
+    .in('zonaid', zonaIds)
     .eq('statusid', 1);
-  
+
   if (ubicError) throw ubicError;
   if (!ubicaciones || ubicaciones.length === 0) return [];
   

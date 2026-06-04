@@ -527,17 +527,27 @@ router.get('/umbrales-por-lote', async (req, res) => {
     // Usar el cliente de Supabase del request (con token del usuario) si est├í disponible
     const userSupabase = req.supabase || baseSupabase;
     
-    // Convertir CTEs a m├║ltiples queries con Supabase API
-    // Paso 1: Obtener ubicaciones
+    // Convertir CTEs a múltiples queries con Supabase API
+    // Paso 1: Obtener zonas y ubicaciones
+    const { data: zonas, error: zonaErr } = await userSupabase
+      .schema(dbSchema)
+      .from('zona')
+      .select('zonaid')
+      .in('fundoid', fundoIdArray);
+
+    if (zonaErr) throw zonaErr;
+    const zonaIds = (zonas || []).map(z => z.zonaid);
+    if (!zonaIds.length) return res.json([]);
+
     const { data: ubicaciones, error: ubicError } = await userSupabase
       .schema(dbSchema)
       .from('ubicacion')
       .select('ubicacionid')
-      .in('fundoid', fundoIdArray)
+      .in('zonaid', zonaIds)
       .eq('statusid', 1);
-    
+
     if (ubicError) throw ubicError;
-    
+
     if (!ubicaciones || ubicaciones.length === 0) {
       return res.json([]);
     }
@@ -620,19 +630,31 @@ router.get('/umbrales-por-lote', async (req, res) => {
     
     const ubicacionIdsParaReglas = [...new Set(nodosParaReglas?.map(n => n.ubicacionid).filter(id => id != null) || [])];
     
-    // Obtener fundoids de las ubicaciones
-    const { data: ubicacionesParaReglas, error: ubicacionesParaReglasError } = await userSupabase
+    // Obtener fundoids desde las zonas de las ubicaciones
+    const { data: zonasParaReglas, error: zonasParaReglasError } = await userSupabase
       .schema(dbSchema)
       .from('ubicacion')
-      .select('ubicacionid, fundoid')
+      .select('ubicacionid, zonaid')
       .in('ubicacionid', ubicacionIdsParaReglas)
       .eq('statusid', 1);
-    
-    if (ubicacionesParaReglasError) {
-      throw ubicacionesParaReglasError;
+
+    if (zonasParaReglasError) {
+      throw zonasParaReglasError;
     }
-    
-    const fundoIdsParaReglas = [...new Set(ubicacionesParaReglas?.map(u => u.fundoid).filter(id => id != null) || [])];
+
+    const zonaIdsParaReglas = [...new Set(zonasParaReglas?.map(u => u.zonaid).filter(id => id != null) || [])];
+
+    const { data: fundosDeZonas, error: fundosDeZonasError } = await userSupabase
+      .schema(dbSchema)
+      .from('zona')
+      .select('zonaid, fundoid')
+      .in('zonaid', zonaIdsParaReglas);
+
+    if (fundosDeZonasError) {
+      throw fundosDeZonasError;
+    }
+
+    const fundoIdsParaReglas = [...new Set(fundosDeZonas?.map(z => z.fundoid).filter(id => id != null) || [])];
     
     // Obtener empresaid de los fundos
     const { data: fundosParaReglas, error: fundosParaReglasError } = await userSupabase

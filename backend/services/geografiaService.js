@@ -124,20 +124,30 @@ const getUbicaciones = async (supabase, fundoId) => {
     .schema(dbSchema)
     .from('ubicacion')
     .select('*');
-  
+
   if (fundoId) {
-    query = query.eq('fundoid', fundoId);
+    const { data: zonas, error: zonaError } = await supabase
+      .schema(dbSchema)
+      .from('zona')
+      .select('zonaid')
+      .eq('fundoid', fundoId);
+
+    if (zonaError) throw zonaError;
+    const zonaIds = (zonas || []).map(z => z.zonaid);
+    if (zonaIds.length === 0) return [];
+
+    query = query.in('zonaid', zonaIds);
   }
-  
+
   query = query.order('ubicacionid', { ascending: true });
-  
+
   const { data, error } = await query;
-  
+
   if (error) {
     logger.error(`❌ [geografiaService.getUbicaciones] Error: ${error.message}`);
     throw error;
   }
-  
+
   return (data || []).map(ubic => ({
     ...ubic,
     fundo: null
@@ -226,8 +236,8 @@ const getNodos = async (supabase, { ubicacionId }) => {
       ubicacion:ubicacionid(
         ubicacionid,
         ubicacion,
-        fundoid,
-        fundo:fundoid(fundoid, fundo, empresaid)
+        zonaid,
+        zona:zonaid(zonaid, zona, fundoid, fundo:fundoid(fundoid, fundo, empresaid))
       )
     `);
 
@@ -314,8 +324,8 @@ const _getLocalizacionesWithMetrics = async (supabase, { nodoid, ubicacionId }) 
         ubicacion:ubicacionid(
           ubicacionid,
           ubicacion,
-          fundoid,
-          fundo:fundoid(fundoid, fundo)
+          zonaid,
+          zona:zonaid(zonaid, zona, fundoid, fundo:fundoid(fundoid, fundo))
         )
       )
     `);
@@ -437,7 +447,11 @@ const _resolveNodoidsByGeografia = async (supabase, { fundoId, empresaId, paisId
   let ubicacionIds = [];
   if (Number.isFinite(fid)) {
     logger.info(`[_resolveNodoidsByGeografia] Buscando ubicaciones para fundoId=${fid}`);
-    const { data: u, error } = await supabase.schema(dbSchema).from('ubicacion').select('ubicacionid').eq('fundoid', fid);
+    const { data: zonas, error: zonaErr } = await supabase.schema(dbSchema).from('zona').select('zonaid').eq('fundoid', fid);
+    if (zonaErr) throw zonaErr;
+    const zonaIds = (zonas || []).map(z => z.zonaid);
+    if (zonaIds.length === 0) return [];
+    const { data: u, error } = await supabase.schema(dbSchema).from('ubicacion').select('ubicacionid').in('zonaid', zonaIds);
     if (error) throw error;
     ubicacionIds = (u || []).map((x) => x.ubicacionid);
     logger.info(`[_resolveNodoidsByGeografia] Encontradas ${ubicacionIds.length} ubicaciones para fundoId=${fid}`);
@@ -446,7 +460,11 @@ const _resolveNodoidsByGeografia = async (supabase, { fundoId, empresaId, paisId
     if (fe) throw fe;
     const fundoids = (fundos || []).map((x) => x.fundoid);
     if (fundoids.length === 0) return [];
-    const { data: u, error } = await supabase.schema(dbSchema).from('ubicacion').select('ubicacionid').in('fundoid', fundoids);
+    const { data: zonas, error: zonaErr } = await supabase.schema(dbSchema).from('zona').select('zonaid').in('fundoid', fundoids);
+    if (zonaErr) throw zonaErr;
+    const zonaIds = (zonas || []).map(z => z.zonaid);
+    if (zonaIds.length === 0) return [];
+    const { data: u, error } = await supabase.schema(dbSchema).from('ubicacion').select('ubicacionid').in('zonaid', zonaIds);
     if (error) throw error;
     ubicacionIds = (u || []).map((x) => x.ubicacionid);
   } else if (Number.isFinite(pid)) {
@@ -458,7 +476,11 @@ const _resolveNodoidsByGeografia = async (supabase, { fundoId, empresaId, paisId
     if (fe) throw fe;
     const fundoids = (fundos || []).map((x) => x.fundoid);
     if (fundoids.length === 0) return [];
-    const { data: u, error } = await supabase.schema(dbSchema).from('ubicacion').select('ubicacionid').in('fundoid', fundoids);
+    const { data: zonas, error: zonaErr } = await supabase.schema(dbSchema).from('zona').select('zonaid').in('fundoid', fundoids);
+    if (zonaErr) throw zonaErr;
+    const zonaIds = (zonas || []).map(z => z.zonaid);
+    if (zonaIds.length === 0) return [];
+    const { data: u, error } = await supabase.schema(dbSchema).from('ubicacion').select('ubicacionid').in('zonaid', zonaIds);
     if (error) throw error;
     ubicacionIds = (u || []).map((x) => x.ubicacionid);
   }
@@ -505,18 +527,23 @@ const _getNodosConLocalizacionDashboardPrincipal = async (supabase, { limit, fun
       ubicacion:ubicacionid(
         ubicacionid,
         ubicacion,
-        fundoid,
-        fundo:fundoid(
-          fundoid, 
-          fundo, 
-          fundoabrev, 
-          empresaid,
-          empresa:empresaid(
-            empresaid, 
-            empresa, 
-            empresabrev, 
-            paisid,
-            pais:paisid(paisid, pais, paisabrev)
+        zonaid,
+        zona:zonaid(
+          zonaid,
+          zona,
+          fundoid,
+          fundo:fundoid(
+            fundoid,
+            fundo,
+            fundoabrev,
+            empresaid,
+            empresa:empresaid(
+              empresaid,
+              empresa,
+              empresabrev,
+              paisid,
+              pais:paisid(paisid, pais, paisabrev)
+            )
           )
         )
       )
@@ -614,7 +641,8 @@ const _getNodosConLocalizacionDashboardPrincipal = async (supabase, { limit, fun
     nodosSinLocalizaciones.delete(loc.nodoid);
 
     const ubicacionRaw = nodoRaw?.ubicacion ? (Array.isArray(nodoRaw.ubicacion) ? nodoRaw.ubicacion[0] : nodoRaw.ubicacion) : null;
-    const fundoRaw = ubicacionRaw?.fundo ? (Array.isArray(ubicacionRaw.fundo) ? ubicacionRaw.fundo[0] : ubicacionRaw.fundo) : null;
+    const zonaRaw = ubicacionRaw?.zona ? (Array.isArray(ubicacionRaw.zona) ? ubicacionRaw.zona[0] : ubicacionRaw.zona) : null;
+    const fundoRaw = zonaRaw?.fundo ? (Array.isArray(zonaRaw.fundo) ? zonaRaw.fundo[0] : zonaRaw.fundo) : null;
     const empresaRaw = fundoRaw?.empresa ? (Array.isArray(fundoRaw.empresa) ? fundoRaw.empresa[0] : fundoRaw.empresa) : null;
     const paisRaw = empresaRaw?.pais ? (Array.isArray(empresaRaw.pais) ? empresaRaw.pais[0] : empresaRaw.pais) : null;
 
@@ -623,11 +651,14 @@ const _getNodosConLocalizacionDashboardPrincipal = async (supabase, { limit, fun
       ...nodoRaw,
       ubicacion: ubicacionRaw ? {
         ...ubicacionRaw,
-        fundo: fundoRaw ? {
-          ...fundoRaw,
-          empresa: empresaRaw ? {
-            ...empresaRaw,
-            pais: paisRaw
+        zona: zonaRaw ? {
+          ...zonaRaw,
+          fundo: fundoRaw ? {
+            ...fundoRaw,
+            empresa: empresaRaw ? {
+              ...empresaRaw,
+              pais: paisRaw
+            } : null
           } : null
         } : null
       } : null,
@@ -711,8 +742,8 @@ const _getNodosConLocalizacionDashboardFallback = async (supabase, { limit, fund
       ubicacion:ubicacionid(
         ubicacionid,
         ubicacion,
-        fundoid,
-        fundo:fundoid(fundoid, fundo, empresaid, empresa:empresaid(empresaid, empresa, paisid, pais:paisid(paisid, pais)))
+        zonaid,
+        zona:zonaid(zonaid, zona, fundoid, fundo:fundoid(fundoid, fundo, empresaid, empresa:empresaid(empresaid, empresa, paisid, pais:paisid(paisid, pais))))
       )
     `)
     .eq('statusid', 1)
@@ -807,16 +838,21 @@ const searchLocationsDB = async (supabase, query) => {
         ubicacion:ubicacionid(
           ubicacionid,
           ubicacion,
-          fundoid,
-          fundo:fundoid(
+          zonaid,
+          zona:zonaid(
+            zonaid,
+            zona,
             fundoid,
-            fundo,
-            empresaid,
-            empresa:empresaid(
+            fundo:fundoid(
+              fundoid,
+              fundo,
               empresaid,
-              empresa,
-              paisid,
-              pais:paisid(paisid, pais)
+              empresa:empresaid(
+                empresaid,
+                empresa,
+                paisid,
+                pais:paisid(paisid, pais)
+              )
             )
           )
         )
@@ -844,9 +880,10 @@ const searchLocationsDB = async (supabase, query) => {
         logger.warn(`[searchLocationsDB] No se encontró nodo para nodoid=${loc.nodoid}`);
         return;
       }
-      
+
       const ubicacion = nodo?.ubicacion ? (Array.isArray(nodo.ubicacion) ? nodo.ubicacion[0] : nodo.ubicacion) : null;
-      const fundo = ubicacion?.fundo ? (Array.isArray(ubicacion.fundo) ? ubicacion.fundo[0] : ubicacion.fundo) : null;
+      const zona = ubicacion?.zona ? (Array.isArray(ubicacion.zona) ? ubicacion.zona[0] : ubicacion.zona) : null;
+      const fundo = zona?.fundo ? (Array.isArray(zona.fundo) ? zona.fundo[0] : zona.fundo) : null;
       const empresa = fundo?.empresa ? (Array.isArray(fundo.empresa) ? fundo.empresa[0] : fundo.empresa) : null;
       const pais = empresa?.pais ? (Array.isArray(empresa.pais) ? empresa.pais[0] : empresa.pais) : null;
       
@@ -864,6 +901,7 @@ const searchLocationsDB = async (supabase, query) => {
           pais?.pais,
           empresa?.empresa,
           fundo?.fundo,
+          zona?.zona,
           ubicacion?.ubicacion,
           loc.localizacion
         ].filter(Boolean).join(' → ');
