@@ -206,6 +206,7 @@ export const getColumnDisplayNameTranslated = (columnName: string, t: (key: stri
     'entidadid': t('table_headers.entity'),
     'nodoid': t('table_headers.node'),
     'nodo': t('table_headers.node'),
+    'activofisico': 'ACTIVO FÍSICO',
     'tipoid': t('table_headers.type'),
     'metricaid': t('table_headers.metric'),
     'tipos': t('table_headers.type'),

@@ -47,7 +47,7 @@ export const filterColumnsByTable = (
     'fuente': ['esquema', 'fuente', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'origen': ['origen', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'asociacion': ['asociacionid', 'localizacionid', 'id_device', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
-    'nodo': ['nodoid', 'ubicacionid', 'nodo', 'descripcion', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
+    'nodo': ['nodoid', 'ubicacionid', 'nodo', 'activofisico', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
     'sensor_valor': ['id_device', 'fecha', 'valor', 'statusid'],
     'sensor_valor_error': ['sensorvalorerrorid', 'id_device', 'error', 'valor', 'fecha'],
     'medicion': ['medicionid', 'localizacionid', 'fecha', 'medicion', 'usercreatedid', 'datecreated'],
@@ -59,11 +59,10 @@ export const filterColumnsByTable = (
     'usuario_canal': ['usuarioid', 'canalid', 'identificador', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'],
   };
 
-  // Caso especial para nodo - ya no tiene campos obsoletos (deveui, appeui, appkey, atpin)
-  // Los campos actuales son: ubicacionid, nodo, descripcion, statusid, campos de auditoría
+  // Caso especial para nodo - campos actuales: ubicacionid, nodo, activofisico, statusid, campos de auditoría
   if (tableName === 'nodo') {
-    return columns.filter(col => 
-      ['ubicacionid', 'nodo', 'descripcion', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName)
+    return columns.filter(col =>
+      ['ubicacionid', 'nodo', 'activofisico', 'statusid', 'usercreatedid', 'datecreated', 'usermodifiedid', 'datemodified'].includes(col.columnName)
     );
   }
 
@@ -167,11 +166,11 @@ export const reorderColumns = (
 
   const reordered: ColumnInfo[] = [];
 
-  // Caso especial para nodo - orden: ubicacionid, nodo, descripcion
+  // Caso especial para nodo - orden: ubicacionid, nodo, activofisico
   if (tableName === 'nodo') {
     reordered.push(...otherColumns.filter(col => ['ubicacionid'].includes(col.columnName)));
     reordered.push(...otherColumns.filter(col => ['nodo'].includes(col.columnName)));
-    reordered.push(...otherColumns.filter(col => ['descripcion'].includes(col.columnName)));
+    reordered.push(...otherColumns.filter(col => ['activofisico'].includes(col.columnName)));
     reordered.push(...auditColumns);
     if (statusColumn) reordered.push(statusColumn);
     return reordered;

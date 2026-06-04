@@ -86,12 +86,12 @@ export const DispositivosFormFields: React.FC<DispositivosFormFieldsProps> = ({
   // Función para renderizar campos de Nodo
   const renderNodoFields = (): React.ReactNode[] => {
     const result: React.ReactNode[] = [];
-    
+
     // Fila 1: Nombre Nodo, Ubicación, Referencia (Layout 3 columnas)
     const nodoField = visibleColumns.find(c => c.columnName === 'nodo');
     const ubicacionField = visibleColumns.find(c => c.columnName === 'ubicacionid');
     const referenciaField = visibleColumns.find(c => c.columnName === 'referencia');
-    
+
     if (nodoField || ubicacionField || referenciaField) {
       result.push(
         <div key="nodo-main-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
@@ -102,21 +102,32 @@ export const DispositivosFormFields: React.FC<DispositivosFormFieldsProps> = ({
       );
     }
 
-    // Fila 2: Latitud, Longitud, Status
+    // Fila 2: Latitud, Longitud, Activo Físico
     const latitudField = visibleColumns.find(c => c.columnName === 'latitud');
     const longitudField = visibleColumns.find(c => c.columnName === 'longitud');
-    const statusField = visibleColumns.find(c => c.columnName === 'statusid');
+    const activofisicoField = visibleColumns.find(c => c.columnName === 'activofisico');
 
-    if (latitudField || longitudField || statusField) {
+    if (latitudField || longitudField || activofisicoField) {
       result.push(
-        <div key="nodo-coords-status-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div key="nodo-coords-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           {latitudField && renderField(latitudField)}
           {longitudField && renderField(longitudField)}
+          {activofisicoField && renderField(activofisicoField)}
+        </div>
+      );
+    }
+
+    // Fila 3: Estado
+    const statusField = visibleColumns.find(c => c.columnName === 'statusid');
+
+    if (statusField) {
+      result.push(
+        <div key="nodo-status-row" className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           {statusField && renderField(statusField)}
         </div>
       );
     }
-    
+
     return result;
   };
 

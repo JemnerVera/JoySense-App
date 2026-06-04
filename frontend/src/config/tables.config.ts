@@ -340,6 +340,7 @@ export const TABLES_CONFIG: Record<TableName, TableConfig> = {
       { name: 'latitud', label: 'Latitud', type: 'number' },
       { name: 'longitud', label: 'Longitud', type: 'number' },
       { name: 'referencia', label: 'Referencia', type: 'text' },
+      { name: 'activofisico', label: 'Activo Físico', type: 'text' },
       { name: 'statusid', label: 'Estado', type: 'number', defaultValue: STATUS.ACTIVO, hidden: false }
     ]
   },
