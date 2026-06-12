@@ -39,9 +39,16 @@ const WeatherDetailsPageLazy = lazy(() =>
 );
 
 // Lazy load Weather Data Historica component
-const WeatherDataHistoricaLazy = lazy(() => 
+const WeatherDataHistoricaLazy = lazy(() =>
   import('../../features/weather/WeatherDataHistorica').then(module => ({
     default: module.WeatherDataHistorica
+  }))
+);
+
+// Lazy load Weather Resumen component
+const WeatherResumenLazy = lazy(() =>
+  import('../../features/weather/WeatherResumen').then(module => ({
+    default: module.WeatherResumen
   }))
 );
 
@@ -224,6 +231,14 @@ export const WeatherDataHistoricaLazyWithBoundary: React.FC = () => (
   <LazyComponentErrorBoundary>
     <LazyComponentWrapper>
       <WeatherDataHistoricaLazy />
+    </LazyComponentWrapper>
+  </LazyComponentErrorBoundary>
+);
+
+export const WeatherResumenLazyWithBoundary: React.FC = () => (
+  <LazyComponentErrorBoundary>
+    <LazyComponentWrapper>
+      <WeatherResumenLazy />
     </LazyComponentWrapper>
   </LazyComponentErrorBoundary>
 );

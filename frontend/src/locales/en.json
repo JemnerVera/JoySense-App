@@ -321,6 +321,7 @@
   "menu.condicionActual": "Current Condition",
   "menu.detalles": "Details",
   "menu.dataHistorica": "Historical Data",
+  "menu.resumen": "Summary",
   "buttons.save": "SAVE",
   "buttons.cancel": "CANCEL",
   "buttons.delete": "DELETE",

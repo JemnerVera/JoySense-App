@@ -57,6 +57,7 @@ import {
   WeatherMainLazyWithBoundary,
   WeatherDetailsPageLazyWithBoundary,
   WeatherDataHistoricaLazyWithBoundary,
+  WeatherResumenLazyWithBoundary,
   // Dashboards
   DashboardLazy,
   NodeStatusDashboardLazy, 
@@ -2063,6 +2064,11 @@ const AppContentInternal: React.FC<{
       );
     }
 
+    if (activeTab === 'meteorologia-resumen') {
+      return (
+        <WeatherResumenLazyWithBoundary />
+      );
+    }
 
     // Manejar sub-rutas de ALERTAS
     if (activeTab.startsWith('alertas-regla-') && !activeTab.startsWith('alertas-regla_')) {

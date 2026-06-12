@@ -12,7 +12,7 @@ interface WeatherTrend24hProps {
   metric: string;
   unit: string;
   color?: string;
-  height?: number;
+  height?: number | string;
 }
 
 export const WeatherTrend24h: React.FC<WeatherTrend24hProps> = ({
@@ -20,15 +20,17 @@ export const WeatherTrend24h: React.FC<WeatherTrend24hProps> = ({
   metric,
   unit,
   color = '#3b82f6',
-  height = 200,
+  height,
 }) => {
+  // Si no se especifica altura, usar altura flexible
+  const containerHeight = height ?? '100%';
   const { isReady, containerRef, chartRef } = useEChartsReady();
 
   if (!data || data.length === 0) {
     return (
-      <div 
-        className="flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded"
-        style={{ height }}
+      <div
+        className="flex items-center justify-center bg-gray-100 dark:bg-gray-700 rounded h-full"
+        style={{ height: containerHeight }}
       >
         <span className="text-sm text-gray-400">Sin datos</span>
       </div>
@@ -94,11 +96,11 @@ export const WeatherTrend24h: React.FC<WeatherTrend24hProps> = ({
   };
 
   return (
-    <div>
-      <div className="text-xs font-mono text-gray-600 dark:text-gray-400 mb-1">
+    <div className="flex flex-col h-full">
+      <div className="text-xs font-mono text-gray-600 dark:text-gray-400 mb-1 flex-shrink-0">
         {metric} ({unit})
       </div>
-      <div ref={containerRef} style={{ height, width: '100%' }}>
+      <div ref={containerRef} style={{ height: containerHeight, width: '100%' }} className="flex-1">
         {isReady && (
           <ReactECharts
             ref={chartRef}

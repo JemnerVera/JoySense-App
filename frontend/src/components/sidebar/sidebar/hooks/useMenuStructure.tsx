@@ -40,6 +40,7 @@ import {
   IconWeatherConditions,
   IconWeatherDetails,
   IconWeatherHistory,
+  IconWeatherResumen,
 } from '../utils/menuIcons';
 
 export function useMenuStructure() {
@@ -277,6 +278,11 @@ export function useMenuStructure() {
             id: 'data-historica',
             label: t('menu.dataHistorica'),
             icon: <IconWeatherHistory />,
+          },
+          {
+            id: 'resumen',
+            label: t('menu.resumen'),
+            icon: <IconWeatherResumen />,
           },
         ],
       },
