@@ -1,6 +1,7 @@
 import React from 'react';
 import { useWeatherData } from '../../hooks/useWeatherData';
 import { WeatherStationSelector } from './WeatherStationSelector';
+import { isTileVisible } from './weatherTileVisibility';
 import { 
   TemperatureTile, 
   HumidityTile, 
@@ -24,6 +25,7 @@ export const WeatherMain: React.FC = () => {
     selectedStation,
     setSelectedStation,
     summaryData,
+    availableMetricNames,
     openMeteoData,
     moonPhase,
     loading,
@@ -94,61 +96,80 @@ export const WeatherMain: React.FC = () => {
       )}
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        <TemperatureTile temp={summaryData?.temp_out ?? null} />
-        <HumidityTile
-          humidity={summaryData?.hum_out ?? null}
-          dewPoint={summaryData?.dew_point ?? null}
-        />
-        <WindTile
-          speed={summaryData?.wind_speed_10_min_avg ?? null}
-          direction={summaryData?.wind_dir ?? null}
-          gust={summaryData?.wind_gust_10_min ?? null}
-        />
-        <PressureTile pressure={summaryData?.bar ?? null} />
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        <RainTile
-          today={summaryData?.rain_day_mm ?? null}
-          rate={summaryData?.rain_rate_mm ?? null}
-          et={summaryData?.et_day ?? null}
-        />
-        <SolarTile radiation={summaryData?.solar_rad ?? null} />
-        <IndoorTile
-          tempIn={summaryData?.temp_in ?? null}
-          humIn={summaryData?.hum_in ?? null}
-        />
-        <SunTimesTile 
-          sunrise={openMeteoData?.sunrise ?? ''} 
-          sunset={openMeteoData?.sunset ?? ''} 
-        />
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        <IndexTile label="THW" value={summaryData?.thw_index ?? null} />
-        <IndexTile label="THSW" value={summaryData?.thsw_index ?? null} />
-        <ForecastTile 
-          weatherCode={openMeteoData?.weatherCode ?? 0}
-          tempMax={openMeteoData?.tempMax ?? null}
-          tempMin={openMeteoData?.tempMin ?? null}
-        />
-        <MoonPhaseTile 
-          phase={moonPhase.phase}
-          icon={moonPhase.icon}
-          name={moonPhase.name}
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <WindRoseTile 
-          windDir={openMeteoData?.hourlyWindDir ?? []}
-          windSpeed={openMeteoData?.hourlyWindSpeed ?? []}
-        />
-        <TempBarChartTile 
-          tempOutTrend={summaryData?.temp_out?.trend ?? []}
-          tempInTrend={summaryData?.temp_in?.trend ?? []}
-          dewPointTrend={summaryData?.dew_point?.trend ?? []}
-        />
+        {isTileVisible('temperature', availableMetricNames) && (
+          <TemperatureTile temp={summaryData?.temp_out ?? null} />
+        )}
+        {isTileVisible('humidity', availableMetricNames) && (
+          <HumidityTile
+            humidity={summaryData?.hum_out ?? null}
+            dewPoint={summaryData?.dew_point ?? null}
+          />
+        )}
+        {isTileVisible('wind', availableMetricNames) && (
+          <WindTile
+            speed={summaryData?.wind_speed_10_min_avg ?? null}
+            direction={summaryData?.wind_dir ?? null}
+            gust={summaryData?.wind_gust_10_min ?? null}
+          />
+        )}
+        {isTileVisible('pressure', availableMetricNames) && (
+          <PressureTile pressure={summaryData?.bar ?? null} />
+        )}
+        {isTileVisible('rain', availableMetricNames) && (
+          <RainTile
+            today={summaryData?.rain_day_mm ?? null}
+            rate={summaryData?.rain_rate_mm ?? null}
+            et={summaryData?.et_day ?? null}
+          />
+        )}
+        {isTileVisible('solar', availableMetricNames) && (
+          <SolarTile radiation={summaryData?.solar_rad ?? null} />
+        )}
+        {isTileVisible('indoor', availableMetricNames) && (
+          <IndoorTile
+            tempIn={summaryData?.temp_in ?? null}
+            humIn={summaryData?.hum_in ?? null}
+          />
+        )}
+        {isTileVisible('sunTimes', availableMetricNames) && (
+          <SunTimesTile 
+            sunrise={openMeteoData?.sunrise ?? ''} 
+            sunset={openMeteoData?.sunset ?? ''} 
+          />
+        )}
+        {isTileVisible('thw', availableMetricNames) && (
+          <IndexTile label="THW" value={summaryData?.thw_index ?? null} />
+        )}
+        {isTileVisible('thsw', availableMetricNames) && (
+          <IndexTile label="THSW" value={summaryData?.thsw_index ?? null} />
+        )}
+        {isTileVisible('forecast', availableMetricNames) && (
+          <ForecastTile 
+            weatherCode={openMeteoData?.weatherCode ?? 0}
+            tempMax={openMeteoData?.tempMax ?? null}
+            tempMin={openMeteoData?.tempMin ?? null}
+          />
+        )}
+        {isTileVisible('moon', availableMetricNames) && (
+          <MoonPhaseTile 
+            phase={moonPhase.phase}
+            icon={moonPhase.icon}
+            name={moonPhase.name}
+          />
+        )}
+        {isTileVisible('windRose', availableMetricNames) && (
+          <WindRoseTile 
+            windDir={openMeteoData?.hourlyWindDir ?? []}
+            windSpeed={openMeteoData?.hourlyWindSpeed ?? []}
+          />
+        )}
+        {isTileVisible('tempBarChart', availableMetricNames) && (
+          <TempBarChartTile 
+            tempOutTrend={summaryData?.temp_out?.trend ?? []}
+            tempInTrend={summaryData?.temp_in?.trend ?? []}
+            dewPointTrend={summaryData?.dew_point?.trend ?? []}
+          />
+        )}
       </div>
     </div>
   );

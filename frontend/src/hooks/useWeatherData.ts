@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import SupabaseRPCService from '../services/supabase-rpc';
 
 export interface WeatherStation {
@@ -48,6 +48,7 @@ export interface UseWeatherDataResult {
   currentData: WeatherCurrentData;
   summaryData: WeatherSummaryData | null;
   historical24h: WeatherMedicionData[];
+  availableMetricNames: Set<string>;
   openMeteoData: OpenMeteoData | null;
   moonPhase: { phase: string; icon: string; name: string };
   loading: boolean;
@@ -135,6 +136,29 @@ export interface WeatherSummaryData {
   thsw_index: WeatherSummary;
   temp_in: WeatherSummary;
   hum_in: WeatherSummary;
+}
+
+export function hasMetricData(summary: WeatherSummary | null | undefined): boolean {
+  return (summary?.trend?.length ?? 0) > 0 || summary?.current != null;
+}
+
+export function buildAvailableMetrics(
+  historical: WeatherMedicionData[],
+  summary: WeatherSummaryData | null
+): Set<string> {
+  const names = new Set(historical.map(d => d.metrica_nombre).filter(Boolean));
+  if (summary) {
+    for (const [key, val] of Object.entries(summary)) {
+      if (key === 'wind_dir') {
+        if ((val as { current: number | null }).current != null) {
+          names.add('wind_dir');
+        }
+      } else if (hasMetricData(val as WeatherSummary)) {
+        names.add(key);
+      }
+    }
+  }
+  return names;
 }
 
 export interface WeatherMedicionData {
@@ -468,6 +492,11 @@ export function useWeatherData(): UseWeatherDataResult {
     }
   }, [selectedStation, refreshCurrent, refreshSummary, refreshOpenMeteo]);
 
+  const availableMetricNames = useMemo(
+    () => buildAvailableMetrics(historical24h, summaryData),
+    [historical24h, summaryData]
+  );
+
   return {
     stations,
     stationsLoading,
@@ -476,6 +505,7 @@ export function useWeatherData(): UseWeatherDataResult {
     currentData,
     summaryData,
     historical24h,
+    availableMetricNames,
     openMeteoData,
     moonPhase,
     loading,
