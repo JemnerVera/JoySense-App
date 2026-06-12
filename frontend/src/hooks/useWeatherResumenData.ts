@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useWeatherData } from './useWeatherData';
+import { useAuth } from '../contexts/AuthContext';
+import { useCompleteFilterData } from './useCompleteFilterData';
 import SupabaseRPCService from '../services/supabase-rpc';
+import { JoySenseService } from '../services/backend-api';
 import { getIsoWeekDateRange, getCurrentIsoWeek } from '../features/weather/utils/weekYearUtils';
 import {
   AccumType,
@@ -53,6 +56,8 @@ export interface UseWeatherResumenDataResult {
 
 export function useWeatherResumenData(): UseWeatherResumenDataResult {
   const { selectedStation } = useWeatherData();
+  const { user } = useAuth();
+  const { fundos: fundosFromApi, loading: fundosLoading } = useCompleteFilterData(user?.token || '');
   const currentWeek = getCurrentIsoWeek();
 
   const [selectedFundoId, setSelectedFundoId] = useState<string | null>(null);
@@ -64,16 +69,21 @@ export function useWeatherResumenData(): UseWeatherResumenDataResult {
   const [error, setError] = useState<string | null>(null);
   const [fundos, setFundos] = useState<Fundo[]>([]);
 
-  // Para ahora, los fondos vienen del selectedStation
-  // En el futuro, pueden venir de otra fuente
+  // Cargar fundos desde la API
   useEffect(() => {
-    if (selectedStation) {
-      setFundos([{ id: selectedStation.id, name: selectedStation.name }]);
-      if (!selectedFundoId) {
-        setSelectedFundoId(selectedStation.id);
+    if (fundosFromApi && fundosFromApi.length > 0) {
+      const fundosFormated = fundosFromApi.map((f: any) => ({
+        id: f.fundoid?.toString() || '',
+        name: f.fundo || ''
+      }));
+      setFundos(fundosFormated);
+
+      // Auto-select el primer fundo si no hay selección
+      if (!selectedFundoId && fundosFormated.length > 0) {
+        setSelectedFundoId(fundosFormated[0].id);
       }
     }
-  }, [selectedStation]);
+  }, [fundosFromApi]);
 
   // Calcular rango de fechas de la semana seleccionada
   const dateRange = useMemo(() => {
@@ -100,9 +110,9 @@ export function useWeatherResumenData(): UseWeatherResumenDataResult {
     return { startDate, endDate, formatted };
   }, [selectedYear, selectedWeek]);
 
-  // Fetch datos cuando cambian estación/año/semana
+  // Fetch datos cuando cambian año/semana o fundo
   useEffect(() => {
-    if (!selectedStation) {
+    if (!selectedStation || !selectedFundoId) {
       setRawData([]);
       return;
     }
@@ -111,6 +121,7 @@ export function useWeatherResumenData(): UseWeatherResumenDataResult {
       setLoading(true);
       setError(null);
       try {
+        // Usar el nodoid de la estación seleccionada (está asociada al fundo)
         const data = await SupabaseRPCService.getMedicionesNodoDetallado({
           nodoid: selectedStation.nodoid,
           startDate: dateRange.startDate,
@@ -127,7 +138,7 @@ export function useWeatherResumenData(): UseWeatherResumenDataResult {
     };
 
     fetchData();
-  }, [selectedStation, selectedYear, selectedWeek, dateRange]);
+  }, [selectedStation, selectedFundoId, selectedYear, selectedWeek, dateRange]);
 
   // Procesar datos en series por métrica
   const allSeries = useMemo(() => {
