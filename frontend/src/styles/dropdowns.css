@@ -378,3 +378,36 @@ select.dashboard-scrollbar::-webkit-scrollbar-thumb:hover {
 .dark .dashboard-scrollbar-blue {
   scrollbar-color: #3b82f6 #404040; /* blue-500 neutral-700 */
 }
+
+/* Scrollbar Gris para Weather Resumen */
+.weather-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.weather-scrollbar::-webkit-scrollbar-track {
+  background: #4b5563; /* gray-600 para modo claro */
+  border-radius: 3px;
+}
+
+.dark .weather-scrollbar::-webkit-scrollbar-track {
+  background: #374151; /* gray-700 para modo oscuro */
+}
+
+.weather-scrollbar::-webkit-scrollbar-thumb {
+  background: #6b7280; /* gray-500 */
+  border-radius: 3px;
+}
+
+.weather-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af; /* gray-400 */
+}
+
+/* Para Firefox */
+.weather-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #6b7280 #4b5563; /* gray-500 gray-600 */
+}
+
+.dark .weather-scrollbar {
+  scrollbar-color: #6b7280 #374151; /* gray-500 gray-700 */
+}

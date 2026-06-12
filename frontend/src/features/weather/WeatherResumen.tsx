@@ -26,7 +26,7 @@ export const WeatherResumen: React.FC = () => {
   return (
     <div className="w-full flex flex-col bg-gray-50 dark:bg-black" style={{ height: 'calc(100vh - 56px)' }}>
       {/* Layout principal: Panel izquierdo + derecho */}
-      <div className="flex flex-1 min-h-0">
+      <div className="flex flex-1 min-h-0 overflow-x-auto">
         {/* Panel izquierdo: Slicers y selectores */}
         <WeatherWeekYearSlicer
           fundos={fundos}
