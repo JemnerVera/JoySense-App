@@ -21,6 +21,9 @@ interface WeatherWeekYearSlicerProps {
   selectedWeek: number;
   onYearChange: (year: number) => void;
   onWeekChange: (week: number) => void;
+  availableYearsWithData?: number[];
+  availableWeeksWithData?: Set<number>;
+  availabilityLoading?: boolean;
 }
 
 export const WeatherWeekYearSlicer: React.FC<WeatherWeekYearSlicerProps> = ({
@@ -35,6 +38,9 @@ export const WeatherWeekYearSlicer: React.FC<WeatherWeekYearSlicerProps> = ({
   selectedWeek,
   onYearChange,
   onWeekChange,
+  availableYearsWithData = [],
+  availableWeeksWithData,
+  availabilityLoading = false,
 }) => {
   const { isCollapsed, state } = useSidebar();
   const availableYears = getAvailableYears();
@@ -285,19 +291,27 @@ export const WeatherWeekYearSlicer: React.FC<WeatherWeekYearSlicerProps> = ({
           Año
         </label>
         <div className="grid grid-cols-1 gap-2">
-          {availableYears.map((year) => (
-            <button
-              key={year}
-              onClick={() => handleYearChange(year)}
-              className={`px-3 py-2 rounded-md text-sm font-mono font-medium transition-colors ${
-                selectedYear === year
-                  ? 'bg-gray-600 dark:bg-gray-700 text-white'
-                  : 'bg-gray-700 dark:bg-neutral-700 text-gray-200 dark:text-gray-300 border border-gray-600 dark:border-neutral-600 hover:bg-gray-600 dark:hover:bg-neutral-600'
-              }`}
-            >
-              {year}
-            </button>
-          ))}
+          {availableYears.map((year) => {
+            const hasData = availableYearsWithData.length === 0 || availableYearsWithData.includes(year);
+            const isDisabled = availabilityLoading || !hasData;
+
+            return (
+              <button
+                key={year}
+                onClick={() => !isDisabled && handleYearChange(year)}
+                disabled={isDisabled}
+                className={`px-3 py-2 rounded-md text-sm font-mono font-medium transition-colors ${
+                  selectedYear === year
+                    ? 'bg-gray-600 dark:bg-gray-700 text-white'
+                    : isDisabled
+                      ? 'bg-gray-700 dark:bg-neutral-700 text-gray-500 dark:text-gray-600 border border-gray-600 dark:border-neutral-600 cursor-not-allowed opacity-50'
+                      : 'bg-gray-700 dark:bg-neutral-700 text-gray-200 dark:text-gray-300 border border-gray-600 dark:border-neutral-600 hover:bg-gray-600 dark:hover:bg-neutral-600'
+                }`}
+              >
+                {year}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -309,17 +323,19 @@ export const WeatherWeekYearSlicer: React.FC<WeatherWeekYearSlicerProps> = ({
         <div className="grid grid-cols-4 gap-1 max-h-64 overflow-y-auto weather-scrollbar">
           {weeks.map((week) => {
             const isFuture = isWeekInFuture(selectedYear, week);
+            const hasData = !availableWeeksWithData || availableWeeksWithData.has(week);
             const isSelected = selectedWeek === week;
+            const isDisabled = isFuture || availabilityLoading || !hasData;
 
             return (
               <button
                 key={week}
-                onClick={() => !isFuture && onWeekChange(week)}
-                disabled={isFuture}
+                onClick={() => !isDisabled && onWeekChange(week)}
+                disabled={isDisabled}
                 className={`px-2 py-1 rounded text-xs font-mono font-medium transition-colors ${
                   isSelected
                     ? 'bg-gray-600 dark:bg-gray-700 text-white'
-                    : isFuture
+                    : isDisabled
                       ? 'bg-gray-700 dark:bg-neutral-700 text-gray-500 dark:text-gray-600 border border-gray-600 dark:border-neutral-600 cursor-not-allowed opacity-50'
                       : 'bg-gray-700 dark:bg-neutral-700 text-gray-200 dark:text-gray-300 border border-gray-600 dark:border-neutral-600 hover:bg-gray-600 dark:hover:bg-neutral-600 cursor-pointer'
                 }`}

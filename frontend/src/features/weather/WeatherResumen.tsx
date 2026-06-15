@@ -24,6 +24,9 @@ export const WeatherResumen: React.FC = () => {
     loading,
     error,
     dateRange,
+    availableYearsWithData,
+    availableWeeksWithData,
+    availabilityLoading,
   } = useWeatherResumenData();
 
   return (
@@ -41,6 +44,9 @@ export const WeatherResumen: React.FC = () => {
           selectedWeek={selectedWeek}
           onYearChange={setSelectedYear}
           onWeekChange={setSelectedWeek}
+          availableYearsWithData={availableYearsWithData}
+          availableWeeksWithData={availableWeeksWithData}
+          availabilityLoading={availabilityLoading}
         />
 
         <div className="flex-1 min-h-0 min-w-0 flex flex-col mx-6 mb-6 mt-6">

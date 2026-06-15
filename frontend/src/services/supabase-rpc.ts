@@ -719,6 +719,60 @@ export class SupabaseRPCService {
       throw err;
     }
   }
+
+  /**
+   * Obtiene semanas con datos disponibles para un nodo y métrica
+   * Retorna un mapa de año → Set<semanas> para usar en validación de UI
+   * @param params Parámetros de la consulta
+   * @returns Array de { year_num, week_num } agrupado por disponibilidad
+   */
+  static async getSemanasConDatos(params: {
+    nodoid: number;
+    metricaNombre: string;
+    startYear?: number;
+    endYear?: number;
+  }): Promise<{ year_num: number; week_num: number }[]> {
+    try {
+      if (!params.nodoid || params.nodoid <= 0) {
+        throw new Error('nodoid es requerido y debe ser > 0');
+      }
+
+      if (!params.metricaNombre) {
+        throw new Error('metricaNombre es requerido');
+      }
+
+      const { data, error } = await supabaseAuth
+        .schema(DB_SCHEMA)
+        .rpc('fn_get_semanas_con_datos', {
+          p_nodoid: params.nodoid,
+          p_metrica_nombre: params.metricaNombre,
+          p_start_year: params.startYear ?? null,
+          p_end_year: params.endYear ?? null,
+        });
+
+      if (error) {
+        if (error.message.includes('does not exist')) {
+          console.warn(
+            '[SupabaseRPCService] fn_get_semanas_con_datos no existe aún'
+          );
+          return [];
+        }
+        throw new Error(`RPC error: ${error.message}`);
+      }
+
+      if (!Array.isArray(data)) {
+        return [];
+      }
+
+      return data.map((item: any) => ({
+        year_num: item.year_num,
+        week_num: item.week_num,
+      }));
+    } catch (err: any) {
+      console.error('[SupabaseRPCService] Error en getSemanasConDatos:', err);
+      throw err;
+    }
+  }
 }
 
 export default SupabaseRPCService;

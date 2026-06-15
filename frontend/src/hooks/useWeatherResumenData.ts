@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useWeatherData } from './useWeatherData';
 import SupabaseRPCService from '../services/supabase-rpc';
-import { getIsoWeekDateRange, getCurrentIsoWeek } from '../features/weather/utils/weekYearUtils';
+import { getIsoWeekDateRange, getCurrentIsoWeek, getAvailableYears } from '../features/weather/utils/weekYearUtils';
 import {
   AccumType,
   getMetricConfig,
@@ -41,6 +41,9 @@ export interface UseWeatherResumenDataResult {
     endDate: string;
     formatted: string;
   };
+  availableYearsWithData: number[];
+  availableWeeksWithData: Set<number>;
+  availabilityLoading: boolean;
 }
 
 export function useWeatherResumenData(): UseWeatherResumenDataResult {
@@ -53,11 +56,59 @@ export function useWeatherResumenData(): UseWeatherResumenDataResult {
   const [rawData, setRawData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [weekAvailability, setWeekAvailability] = useState<Map<number, Set<number>>>(new Map());
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
 
   // Reset métrica al cambiar estación
   useEffect(() => {
     setSelectedMetricName(null);
   }, [selectedStation?.nodoid]);
+
+  // Cargar disponibilidad de semanas al cambiar estación o métrica
+  useEffect(() => {
+    if (!selectedStation || !selectedMetricName) {
+      setWeekAvailability(new Map());
+      return;
+    }
+
+    let cancelled = false;
+
+    const fetchAvailability = async () => {
+      setAvailabilityLoading(true);
+      try {
+        const years = getAvailableYears();
+        const rows = await SupabaseRPCService.getSemanasConDatos({
+          nodoid: selectedStation.nodoid,
+          metricaNombre: selectedMetricName,
+          startYear: Math.min(...years),
+          endYear: Math.max(...years),
+        });
+
+        if (cancelled) return;
+
+        const map = new Map<number, Set<number>>();
+        for (const { year_num, week_num } of rows) {
+          if (!map.has(year_num)) {
+            map.set(year_num, new Set());
+          }
+          map.get(year_num)!.add(week_num);
+        }
+        setWeekAvailability(map);
+      } catch (err) {
+        console.error('Error fetching week availability:', err);
+      } finally {
+        if (!cancelled) {
+          setAvailabilityLoading(false);
+        }
+      }
+    };
+
+    fetchAvailability();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedStation?.nodoid, selectedMetricName]);
 
   // Calcular rango de fechas de la semana seleccionada
   const dateRange = useMemo(() => {
@@ -83,6 +134,37 @@ export function useWeatherResumenData(): UseWeatherResumenDataResult {
 
     return { startDate, endDate, formatted };
   }, [selectedYear, selectedWeek]);
+
+  // Derivados: años y semanas con datos disponibles
+  const availableYearsWithData = useMemo(() => {
+    const years = getAvailableYears();
+    return years.filter((y) => weekAvailability.has(y));
+  }, [weekAvailability]);
+
+  const availableWeeksWithData = useMemo(() => {
+    return weekAvailability.get(selectedYear) ?? new Set<number>();
+  }, [weekAvailability, selectedYear]);
+
+  // Auto-seleccionar semana más reciente con data si la selección actual no es válida
+  useEffect(() => {
+    if (availabilityLoading || weekAvailability.size === 0) return;
+
+    const currentYearWeeks = weekAvailability.get(selectedYear);
+    if (currentYearWeeks?.has(selectedWeek)) {
+      return; // Selección actual es válida
+    }
+
+    // Buscar año+semana más reciente con data
+    const sortedYears = [...getAvailableYears()].sort((a, b) => b - a);
+    for (const year of sortedYears) {
+      const weeks = weekAvailability.get(year);
+      if (weeks && weeks.size > 0) {
+        setSelectedYear(year);
+        setSelectedWeek(Math.max(...weeks));
+        return;
+      }
+    }
+  }, [weekAvailability, availabilityLoading, selectedYear, selectedWeek]);
 
   // Fetch datos cuando cambian año/semana o estación
   useEffect(() => {
@@ -215,5 +297,8 @@ export function useWeatherResumenData(): UseWeatherResumenDataResult {
     loading,
     error,
     dateRange,
+    availableYearsWithData,
+    availableWeeksWithData,
+    availabilityLoading,
   };
 }
