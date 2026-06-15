@@ -39,10 +39,10 @@ export const WeatherTrend24h: React.FC<WeatherTrend24hProps> = ({
 
   const option = {
     grid: {
-      left: 40,
+      left: 50,
       right: 20,
       top: 20,
-      bottom: 30,
+      bottom: 40,
     },
     tooltip: {
       trigger: 'axis',
@@ -54,7 +54,7 @@ export const WeatherTrend24h: React.FC<WeatherTrend24hProps> = ({
       data: data.map(d => d.time),
       axisLine: { lineStyle: { color: '#d1d5db' } },
       axisLabel: {
-        fontSize: 9,
+        fontSize: 12,
         fontFamily: 'monospace',
         color: '#6b7280',
         formatter: (value: string) => value.slice(11, 16),
@@ -66,7 +66,7 @@ export const WeatherTrend24h: React.FC<WeatherTrend24hProps> = ({
       axisTick: { show: false },
       splitLine: { lineStyle: { color: '#f3f4f6' } },
       axisLabel: {
-        fontSize: 9,
+        fontSize: 12,
         fontFamily: 'monospace',
         color: '#9ca3af',
       },
