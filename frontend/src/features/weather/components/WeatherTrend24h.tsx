@@ -45,9 +45,22 @@ export const WeatherTrend24h: React.FC<WeatherTrend24hProps> = ({
       bottom: 40,
     },
     tooltip: {
-      trigger: 'axis',
-      axisPointer: { type: 'cross' },
-      formatter: '{b}: {c}' + unit,
+      trigger: 'axis' as const,
+      position: (pt: [number, number]) => [pt[0], '10%'],
+      backgroundColor: 'rgba(0, 0, 0, 0.7)',
+      borderWidth: 0,
+      formatter: (params: unknown) => {
+        if (!Array.isArray(params)) return '';
+        const lines: string[] = [];
+        params.forEach((p: { value?: number; seriesName?: string; marker?: string }) => {
+          const val = p.value;
+          const display =
+            typeof val === 'number' && !isNaN(val) ? `${val.toFixed(2)} ${unit}` : '-';
+          lines.push(`${p.marker} ${p.seriesName}: ${display}`);
+        });
+        const date = (params[0] as { axisValue?: string })?.axisValue || '';
+        return `${date}<br/>${lines.join('<br/>')}`;
+      },
     },
     xAxis: {
       type: 'category',
@@ -73,6 +86,7 @@ export const WeatherTrend24h: React.FC<WeatherTrend24hProps> = ({
     },
     series: [
       {
+        name: metric,
         type: 'line',
         data: data.map(d => d.value),
         smooth: true,
