@@ -28,7 +28,7 @@ export const WeatherResumen: React.FC = () => {
 
   return (
     <div className="w-full flex flex-col bg-gray-50 dark:bg-black" style={{ height: 'calc(100vh - 56px)' }}>
-      <div className="flex flex-1 min-h-0 overflow-x-auto">
+      <div className="flex flex-1 min-h-0 overflow-hidden">
         <WeatherWeekYearSlicer
           stations={stations}
           selectedStation={selectedStation}
@@ -43,7 +43,7 @@ export const WeatherResumen: React.FC = () => {
           onWeekChange={setSelectedWeek}
         />
 
-        <div className="flex-1 min-h-0 flex flex-col mx-6 mb-6 mt-6">
+        <div className="flex-1 min-h-0 min-w-0 flex flex-col mx-6 mb-6 mt-6">
           {loading && (
             <div className="flex items-center justify-center flex-1">
               <div className="text-center">

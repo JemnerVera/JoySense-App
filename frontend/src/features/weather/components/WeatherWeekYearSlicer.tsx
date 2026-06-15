@@ -136,7 +136,7 @@ export const WeatherWeekYearSlicer: React.FC<WeatherWeekYearSlicerProps> = ({
   const dateRangeFormatted = formatWeekRange(startDate, endDate);
 
   return (
-    <div className="w-56 bg-gray-800 dark:bg-neutral-800 border-r border-gray-700 dark:border-neutral-700 p-4 h-full overflow-y-auto weather-scrollbar">
+    <div className="w-60 flex-shrink-0 bg-gray-800 dark:bg-neutral-800 border-r border-gray-700 dark:border-neutral-700 p-4 h-full min-h-0 overflow-y-auto overflow-x-hidden weather-scrollbar">
       {/* Estación Dropdown */}
       <div className="mb-6">
         <label className="text-base font-bold text-white font-mono mb-2 whitespace-nowrap uppercase block">
@@ -146,9 +146,9 @@ export const WeatherWeekYearSlicer: React.FC<WeatherWeekYearSlicerProps> = ({
           <button
             onClick={() => !stationsLoading && setIsStationDropdownOpen(!isStationDropdownOpen)}
             disabled={stationsLoading || stations.length === 0}
-            className="h-10 min-w-full px-3 bg-gray-700 dark:bg-neutral-700 border border-gray-600 dark:border-neutral-600 rounded text-gray-200 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed"
+            className="h-10 w-full min-w-0 px-3 bg-gray-700 dark:bg-neutral-700 border border-gray-600 dark:border-neutral-600 rounded text-gray-200 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <span className={selectedStation ? 'text-gray-200 dark:text-white truncate' : 'text-gray-400 dark:text-neutral-400'}>
+            <span className={`truncate min-w-0 ${selectedStation ? 'text-gray-200 dark:text-white' : 'text-gray-400 dark:text-neutral-400'}`}>
               {stationsLoading
                 ? 'Cargando...'
                 : selectedStation
@@ -219,12 +219,12 @@ export const WeatherWeekYearSlicer: React.FC<WeatherWeekYearSlicerProps> = ({
           <button
             onClick={() => setIsMetricaDropdownOpen(!isMericaDropdownOpen)}
             disabled={availableMetrics.length === 0}
-            className="h-10 min-w-full px-3 bg-gray-700 dark:bg-neutral-700 border border-gray-600 dark:border-neutral-600 rounded text-gray-200 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed"
+            className="h-10 w-full min-w-0 px-3 bg-gray-700 dark:bg-neutral-700 border border-gray-600 dark:border-neutral-600 rounded text-gray-200 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <span className={selectedMetric ? 'text-gray-200 dark:text-white' : 'text-gray-400 dark:text-neutral-400'}>
+            <span className={`truncate min-w-0 ${selectedMetric ? 'text-gray-200 dark:text-white' : 'text-gray-400 dark:text-neutral-400'}`}>
               {selectedMetric?.label || 'Selecciona'}
             </span>
-            <svg className={`w-4 h-4 transition-transform ${isMericaDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className={`w-4 h-4 flex-shrink-0 transition-transform ${isMericaDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           </button>
