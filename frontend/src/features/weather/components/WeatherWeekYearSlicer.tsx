@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useSidebar } from '../../../contexts/SidebarContext';
 import type { WeatherStation } from '../../../hooks/useWeatherData';
 import {
   getAvailableYears,
@@ -35,6 +36,7 @@ export const WeatherWeekYearSlicer: React.FC<WeatherWeekYearSlicerProps> = ({
   onYearChange,
   onWeekChange,
 }) => {
+  const { isCollapsed, state } = useSidebar();
   const availableYears = getAvailableYears();
   const weeksInYear = getWeeksInYear(selectedYear);
   const weeks = Array.from({ length: weeksInYear }, (_, i) => i + 1);
@@ -62,26 +64,68 @@ export const WeatherWeekYearSlicer: React.FC<WeatherWeekYearSlicerProps> = ({
     `${station.name}${station.hasHistoric ? ' (+Hist)' : ''}`;
 
   useEffect(() => {
-    if (stationDropdownRef.current && isStationDropdownOpen) {
-      const rect = stationDropdownRef.current.getBoundingClientRect();
-      setStationDropdownPosition({
-        top: rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX,
-        width: rect.width,
-      });
+    if (isStationDropdownOpen && stationDropdownRef.current) {
+      let animationFrameId: number;
+      let isMounted = true;
+
+      const updatePosition = () => {
+        if (!isMounted || !stationDropdownRef.current) return;
+        const rect = stationDropdownRef.current.getBoundingClientRect();
+        setStationDropdownPosition({
+          top: rect.bottom + window.scrollY,
+          left: rect.left + window.scrollX,
+          width: rect.width,
+        });
+
+        if (isMounted) {
+          animationFrameId = requestAnimationFrame(updatePosition);
+        }
+      };
+
+      animationFrameId = requestAnimationFrame(updatePosition);
+
+      return () => {
+        isMounted = false;
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+        }
+      };
+    } else {
+      setStationDropdownPosition(null);
     }
-  }, [isStationDropdownOpen]);
+  }, [isStationDropdownOpen, isCollapsed, state]);
 
   useEffect(() => {
-    if (metricDropdownRef.current && isMericaDropdownOpen) {
-      const rect = metricDropdownRef.current.getBoundingClientRect();
-      setMetricDropdownPosition({
-        top: rect.bottom + window.scrollY,
-        left: rect.left + window.scrollX,
-        width: rect.width,
-      });
+    if (isMericaDropdownOpen && metricDropdownRef.current) {
+      let animationFrameId: number;
+      let isMounted = true;
+
+      const updatePosition = () => {
+        if (!isMounted || !metricDropdownRef.current) return;
+        const rect = metricDropdownRef.current.getBoundingClientRect();
+        setMetricDropdownPosition({
+          top: rect.bottom + window.scrollY,
+          left: rect.left + window.scrollX,
+          width: rect.width,
+        });
+
+        if (isMounted) {
+          animationFrameId = requestAnimationFrame(updatePosition);
+        }
+      };
+
+      animationFrameId = requestAnimationFrame(updatePosition);
+
+      return () => {
+        isMounted = false;
+        if (animationFrameId) {
+          cancelAnimationFrame(animationFrameId);
+        }
+      };
+    } else {
+      setMetricDropdownPosition(null);
     }
-  }, [isMericaDropdownOpen]);
+  }, [isMericaDropdownOpen, isCollapsed, state]);
 
   const handleYearChange = (year: number) => {
     onYearChange(year);
