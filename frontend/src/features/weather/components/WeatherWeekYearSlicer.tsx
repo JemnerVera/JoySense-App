@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import type { WeatherStation } from '../../../hooks/useWeatherData';
 import {
   getAvailableYears,
   getWeeksInYear,
@@ -8,9 +9,10 @@ import {
 } from '../utils/weekYearUtils';
 
 interface WeatherWeekYearSlicerProps {
-  fundos: Array<{ id: string; name: string }>;
-  selectedFundoId: string | null;
-  onFundoChange: (fundoId: string | null) => void;
+  stations: WeatherStation[];
+  selectedStation: WeatherStation | null;
+  onStationChange: (station: WeatherStation | null) => void;
+  stationsLoading?: boolean;
   availableMetrics: Array<{ name: string; label: string }>;
   selectedMetricName: string | null;
   onMetricChange: (metricName: string | null) => void;
@@ -21,9 +23,10 @@ interface WeatherWeekYearSlicerProps {
 }
 
 export const WeatherWeekYearSlicer: React.FC<WeatherWeekYearSlicerProps> = ({
-  fundos,
-  selectedFundoId,
-  onFundoChange,
+  stations,
+  selectedStation,
+  onStationChange,
+  stationsLoading = false,
   availableMetrics,
   selectedMetricName,
   onMetricChange,
@@ -36,36 +39,38 @@ export const WeatherWeekYearSlicer: React.FC<WeatherWeekYearSlicerProps> = ({
   const weeksInYear = getWeeksInYear(selectedYear);
   const weeks = Array.from({ length: weeksInYear }, (_, i) => i + 1);
 
-  const [isFundoDropdownOpen, setIsFundoDropdownOpen] = useState(false);
-  const [fundoSearchTerm, setFundoSearchTerm] = useState('');
+  const [isStationDropdownOpen, setIsStationDropdownOpen] = useState(false);
+  const [stationSearchTerm, setStationSearchTerm] = useState('');
   const [isMericaDropdownOpen, setIsMetricaDropdownOpen] = useState(false);
   const [metricSearchTerm, setMetricSearchTerm] = useState('');
-  const fundoDropdownRef = useRef<HTMLDivElement>(null);
+  const stationDropdownRef = useRef<HTMLDivElement>(null);
   const metricDropdownRef = useRef<HTMLDivElement>(null);
-  const [fundoDropdownPosition, setFundoDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [stationDropdownPosition, setStationDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
   const [metricDropdownPosition, setMetricDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
 
-  const filteredFundos = fundos.filter((f) =>
-    f.name.toLowerCase().includes(fundoSearchTerm.toLowerCase())
+  const filteredStations = stations.filter((s) =>
+    s.name.toLowerCase().includes(stationSearchTerm.toLowerCase())
   );
 
   const filteredMetrics = availableMetrics.filter((m) =>
     m.label.toLowerCase().includes(metricSearchTerm.toLowerCase())
   );
 
-  const selectedFundo = fundos.find((f) => f.id === selectedFundoId);
   const selectedMetric = availableMetrics.find((m) => m.name === selectedMetricName);
 
+  const formatStationLabel = (station: WeatherStation) =>
+    `${station.name}${station.hasHistoric ? ' (+Hist)' : ''}`;
+
   useEffect(() => {
-    if (fundoDropdownRef.current && isFundoDropdownOpen) {
-      const rect = fundoDropdownRef.current.getBoundingClientRect();
-      setFundoDropdownPosition({
+    if (stationDropdownRef.current && isStationDropdownOpen) {
+      const rect = stationDropdownRef.current.getBoundingClientRect();
+      setStationDropdownPosition({
         top: rect.bottom + window.scrollY,
         left: rect.left + window.scrollX,
         width: rect.width,
       });
     }
-  }, [isFundoDropdownOpen]);
+  }, [isStationDropdownOpen]);
 
   useEffect(() => {
     if (metricDropdownRef.current && isMericaDropdownOpen) {
@@ -80,7 +85,7 @@ export const WeatherWeekYearSlicer: React.FC<WeatherWeekYearSlicerProps> = ({
 
   const handleYearChange = (year: number) => {
     onYearChange(year);
-    onWeekChange(1); // Reset a semana 1 al cambiar año
+    onWeekChange(1);
   };
 
   const { startDate, endDate } = getIsoWeekDateRange(selectedYear, selectedWeek);
@@ -88,38 +93,43 @@ export const WeatherWeekYearSlicer: React.FC<WeatherWeekYearSlicerProps> = ({
 
   return (
     <div className="w-56 bg-gray-800 dark:bg-neutral-800 border-r border-gray-700 dark:border-neutral-700 p-4 h-full overflow-y-auto weather-scrollbar">
-      {/* Fundo Dropdown */}
+      {/* Estación Dropdown */}
       <div className="mb-6">
         <label className="text-base font-bold text-white font-mono mb-2 whitespace-nowrap uppercase block">
-          Fundo
+          Estación
         </label>
-        <div className="relative" ref={fundoDropdownRef}>
+        <div className="relative" ref={stationDropdownRef}>
           <button
-            onClick={() => setIsFundoDropdownOpen(!isFundoDropdownOpen)}
-            className="h-10 min-w-full px-3 bg-gray-700 dark:bg-neutral-700 border border-gray-600 dark:border-neutral-600 rounded text-gray-200 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm flex items-center justify-between"
+            onClick={() => !stationsLoading && setIsStationDropdownOpen(!isStationDropdownOpen)}
+            disabled={stationsLoading || stations.length === 0}
+            className="h-10 min-w-full px-3 bg-gray-700 dark:bg-neutral-700 border border-gray-600 dark:border-neutral-600 rounded text-gray-200 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm flex items-center justify-between disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <span className={selectedFundo ? 'text-gray-200 dark:text-white' : 'text-gray-400 dark:text-neutral-400'}>
-              {selectedFundo?.name || 'Selecciona'}
+            <span className={selectedStation ? 'text-gray-200 dark:text-white truncate' : 'text-gray-400 dark:text-neutral-400'}>
+              {stationsLoading
+                ? 'Cargando...'
+                : selectedStation
+                  ? formatStationLabel(selectedStation)
+                  : 'Selecciona'}
             </span>
-            <svg className={`w-4 h-4 transition-transform ${isFundoDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className={`w-4 h-4 flex-shrink-0 transition-transform ${isStationDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           </button>
 
-          {isFundoDropdownOpen && fundoDropdownPosition && (
+          {isStationDropdownOpen && stationDropdownPosition && (
             <div
               className="fixed z-[9999] bg-gray-700 dark:bg-neutral-800 border border-gray-600 dark:border-neutral-700 rounded-lg shadow-lg max-h-48 overflow-hidden"
               style={{
-                top: `${fundoDropdownPosition.top}px`,
-                left: `${fundoDropdownPosition.left}px`,
-                width: `${fundoDropdownPosition.width}px`
+                top: `${stationDropdownPosition.top}px`,
+                left: `${stationDropdownPosition.left}px`,
+                width: `${stationDropdownPosition.width}px`
               }}
             >
               <div className="p-2 border-b border-gray-600 dark:border-neutral-700">
                 <input
                   type="text"
-                  value={fundoSearchTerm}
-                  onChange={(e) => setFundoSearchTerm(e.target.value)}
+                  value={stationSearchTerm}
+                  onChange={(e) => setStationSearchTerm(e.target.value)}
                   placeholder="Buscar..."
                   className="w-full px-2 py-1 bg-gray-600 dark:bg-neutral-700 border border-gray-500 dark:border-neutral-600 rounded text-gray-200 dark:text-white text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
                   autoFocus
@@ -127,22 +137,22 @@ export const WeatherWeekYearSlicer: React.FC<WeatherWeekYearSlicerProps> = ({
                 />
               </div>
               <div className="max-h-40 overflow-y-auto weather-scrollbar">
-                {filteredFundos.length > 0 ? (
-                  filteredFundos.map((fundo) => (
+                {filteredStations.length > 0 ? (
+                  filteredStations.map((station) => (
                     <button
-                      key={fundo.id}
+                      key={station.id}
                       onClick={() => {
-                        onFundoChange(fundo.id);
-                        setIsFundoDropdownOpen(false);
-                        setFundoSearchTerm('');
+                        onStationChange(station);
+                        setIsStationDropdownOpen(false);
+                        setStationSearchTerm('');
                       }}
                       className={`w-full text-left px-3 py-2 text-sm transition-colors font-mono ${
-                        selectedFundoId === fundo.id
+                        selectedStation?.id === station.id
                           ? 'bg-blue-600 text-white'
                           : 'text-gray-200 dark:text-gray-300 hover:bg-gray-600 dark:hover:bg-neutral-700'
                       }`}
                     >
-                      {fundo.name}
+                      {formatStationLabel(station)}
                     </button>
                   ))
                 ) : (

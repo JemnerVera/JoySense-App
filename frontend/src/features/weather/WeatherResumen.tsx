@@ -5,11 +5,14 @@ import { WeatherWeekYearSlicer } from './components/WeatherWeekYearSlicer';
 import { WeatherMetricWeekChart } from './components/WeatherMetricWeekChart';
 
 export const WeatherResumen: React.FC = () => {
-  const { stations } = useWeatherData();
   const {
-    fundos,
-    selectedFundoId,
-    setSelectedFundoId,
+    stations,
+    stationsLoading,
+    selectedStation,
+    setSelectedStation,
+  } = useWeatherData();
+
+  const {
     availableMetrics,
     selectedMetricName,
     setSelectedMetricName,
@@ -25,13 +28,12 @@ export const WeatherResumen: React.FC = () => {
 
   return (
     <div className="w-full flex flex-col bg-gray-50 dark:bg-black" style={{ height: 'calc(100vh - 56px)' }}>
-      {/* Layout principal: Panel izquierdo + derecho */}
       <div className="flex flex-1 min-h-0 overflow-x-auto">
-        {/* Panel izquierdo: Slicers y selectores */}
         <WeatherWeekYearSlicer
-          fundos={fundos}
-          selectedFundoId={selectedFundoId}
-          onFundoChange={setSelectedFundoId}
+          stations={stations}
+          selectedStation={selectedStation}
+          onStationChange={setSelectedStation}
+          stationsLoading={stationsLoading}
           availableMetrics={availableMetrics}
           selectedMetricName={selectedMetricName}
           onMetricChange={setSelectedMetricName}
@@ -41,9 +43,7 @@ export const WeatherResumen: React.FC = () => {
           onWeekChange={setSelectedWeek}
         />
 
-        {/* Panel derecho: Dashboard de métrica seleccionada */}
         <div className="flex-1 min-h-0 flex flex-col mx-6 mb-6 mt-6">
-          {/* Estado de carga */}
           {loading && (
             <div className="flex items-center justify-center flex-1">
               <div className="text-center">
@@ -53,15 +53,21 @@ export const WeatherResumen: React.FC = () => {
             </div>
           )}
 
-          {/* Error */}
           {error && (
             <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
               <p className="text-red-800 dark:text-red-200 text-sm">{error}</p>
             </div>
           )}
 
-          {/* Sin métrica seleccionada */}
-          {!loading && !error && !selectedMetricName && (
+          {!loading && !error && !selectedStation && (
+            <div className="bg-gray-100 dark:bg-neutral-900 rounded-lg border border-gray-200 dark:border-neutral-700 p-8 text-center flex-1 flex items-center justify-center">
+              <p className="text-gray-600 dark:text-gray-400">
+                Selecciona una estación del panel izquierdo
+              </p>
+            </div>
+          )}
+
+          {!loading && !error && selectedStation && !selectedMetricName && (
             <div className="bg-gray-100 dark:bg-neutral-900 rounded-lg border border-gray-200 dark:border-neutral-700 p-8 text-center flex-1 flex items-center justify-center">
               <p className="text-gray-600 dark:text-gray-400">
                 Selecciona una métrica del panel izquierdo
@@ -69,8 +75,7 @@ export const WeatherResumen: React.FC = () => {
             </div>
           )}
 
-          {/* Sin datos para la métrica seleccionada */}
-          {!loading && !error && selectedMetricName && !selectedSeries && (
+          {!loading && !error && selectedStation && selectedMetricName && !selectedSeries && (
             <div className="bg-gray-100 dark:bg-neutral-900 rounded-lg border border-gray-200 dark:border-neutral-700 p-8 text-center flex-1 flex items-center justify-center">
               <p className="text-gray-600 dark:text-gray-400">
                 No hay datos disponibles para la semana seleccionada
@@ -78,7 +83,6 @@ export const WeatherResumen: React.FC = () => {
             </div>
           )}
 
-          {/* Gráfico de métrica seleccionada */}
           {!loading && selectedSeries && (
             <WeatherMetricWeekChart
               series={selectedSeries}

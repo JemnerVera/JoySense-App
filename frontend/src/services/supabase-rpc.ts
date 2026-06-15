@@ -701,13 +701,13 @@ export class SupabaseRPCService {
         return [];
       }
 
-      // Filtrar duplicados por referencia (por si acaso)
+      // Filtrar duplicados por nodoid
       const uniqueData = data.filter((item: any, index: number, self: any[]) =>
-        index === self.findIndex((t: any) => t.referencia === item.referencia)
+        index === self.findIndex((t: any) => t.nodoid === item.nodoid)
       );
 
       return uniqueData.map((item: any) => ({
-        id: item.referencia,
+        id: item.referencia ?? String(item.nodoid),
         name: item.nodo,
         nodoid: item.nodoid,
         hasHistoric: item.has_historic,

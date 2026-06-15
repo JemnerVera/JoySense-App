@@ -168,6 +168,41 @@ export const METRIC_CHART_CONFIG: Record<string, MetricChartConfig> = {
     decimals: 1,
     accumType: null,
   },
+  luminosidad_lux: {
+    label: 'Luminosidad',
+    unit: 'lux',
+    color: '#facc15',
+    decimals: 0,
+    accumType: null,
+  },
+  nivel_viento: {
+    label: 'Nivel Viento',
+    unit: 'nivel',
+    color: '#94a3b8',
+    decimals: 0,
+    accumType: null,
+  },
+  pm10_ugm: {
+    label: 'PM10',
+    unit: 'µg/m³',
+    color: '#78716c',
+    decimals: 1,
+    accumType: null,
+  },
+  pm25_ugm: {
+    label: 'PM2.5',
+    unit: 'µg/m³',
+    color: '#57534e',
+    decimals: 1,
+    accumType: null,
+  },
+  ruido_db: {
+    label: 'Ruido',
+    unit: 'dB',
+    color: '#6366f1',
+    decimals: 1,
+    accumType: null,
+  },
 };
 
 export function getMetricConfig(metricName: string): MetricChartConfig {

@@ -12,6 +12,7 @@ import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { FilterProvider, useFilters } from './contexts/FilterContext';
+import { WeatherProvider } from './contexts/WeatherContext';
 import { SidebarProvider, useSidebar } from './contexts/SidebarContext';
 import { ModalProvider } from './contexts/ModalContext';
 
@@ -3034,7 +3035,9 @@ const AppContent: React.FC<{
 }> = ({ executeTabChangeRef, activeTabRef }) => {
   return (
     <FilterProvider>
-      <AppContentInternal executeTabChangeRef={executeTabChangeRef} activeTabRefShared={activeTabRef} />
+      <WeatherProvider>
+        <AppContentInternal executeTabChangeRef={executeTabChangeRef} activeTabRefShared={activeTabRef} />
+      </WeatherProvider>
     </FilterProvider>
   );
 };

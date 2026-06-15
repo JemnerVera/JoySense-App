@@ -1,9 +1,6 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useWeatherData } from './useWeatherData';
-import { useAuth } from '../contexts/AuthContext';
-import { useCompleteFilterData } from './useCompleteFilterData';
 import SupabaseRPCService from '../services/supabase-rpc';
-import { JoySenseService } from '../services/backend-api';
 import { getIsoWeekDateRange, getCurrentIsoWeek } from '../features/weather/utils/weekYearUtils';
 import {
   AccumType,
@@ -27,15 +24,7 @@ export interface MetricWeekSeries {
   cumulativePoints: DataPoint[] | null; // Acumulado o media móvil (si aplica)
 }
 
-export interface Fundo {
-  id: string;
-  name: string;
-}
-
 export interface UseWeatherResumenDataResult {
-  fundos: Fundo[];
-  selectedFundoId: string | null;
-  setSelectedFundoId: (fundoId: string | null) => void;
   availableMetrics: Array<{ name: string; label: string }>;
   selectedMetricName: string | null;
   setSelectedMetricName: (metricName: string | null) => void;
@@ -56,34 +45,19 @@ export interface UseWeatherResumenDataResult {
 
 export function useWeatherResumenData(): UseWeatherResumenDataResult {
   const { selectedStation } = useWeatherData();
-  const { user } = useAuth();
-  const { fundos: fundosFromApi, loading: fundosLoading } = useCompleteFilterData(user?.token || '');
   const currentWeek = getCurrentIsoWeek();
 
-  const [selectedFundoId, setSelectedFundoId] = useState<string | null>(null);
   const [selectedMetricName, setSelectedMetricName] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState(currentWeek.year);
   const [selectedWeek, setSelectedWeek] = useState(currentWeek.week);
   const [rawData, setRawData] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [fundos, setFundos] = useState<Fundo[]>([]);
 
-  // Cargar fundos desde la API
+  // Reset métrica al cambiar estación
   useEffect(() => {
-    if (fundosFromApi && fundosFromApi.length > 0) {
-      const fundosFormated = fundosFromApi.map((f: any) => ({
-        id: f.fundoid?.toString() || '',
-        name: f.fundo || ''
-      }));
-      setFundos(fundosFormated);
-
-      // Auto-select el primer fundo si no hay selección
-      if (!selectedFundoId && fundosFormated.length > 0) {
-        setSelectedFundoId(fundosFormated[0].id);
-      }
-    }
-  }, [fundosFromApi]);
+    setSelectedMetricName(null);
+  }, [selectedStation?.nodoid]);
 
   // Calcular rango de fechas de la semana seleccionada
   const dateRange = useMemo(() => {
@@ -110,9 +84,9 @@ export function useWeatherResumenData(): UseWeatherResumenDataResult {
     return { startDate, endDate, formatted };
   }, [selectedYear, selectedWeek]);
 
-  // Fetch datos cuando cambian año/semana o fundo
+  // Fetch datos cuando cambian año/semana o estación
   useEffect(() => {
-    if (!selectedStation || !selectedFundoId) {
+    if (!selectedStation) {
       setRawData([]);
       return;
     }
@@ -121,7 +95,6 @@ export function useWeatherResumenData(): UseWeatherResumenDataResult {
       setLoading(true);
       setError(null);
       try {
-        // Usar el nodoid de la estación seleccionada (está asociada al fundo)
         const data = await SupabaseRPCService.getMedicionesNodoDetallado({
           nodoid: selectedStation.nodoid,
           startDate: dateRange.startDate,
@@ -138,13 +111,12 @@ export function useWeatherResumenData(): UseWeatherResumenDataResult {
     };
 
     fetchData();
-  }, [selectedStation, selectedFundoId, selectedYear, selectedWeek, dateRange]);
+  }, [selectedStation, selectedYear, selectedWeek, dateRange]);
 
   // Procesar datos en series por métrica
   const allSeries = useMemo(() => {
     if (!rawData.length) return [];
 
-    // Agrupar por métrica
     const metricGroups: Record<string, any[]> = {};
     rawData.forEach((record: any) => {
       const metricName = record.metrica_nombre;
@@ -156,38 +128,32 @@ export function useWeatherResumenData(): UseWeatherResumenDataResult {
       metricGroups[metricName].push(record);
     });
 
-    // Transformar a series
     const series: MetricWeekSeries[] = Object.entries(metricGroups)
       .map(([metricName, records]) => {
         const config = getMetricConfig(metricName);
 
-        // Ordenar por fecha
         const sorted = records.sort((a, b) =>
           a.fecha.localeCompare(b.fecha)
         );
 
-        // Serie de semana (valores puntuales)
         const weekPoints: DataPoint[] = sorted.map((r: any) => {
           const fecha = new Date(r.fecha);
           return {
             date: fecha.toISOString().split('T')[0],
-            time: r.fecha.slice(11, 16), // HH:mm
+            time: r.fecha.slice(11, 16),
             value: r.medicion,
           };
         });
 
-        // Serie acumulada/media móvil (si aplica)
         let cumulativePoints: DataPoint[] | null = null;
 
         if (config.accumType === 'cumsum') {
-          // Suma acumulada
           let cumsum = 0;
           cumulativePoints = weekPoints.map((point) => ({
             ...point,
             value: point.value !== null ? (cumsum += point.value) : null,
           }));
         } else if (config.accumType === 'moving_avg') {
-          // Media móvil de ~24 puntos
           const windowSize = 24;
           cumulativePoints = weekPoints.map((_, idx) => {
             const start = Math.max(0, idx - windowSize + 1);
@@ -221,18 +187,15 @@ export function useWeatherResumenData(): UseWeatherResumenDataResult {
     return series;
   }, [rawData]);
 
-  // Métricas disponibles
   const availableMetrics = useMemo(() => {
     return allSeries.map((s) => ({ name: s.metricName, label: s.label }));
   }, [allSeries]);
 
-  // Serie seleccionada
   const selectedSeries = useMemo(() => {
     if (!selectedMetricName) return null;
     return allSeries.find((s) => s.metricName === selectedMetricName) || null;
   }, [selectedMetricName, allSeries]);
 
-  // Auto-select primera métrica si hay datos y no hay selección
   useEffect(() => {
     if (availableMetrics.length > 0 && !selectedMetricName) {
       setSelectedMetricName(availableMetrics[0].name);
@@ -240,9 +203,6 @@ export function useWeatherResumenData(): UseWeatherResumenDataResult {
   }, [availableMetrics, selectedMetricName]);
 
   return {
-    fundos,
-    selectedFundoId,
-    setSelectedFundoId,
     availableMetrics,
     selectedMetricName,
     setSelectedMetricName,
