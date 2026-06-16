@@ -7,14 +7,14 @@ import { useLanguage } from "../../contexts/LanguageContext"
 import { useToast } from "../../contexts/ToastContext"
 import { useFilters } from "../../contexts/FilterContext"
 import { filterNodesByGlobalFilters } from "../../utils/filterNodesUtils"
-import { transformMedicionData } from "../../utils/medicionTransform"
+import { transformMedicionData, transformRpcMedicionesDetallado } from "../../utils/medicionTransform"
+import { loadMedicionesPorNodo } from "../../utils/medicionesPorNodo"
 import { useMedicionesLoader, useSystemData } from "./hooks"
 import { STATUS } from '../../constants/status';
 import { METRICS } from '../../constants/metrics';
 import { ErrorAlert, LoadingState, ThresholdRecommendationsModal, DetailedAnalysisModal } from "./components"
 import { MetricMiniChart } from "./components/MetricMiniChart"
 import {
-  DATA_LIMITS,
   getMetricColor,
   getMetricRanges,
   normalizeMetricDataKey,
@@ -308,96 +308,17 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
       let allData: any[] = []
       
       if (selectedNode) {
-        const formatDate = (date: Date) => {
-          const year = date.getFullYear()
-          const month = String(date.getMonth() + 1).padStart(2, '0')
-          const day = String(date.getDate()).padStart(2, '0')
-          const hours = String(date.getHours()).padStart(2, '0')
-          const minutes = String(date.getMinutes()).padStart(2, '0')
-          const seconds = String(date.getSeconds()).padStart(2, '0')
-          return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+        try {
+          const transformed = await loadMedicionesPorNodo({
+            nodoid: selectedNode.nodoid,
+            startDate: filters.startDate || undefined,
+            endDate: filters.endDate || undefined,
+          })
+          const { data: filteredData } = filterByTipoSensor(transformed, selectedNode)
+          allData = filteredData
+        } catch (error: any) {
+          console.error('ModernDashboard: Error cargando mediciones por nodo (RPC):', error)
         }
-
-        // 1. INTENTAR PRIMERO CON LOS FILTROS GLOBALES DE FECHA SI EXISTEN
-        if (filters.startDate && filters.endDate) {
-          try {
-            // Usar la misma RPC que MedicionesDashboard para consistencia
-            const data = await SupabaseRPCService.getMedicionesNodoDetallado({
-              nodoid: selectedNode.nodoid,
-              startDate: filters.startDate,
-              endDate: filters.endDate
-            })
-            
-            const dataArray = Array.isArray(data) ? data : (data ? [data] : [])
-            if (dataArray.length > 0) {
-              // CRÍTICO: Aplicar filtro por tipo de sensor (LoRa vs PLC)
-              const { data: filteredData } = filterByTipoSensor(dataArray, selectedNode)
-              allData = filteredData
-            }
-          } catch (error: any) {
-            // Fallback a estrategia progresiva si hay error de timeout/500
-            console.error('ModernDashboard: Error cargando con RPC getMedicionesNodoDetallado:', error)
-          }
-        }
-
-        // 2. ESTRATEGIA PROGRESIVA: Solo si no se obtuvieron datos con los filtros globales
-        if (allData.length === 0) {
-          
-          // ESTRATEGIA PROGRESIVA: Empezar con rango pequeño y expandir si no hay datos
-          // Esto evita timeouts en el backend cuando hay muchos datos antiguos
-          const now = new Date()
-          const endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59) // Final del día actual
-          
-          // ESTRATEGIA: Intentar primero rangos pequeños (más rápidos) y luego expandir
-          // Esto evita timeouts en nodos con muchos datos
-          // Orden: 24 horas -> 7 días -> 14 días -> 30 días
-          const ranges = [
-            { days: 1, limit: DATA_LIMITS.HOURS_24, label: '24 horas' },
-            { days: 7, limit: DATA_LIMITS.DAYS_7, label: '7 días' },
-            { days: 14, limit: DATA_LIMITS.DAYS_14, label: '14 días' },
-            { days: 30, limit: DATA_LIMITS.DAYS_30, label: '30 días' }
-          ]
-          
-          // Intentar con rangos recientes (de menor a mayor)
-          for (const range of ranges) {
-            const startDate = new Date(endDate.getTime() - range.days * 24 * 60 * 60 * 1000)
-            const startDateStr = formatDate(startDate)
-            const endDateStr = formatDate(endDate)
-            
-            try {
-              const data = await JoySenseService.getMediciones({
-                nodoid: selectedNode.nodoid,
-                startDate: startDateStr,
-                endDate: endDateStr,
-                limit: range.limit
-              })
-              
-              // Asegurar que data es un array
-              const dataArray = Array.isArray(data) ? data : (data ? [data] : [])
-              
-              if (dataArray.length > 0) {
-                allData = dataArray
-                break
-              }
-            } catch (error: any) {
-              console.error(`ModernDashboard.loadMediciones: Error en rango ${range.label}:`, error)
-              // Si es timeout o error 500, continuar con el siguiente rango
-              const isTimeoutOr500 = error.message?.includes('timeout') || 
-                                     error.code === '57014' || 
-                                     error.message?.includes('500') ||
-                                     error.message?.includes('HTTP error! status: 500')
-              
-              if (isTimeoutOr500) {
-                continue
-              }
-              continue
-            }
-          }
-        }
-        
-        // Si no encontramos datos en ningún rango, el nodo no tiene datos recientes
-        // Se mostrará "NODO OBSERVADO"
-        
       } else {
         // Sin nodo seleccionado: cargar resumen ligero del mapa para mostrar estado general
         // Esto evita cargar todas las mediciones de todos los nodos
@@ -723,41 +644,10 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
 
       // Transformar datos de la RPC al formato MedicionData
       // fn_get_mediciones_nodo_detallado retorna metrica_nombre, sensor_nombre, tipo_nombre
-      const transformedData: MedicionData[] = detailedData.map((rpcData: any) => ({
-        medicionid: rpcData.medicionid || 0,
-        localizacionid: rpcData.localizacionid || 0,
-        fecha: rpcData.fecha,
-        medicion: Number(rpcData.medicion),
-        localizacion: {
-          localizacionid: rpcData.localizacionid || 0,
-          localizacion: rpcData.localizacion_nombre || '',
-          nodoid: selectedNode.nodoid,
-          metricaid: rpcData.metricaid,
-          sensorid: rpcData.sensorid || 0,
-          metrica: {
-            metricaid: rpcData.metricaid,
-            metrica: rpcData.metrica_nombre || rpcData.metrica || '',
-            unidad: rpcData.unidad || ''
-          },
-          sensor: rpcData.sensorid ? {
-            sensorid: rpcData.sensorid,
-            sensor: rpcData.sensor_nombre || rpcData.sensor || '',
-            nombre: rpcData.sensor_nombre || rpcData.sensor || '',
-            modelo: '',
-            deveui: '',
-            tipoid: rpcData.tipoid || 0,
-            tipo: {
-              tipoid: rpcData.tipoid || 0,
-              tipo: rpcData.tipo_nombre || rpcData.tipo || 'Sensor'
-            }
-          } : undefined
-        },
-        metricaid: rpcData.metricaid,
-        nodoid: selectedNode.nodoid,
-        sensorid: rpcData.sensorid || 0,
-        tipoid: rpcData.tipoid || 0,
-        ubicacionid: 0
-      }));
+      const transformedData: MedicionData[] = transformRpcMedicionesDetallado(
+        detailedData,
+        selectedNode.nodoid
+      ) as MedicionData[]
       
       // CRÍTICO: Aplicar filtro por tipo de sensor (LoRa vs PLC)
       const { data: filteredData } = filterByTipoSensor(transformedData, selectedNode)
