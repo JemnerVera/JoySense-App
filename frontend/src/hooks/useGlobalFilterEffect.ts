@@ -1,10 +1,12 @@
 import { useMemo } from 'react';
 import { useFilters } from '../contexts/FilterContext';
+import { getFundoidFromUbicacion, ubicacionBelongsToFundo } from '../utils/geografiaHierarchy';
 
 interface RelatedData {
   paisesData?: any[];
   empresasData?: any[];
   fundosData?: any[];
+  zonasData?: any[];
   ubicacionesData?: any[];
   localizacionesData?: any[];
   nodosData?: any[];
@@ -34,13 +36,13 @@ export const useGlobalFilterEffect = ({ tableName, data, relatedData }: GlobalFi
 
     const empresas = relatedData?.empresasData || [];
     const fundos = relatedData?.fundosData || [];
+    const zonas = relatedData?.zonasData || [];
     const ubicaciones = relatedData?.ubicacionesData || [];
     const localizaciones = relatedData?.localizacionesData || [];
     const nodos = relatedData?.nodosData || [];
 
     const empresasPorPais = new Map(empresas.map(e => [e.paisid?.toString(), e.empresaid?.toString()]));
     const fundosPorEmpresa = new Map(fundos.map(f => [f.empresaid?.toString(), f.fundoid?.toString()]));
-    const ubicacionesPorFundo = new Map(ubicaciones.map(u => [u.fundoid?.toString(), u.ubicacionid?.toString()]));
     const nodosPorUbicacion = new Map(nodos.map(n => [n.ubicacionid?.toString(), n.nodoid?.toString()]));
     const localizacionesPorNodo = new Map(localizaciones.map(l => [l.nodoid?.toString(), l.localizacionid?.toString()]));
     const localizacionesPorUbicacion = new Map(localizaciones.map(l => [l.ubicacionid?.toString(), l.localizacionid?.toString()]));
@@ -54,7 +56,10 @@ export const useGlobalFilterEffect = ({ tableName, data, relatedData }: GlobalFi
     };
 
     const getUbicacionesIdsPorFundo = (fundoId: string): string[] => {
-      return ubicaciones.filter(u => u.fundoid?.toString() === fundoId).map(u => u.ubicacionid?.toString()).filter(Boolean);
+      return ubicaciones
+        .filter(u => ubicacionBelongsToFundo(u, fundoId, zonas))
+        .map(u => u.ubicacionid?.toString())
+        .filter(Boolean);
     };
 
     const getNodosIdsPorUbicacion = (ubicacionId: string): string[] => {
@@ -95,16 +100,22 @@ export const useGlobalFilterEffect = ({ tableName, data, relatedData }: GlobalFi
         return data.filter(row => row.ubicacionid?.toString() === ubiId);
       }
       if (fundoSeleccionado) {
-        return data.filter(row => row.fundoid?.toString() === fundoSeleccionado);
+        return data.filter(row => ubicacionBelongsToFundo(row, fundoSeleccionado, zonas));
       }
       if (empresaSeleccionada) {
         const fundoIds = getFundosIdsPorEmpresa(empresaSeleccionada);
-        return data.filter(row => row.fundoid && fundoIds.includes(row.fundoid.toString()));
+        return data.filter(row => {
+          const fundoid = getFundoidFromUbicacion(row, zonas);
+          return fundoid != null && fundoIds.includes(fundoid.toString());
+        });
       }
       if (paisSeleccionado) {
         const empresaIds = getEmpresasIdsPorPais(paisSeleccionado);
         const fundoIds = empresaIds.flatMap(eid => getFundosIdsPorEmpresa(eid));
-        return data.filter(row => row.fundoid && fundoIds.includes(row.fundoid.toString()));
+        return data.filter(row => {
+          const fundoid = getFundoidFromUbicacion(row, zonas);
+          return fundoid != null && fundoIds.includes(fundoid.toString());
+        });
       }
       return data;
     }

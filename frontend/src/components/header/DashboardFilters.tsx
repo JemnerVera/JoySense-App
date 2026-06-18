@@ -212,7 +212,9 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
     if (!selectedUbicacion || filteredUbicaciones.length === 0) return;
     const selectedId = selectedUbicacion?.ubicacionid ?? (typeof selectedUbicacion === 'string' ? selectedUbicacion : null);
     if (selectedId == null) return;
-    const listIsForCurrentFundo = fundoSeleccionado && filteredUbicaciones.every((u: any) => u.fundoid === parseInt(fundoSeleccionado));
+    const listIsForCurrentFundo = fundoSeleccionado && filteredUbicaciones.every((u: any) =>
+      u.zona?.fundoid === parseInt(fundoSeleccionado)
+    );
     const selectedIsInList = filteredUbicaciones.some((u: any) => String(u.ubicacionid) === String(selectedId));
     // Solo limpiar si la lista es del fundo actual y la selección no está en la lista
     if (listIsForCurrentFundo && !selectedIsInList) {

@@ -8,6 +8,7 @@ import { DualListbox, SelectWithPlaceholder } from '../../../selectors';
 import { useLanguage } from '../../../../contexts/LanguageContext';
 import { JoySenseService } from '../../../../services/backend-api';
 import { getColumnDisplayNameTranslated } from '../../../../utils/systemParametersUtils';
+import { getFundoidFromUbicacion } from '../../../../utils/geografiaHierarchy';
 
 // ============================================================================
 // CASCADING LISTBOX (Componente interno)
@@ -670,7 +671,11 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
             paises={paisesData.map(p => ({ id: p.paisid, label: p.pais }))}
             empresas={empresasData.map(e => ({ id: e.empresaid, label: e.empresa, parentId: e.paisid }))}
             fundos={fundosData.map(f => ({ id: f.fundoid, label: f.fundo, parentId: f.empresaid }))}
-            ubicaciones={ubicacionesData.map(u => ({ id: u.ubicacionid, label: u.ubicacion, parentId: u.fundoid }))}
+            ubicaciones={ubicacionesData.map(u => ({
+              id: u.ubicacionid,
+              label: u.ubicacion,
+              parentId: getFundoidFromUbicacion(u)
+            }))}
             selectedPaises={selectedPaises}
             selectedEmpresas={selectedEmpresas}
             selectedFundos={selectedFundos}

@@ -7,6 +7,7 @@ import { SelectWithPlaceholder } from '../../shared/selectors';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { JoySenseService } from '../../../services/backend-api';
 import { logger } from '../../../utils/logger';
+import { filterUbicacionesByFundo } from '../../../utils/geografiaHierarchy';
 
 // Types
 import {
@@ -471,7 +472,7 @@ export const MassiveUmbralForm = memo(function MassiveUmbralForm({
         const allLocalizaciones = await JoySenseService.getTableData('localizacion', 1000);
         const allUbicaciones = await JoySenseService.getTableData('ubicacion', 1000);
         
-        const ubicacionesDelFundo = allUbicaciones.filter((u: any) => u.fundoid === formData.fundoid);
+        const ubicacionesDelFundo = filterUbicacionesByFundo(allUbicaciones, formData.fundoid);
         const ubicacionIds = new Set(ubicacionesDelFundo.map((u: any) => u.ubicacionid));
         
         const localizacionesDelFundo = allLocalizaciones.filter((l: any) => 

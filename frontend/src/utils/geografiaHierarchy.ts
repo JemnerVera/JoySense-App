@@ -25,6 +25,46 @@ export const FUENTE_TO_LEVEL: Record<string, string> = {
   'localizacion': 'localizacion'
 };
 
+function unwrapNested<T>(val: T | T[] | undefined | null): T | undefined {
+  if (val == null) return undefined;
+  return Array.isArray(val) ? val[0] : val;
+}
+
+/**
+ * Obtiene fundoid desde una ubicación (ubicacion -> zona -> fundoid).
+ * Acepta zona anidada o lookup por zonaid contra un arreglo de zonas.
+ */
+export function getFundoidFromUbicacion(ubicacion: any, zonas?: any[]): number | undefined {
+  if (!ubicacion) return undefined;
+
+  const zona = unwrapNested(ubicacion.zona);
+  if (zona?.fundoid != null) return Number(zona.fundoid);
+
+  if (ubicacion.zonaid != null && zonas?.length) {
+    const zonaRow = zonas.find((z: any) => z.zonaid === ubicacion.zonaid);
+    if (zonaRow?.fundoid != null) return Number(zonaRow.fundoid);
+  }
+
+  return undefined;
+}
+
+export function ubicacionBelongsToFundo(
+  ubicacion: any,
+  fundoId: string | number,
+  zonas?: any[]
+): boolean {
+  const fundoid = getFundoidFromUbicacion(ubicacion, zonas);
+  return fundoid != null && fundoid.toString() === fundoId.toString();
+}
+
+export function filterUbicacionesByFundo(
+  ubicaciones: any[],
+  fundoId: string | number,
+  zonas?: any[]
+): any[] {
+  return ubicaciones.filter(u => ubicacionBelongsToFundo(u, fundoId, zonas));
+}
+
 /**
  * Obtiene el orden de un nivel geográfico
  */

@@ -57,6 +57,7 @@ export const useUpdateTable = ({
     relatedData: {
       empresasData: relatedData?.empresasData,
       fundosData: relatedData?.fundosData,
+      zonasData: relatedData?.zonasData,
       ubicacionesData: relatedData?.ubicacionesData,
       localizacionesData: relatedData?.localizacionesData,
       nodosData: relatedData?.nodosData

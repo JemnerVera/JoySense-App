@@ -4,6 +4,7 @@ import SupabaseRPCService from '../../services/supabase-rpc';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useFilters } from '../../contexts/FilterContext';
 import MetricaPorLoteModal from './MetricaPorLoteModal';
+import { filterUbicacionesByFundo } from '../../utils/geografiaHierarchy';
 
 interface MetricaPorLoteProps {}
 
@@ -146,7 +147,9 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
       try {
         const ubicacionesData = await JoySenseService.getTableData('ubicacion', 1000);
         
-        const ubicacionesFiltradas = ubicacionesData.filter((u: any) => selectedFundos.includes(u.fundoid));
+        const ubicacionesFiltradas = selectedFundos.flatMap((fundoId) =>
+          filterUbicacionesByFundo(ubicacionesData, fundoId)
+        );
         
         // CRÍTICO: En el nuevo schema, localizacion tiene nodoid, y nodo tiene ubicacionid
         // Necesitamos verificar que haya nodos con esas ubicaciones que tengan localizaciones

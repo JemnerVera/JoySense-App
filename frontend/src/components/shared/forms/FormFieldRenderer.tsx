@@ -125,11 +125,6 @@ export const FormFieldRenderer: React.FC<FormFieldRendererProps> = ({
     return renderSelectField(`${t('buttons.select')} ${t('fields.company')}`);
   }
 
-  // Campos de relación para ubicacion
-  if (col.columnName === 'fundoid' && selectedTable === 'ubicacion') {
-    return renderSelectField(`${t('buttons.select')} ${t('fields.fund')}`);
-  }
-
   // Campos de relación para zona
   if (col.columnName === 'fundoid' && selectedTable === 'zona') {
     return renderSelectField(`${t('buttons.select')} ${t('fields.fund')}`);

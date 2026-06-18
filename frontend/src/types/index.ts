@@ -48,17 +48,28 @@ export interface Fundo {
   medicionesCount?: number;
 }
 
+export interface Zona {
+  zonaid: number;
+  fundoid: number;
+  zona: string;
+  statusid: number;
+  usercreatedid: number;
+  datecreated: string;
+  usermodifiedid: number;
+  datemodified: string;
+  fundo?: Fundo;
+}
+
 export interface Ubicacion {
   ubicacionid: number;
-  fundoid: number;
+  zonaid: number | null;
   ubicacion: string;
   statusid: number;
   usercreatedid: number;
   datecreated: string;
   usermodifiedid: number;
   datemodified: string;
-  // Relación
-  fundo?: Fundo;
+  zona?: Zona;
 }
 
 export interface Entidad {

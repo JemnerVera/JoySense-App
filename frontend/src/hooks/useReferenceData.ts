@@ -25,7 +25,8 @@ interface Criticidad {
 interface Ubicacion {
   ubicacionid: number;
   ubicacion: string;
-  fundoid: number;
+  zonaid: number | null;
+  zona?: { fundoid: number };
 }
 
 interface Fundo {
@@ -90,7 +91,7 @@ export const useReferenceData = () => {
         JoySenseService.getTableData('metrica', 1000),
         JoySenseService.getTableData('tipo', 1000),
         JoySenseService.getTableData('criticidad', 1000),
-        JoySenseService.getTableData('ubicacion', 1000),
+        JoySenseService.getUbicaciones(),
         JoySenseService.getTableData('fundo', 1000),
         JoySenseService.getTableData('empresa', 1000)
       ]);

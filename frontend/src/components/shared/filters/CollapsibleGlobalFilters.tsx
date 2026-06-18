@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 /** Objeto ubicación según tabla joysense.ubicacion (geografia.sql) */
-type UbicacionOption = { ubicacionid?: number; ubicacion?: string; fundoid?: number };
+type UbicacionOption = { ubicacionid?: number; ubicacion?: string; zonaid?: number | null; zona?: { fundoid?: number } };
 
 interface CollapsibleGlobalFiltersProps {
   paisSeleccionado: string;

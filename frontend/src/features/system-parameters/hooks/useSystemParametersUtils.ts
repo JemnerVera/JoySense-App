@@ -3,6 +3,7 @@
 // ============================================================================
 
 import { useCallback } from 'react';
+import { ubicacionBelongsToFundo } from '../../../utils/geografiaHierarchy';
 
 interface RelatedData {
   paisesData?: any[];
@@ -51,8 +52,9 @@ export const useSystemParametersUtils = ({
     if (filters) {
       if (field === 'nodoid' && filters.fundoid && filters.entidadid) {
         // Filtrar nodos por fundo y entidad a través de localizaciones
-        const ubicacionesDelFundo = (relatedDataForStatus.ubicacionesData || []).filter((u: any) => 
-          u.fundoid === parseInt(filters.fundoid)
+        const zonas = relatedDataForStatus.zonasData || [];
+        const ubicacionesDelFundo = (relatedDataForStatus.ubicacionesData || []).filter((u: any) =>
+          ubicacionBelongsToFundo(u, filters.fundoid, zonas)
         );
         const ubicacionIds = new Set(ubicacionesDelFundo.map((u: any) => u.ubicacionid));
         const localizaciones = (relatedDataForStatus.localizacionesData || []).filter((l: any) =>

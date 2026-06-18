@@ -32,7 +32,7 @@ export const useCompleteFilterData = (authToken: string): CompleteFilterData => 
           JoySenseService.getEmpresas(),
           JoySenseService.getFundos(),
           JoySenseService.getTableData('entidad'),
-          JoySenseService.getTableData('ubicacion')
+          JoySenseService.getUbicaciones(),
         ]);
 
         setPaises(paisesData || []);

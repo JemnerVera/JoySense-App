@@ -1,4 +1,5 @@
 import { STATUS } from '../../../constants/status';
+import { getFundoidFromUbicacion, ubicacionBelongsToFundo } from '../../../utils/geografiaHierarchy';
 // ============================================================================
 // UTILITY: getUniqueOptionsForField - Obtener opciones únicas para campos de formulario
 // ============================================================================
@@ -63,7 +64,10 @@ export const getUniqueOptionsForField = ({
     fundos.filter(f => f.empresaid?.toString() === empresaId).map(f => f.fundoid?.toString()).filter(Boolean);
 
   const getUbicacionesIdsPorFundo = (fundoId: string): string[] => 
-    ubicaciones.filter(u => u.fundoid?.toString() === fundoId).map(u => u.ubicacionid?.toString()).filter(Boolean);
+    ubicaciones
+      .filter(u => ubicacionBelongsToFundo(u, fundoId, zonas))
+      .map(u => u.ubicacionid?.toString())
+      .filter(Boolean);
 
   const getNodosIdsPorUbicacion = (ubicacionId: string): string[] => 
     nodos.filter(n => n.ubicacionid?.toString() === ubicacionId).map(n => n.nodoid?.toString()).filter(Boolean);
@@ -104,16 +108,18 @@ export const getUniqueOptionsForField = ({
         return item.fundoid?.toString() === fundoSeleccionado;
       }
       if (columnName === 'ubicacionid' && fundoSeleccionado) {
-        return item.fundoid?.toString() === fundoSeleccionado;
+        return ubicacionBelongsToFundo(item, fundoSeleccionado, zonas);
       }
       if (columnName === 'ubicacionid' && empresaSeleccionada && !fundoSeleccionado) {
         const fundoIds = getFundosIdsPorEmpresa(empresaSeleccionada);
-        return fundoIds.includes(item.fundoid?.toString());
+        const fundoid = getFundoidFromUbicacion(item, zonas);
+        return fundoid != null && fundoIds.includes(fundoid.toString());
       }
       if (columnName === 'ubicacionid' && paisSeleccionado && !empresaSeleccionada) {
         const empresaIds = getEmpresasIdsPorPais(paisSeleccionado);
         const fundoIds = empresaIds.flatMap(eid => getFundosIdsPorEmpresa(eid));
-        return fundoIds.includes(item.fundoid?.toString());
+        const fundoid = getFundoidFromUbicacion(item, zonas);
+        return fundoid != null && fundoIds.includes(fundoid.toString());
       }
       if (columnName === 'nodoid' && ubicacionSeleccionada) {
         const ubiId = ubicacionSeleccionada.ubicacionid?.toString() || ubicacionSeleccionada.toString();
@@ -231,14 +237,14 @@ export const getUniqueOptionsForField = ({
     
     // Si hay fundo seleccionado en filtros globales, filtrar solo ubicaciones de ese fundo
     if (fundoSeleccionado) {
-      filteredUbicaciones = filteredUbicaciones.filter((u: any) => 
-        u.fundoid?.toString() === fundoSeleccionado
+      filteredUbicaciones = filteredUbicaciones.filter((u: any) =>
+        ubicacionBelongsToFundo(u, fundoSeleccionado, zonas)
       );
     }
     
     return filteredUbicaciones
       .map((item: any) => {
-        const fundoName = fundosMap.get(item.fundoid) || '';
+        const fundoName = fundosMap.get(getFundoidFromUbicacion(item, zonas)) || '';
         const ubicacionName = item.ubicacion || '';
         const label = fundoName ? `${fundoName} - ${ubicacionName}` : ubicacionName || `ID: ${item.ubicacionid}`;
         return {
@@ -255,7 +261,10 @@ export const getUniqueOptionsForField = ({
     const ubicaciones = relatedDataForStatus.ubicacionesData || [];
     const fundos = relatedDataForStatus.fundosData || [];
     
-    const ubicacionesMap = new Map(ubicaciones.map((u: any) => [u.ubicacionid, { fundoid: u.fundoid, ubicacion: u.ubicacion }]));
+    const ubicacionesMap = new Map(ubicaciones.map((u: any) => [
+      u.ubicacionid,
+      { fundoid: getFundoidFromUbicacion(u, zonas), ubicacion: u.ubicacion }
+    ]));
     const fundosMap = new Map(fundos.map((f: any) => [f.fundoid, f.fundo]));
     
     return nodos

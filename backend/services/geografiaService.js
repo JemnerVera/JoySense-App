@@ -119,11 +119,21 @@ const updateFundo = async (supabase, id, fundoData) => {
 /**
  * UBICACION
  */
+const normalizeUbicacionZona = (ubic) => {
+  const zonaRaw = ubic?.zona
+    ? (Array.isArray(ubic.zona) ? ubic.zona[0] : ubic.zona)
+    : null;
+  return {
+    ...ubic,
+    zona: zonaRaw
+  };
+};
+
 const getUbicaciones = async (supabase, fundoId) => {
   let query = supabase
     .schema(dbSchema)
     .from('ubicacion')
-    .select('*');
+    .select('*, zona(zonaid, fundoid, zona)');
 
   if (fundoId) {
     const { data: zonas, error: zonaError } = await supabase
@@ -148,10 +158,7 @@ const getUbicaciones = async (supabase, fundoId) => {
     throw error;
   }
 
-  return (data || []).map(ubic => ({
-    ...ubic,
-    fundo: null
-  }));
+  return (data || []).map(normalizeUbicacionZona);
 };
 
 const getUbicacionColumns = async (supabase) => {
@@ -160,15 +167,24 @@ const getUbicacionColumns = async (supabase) => {
 };
 
 const createUbicacion = async (supabase, ubicacionData) => {
-  const { data, error } = await supabase.schema(dbSchema).from('ubicacion').insert(ubicacionData).select();
+  const { data, error } = await supabase
+    .schema(dbSchema)
+    .from('ubicacion')
+    .insert(ubicacionData)
+    .select('*, zona(zonaid, fundoid, zona)');
   if (error) throw error;
-  return data;
+  return (data || []).map(normalizeUbicacionZona);
 };
 
 const updateUbicacion = async (supabase, id, ubicacionData) => {
-  const { data, error } = await supabase.schema(dbSchema).from('ubicacion').update(ubicacionData).eq('ubicacionid', id).select();
+  const { data, error } = await supabase
+    .schema(dbSchema)
+    .from('ubicacion')
+    .update(ubicacionData)
+    .eq('ubicacionid', id)
+    .select('*, zona(zonaid, fundoid, zona)');
   if (error) throw error;
-  return data;
+  return (data || []).map(normalizeUbicacionZona);
 };
 
 /**

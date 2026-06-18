@@ -130,7 +130,10 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
     }
     
     // Query de datos
-    let dataQuery = supabase.schema(dbSchema).from(tableName).select('*');
+    const selectFields = tableName === 'ubicacion'
+      ? '*, zona(zonaid, fundoid, zona)'
+      : '*';
+    let dataQuery = supabase.schema(dbSchema).from(tableName).select(selectFields);
     
     // Aplicar filtros
     Object.keys(whereFilters).forEach(key => {
@@ -203,15 +206,22 @@ async function paginateAndFilter(tableName, params = {}, userSupabase = null) {
       throw dataError;
     }
     
+    const normalizedData = tableName === 'ubicacion' && Array.isArray(data)
+      ? data.map(row => ({
+          ...row,
+          zona: row.zona ? (Array.isArray(row.zona) ? row.zona[0] : row.zona) : null
+        }))
+      : data;
+
     // Sin paginación → solo datos
     if (!usePagination) {
-      return data || [];
+      return normalizedData || [];
     }
 
     const totalPages = Math.ceil((totalRecords || 0) / parseInt(pageSize));
     
     return {
-      data: data || [],
+      data: normalizedData || [],
       pagination: {
         page: parseInt(page),
         pageSize: parseInt(pageSize),
