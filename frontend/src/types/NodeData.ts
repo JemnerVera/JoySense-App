@@ -11,21 +11,27 @@ export interface NodeData {
   ubicacion: {
     ubicacion: string
     ubicacionabrev: string
-    fundoid: number
-    fundo: {
-      fundo: string
-      fundoabrev: string
-      empresa: {
+    zona: {
+      zonaid: number
+      zona: string
+      fundoid: number
+      fundo: {
+        fundoid: number
+        fundo: string
+        fundoabrev: string
         empresaid: number | null
-        empresa: string
-        empresabrev: string
-        pais: {
-          paisid: number | null
-          pais: string
-          paisabrev: string
-        }
-      }
-    }
+        empresa: {
+          empresaid: number | null
+          empresa: string
+          empresabrev: string
+          pais: {
+            paisid: number | null
+            pais: string
+            paisabrev: string
+          } | null
+        } | null
+      } | null
+    } | null
   }
   entidad: {
     entidadid: number

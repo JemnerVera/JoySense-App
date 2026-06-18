@@ -408,11 +408,11 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                   {selectedNode.ubicacion && (
                     <>
                       <div className="truncate pl-2"><span className="text-gray-500 dark:text-neutral-500">Ubicación:</span> {selectedNode.ubicacion.ubicacion}</div>
-                      {selectedNode.ubicacion.fundo && (
+                      {selectedNode.ubicacion.zona?.fundo && (
                         <>
-                          <div className="truncate pl-2"><span className="text-gray-500 dark:text-neutral-500">Fundo:</span> {selectedNode.ubicacion.fundo.fundo}</div>
-                          {selectedNode.ubicacion.fundo.empresa && (
-                            <div className="truncate pl-2"><span className="text-gray-500 dark:text-neutral-500">Empresa:</span> {selectedNode.ubicacion.fundo.empresa.empresa}</div>
+                          <div className="truncate pl-2"><span className="text-gray-500 dark:text-neutral-500">Fundo:</span> {selectedNode.ubicacion.zona.fundo.fundo}</div>
+                          {selectedNode.ubicacion.zona.fundo.empresa && (
+                            <div className="truncate pl-2"><span className="text-gray-500 dark:text-neutral-500">Empresa:</span> {selectedNode.ubicacion.zona.fundo.empresa.empresa}</div>
                           )}
                         </>
                       )}
@@ -656,7 +656,7 @@ export const DetailedAnalysisModal: React.FC<DetailedAnalysisModalProps> = ({
                         <div className="flex items-center gap-1 flex-shrink-0">
                           <span className="text-base font-bold text-gray-700 dark:text-gray-300 font-mono">Fundo:</span>
                           <span className="text-base text-gray-800 dark:text-white font-mono whitespace-nowrap">
-                            {selectedNode?.ubicacion?.fundo?.fundo || '--'}
+                            {selectedNode?.ubicacion?.zona?.fundo?.fundo || '--'}
                           </span>
                         </div>
                       </div>

@@ -1686,7 +1686,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
                 <div className="w-px h-4 bg-gray-400 dark:bg-neutral-600"></div>
                 <div className="flex items-center gap-2">
                   <span className="text-base font-bold text-gray-700 dark:text-gray-300 font-mono">Fundo:</span>
-                  <span className="text-base text-gray-800 dark:text-white font-mono">{selectedNode?.ubicacion?.fundo?.fundo || '--'}</span>
+                  <span className="text-base text-gray-800 dark:text-white font-mono">{selectedNode?.ubicacion?.zona?.fundo?.fundo || '--'}</span>
                 </div>
               </div>
             </div>

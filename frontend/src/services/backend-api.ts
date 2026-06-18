@@ -468,7 +468,10 @@ export class JoySenseService {
         if (!nodesMap.has(nodoid)) {
           const nodo = localizacion.nodo;
           const ubicacion = nodo.ubicacion || {};
-          const fundo = ubicacion.fundo || {};
+          const zonaArray = ubicacion.zona || {};
+          const zona = Array.isArray(zonaArray) ? zonaArray[0] : zonaArray;
+          const fundoArray = zona?.fundo || {};
+          const fundo = Array.isArray(fundoArray) ? fundoArray[0] : fundoArray;
           
           // VALIDACIÓN: Asegurar que tenemos datos mínimos requeridos
           if (!nodo.nodoid) {
@@ -487,22 +490,24 @@ export class JoySenseService {
             localizacion: localizacion.localizacion || '', // "LOTE T1 HILERA 6" (tabla localizacion)
             ubicacion: {
               ubicacion: ubicacion.ubicacion || '',
-              ubicacionabrev: '', // No existe en schema actual
-              fundoid: fundo.fundoid || 0,
-              fundo: {
-                fundo: fundo.fundo || '',
-                fundoabrev: fundo.fundoabrev || '',
-                empresa: fundo.empresa || {
-                  empresaid: null,
-                  empresa: '',
-                  empresabrev: '',
-                  pais: {
-                    paisid: null,
-                    pais: '',
-                    paisabrev: ''
+              ubicacionabrev: '',
+              zona: zona ? {
+                zonaid: zona.zonaid || 0,
+                zona: zona.zona || '',
+                fundoid: fundo.fundoid || 0,
+                fundo: fundo ? {
+                  fundoid: fundo.fundoid || 0,
+                  fundo: fundo.fundo || '',
+                  fundoabrev: fundo.fundoabrev || '',
+                  empresaid: fundo.empresaid || null,
+                  empresa: fundo.empresa || {
+                    empresaid: null,
+                    empresa: '',
+                    empresabrev: '',
+                    pais: null
                   }
-                }
-              }
+                } : null
+              } : null
             },
             entidad: nodo.entidad || {
               entidadid: 0,

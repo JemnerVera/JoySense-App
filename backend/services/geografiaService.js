@@ -608,24 +608,6 @@ const _getNodosConLocalizacionDashboardPrincipal = async (supabase, { limit, fun
 
   logger.info(`[getNodosConLocalizacionDashboardPrincipal] Obtenidas ${localizacionesData.length} localizaciones`);
 
-  // Obtener entidades_localizacion
-  const locIds = localizacionesData.map(l => l.localizacionid);
-  let entidadesRes = { data: [] };
-  if (locIds.length > 0) {
-    entidadesRes = await supabase
-      .schema(dbSchema)
-      .from('entidad_localizacion')
-      .select('localizacionid, entidad:entidadid(entidadid, entidad)')
-      .eq('statusid', 1)
-      .in('localizacionid', locIds);
-  }
-
-  if (entidadesRes.error) throw entidadesRes.error;
-
-  // Construir mapas
-  const localizacionesMap = new Map(localizacionesData.map(l => [l.localizacionid, l]));
-  const entidadesMap = new Map((entidadesRes.data || []).map(e => [e.localizacionid, e.entidad ? (Array.isArray(e.entidad) ? e.entidad[0] : e.entidad) : null]));
-
   // Obtener métricas
   const metricaIds = [...new Set(localizacionesData.map(l => l.metricaid).filter(id => id != null))];
   let metricasMap = new Map();
@@ -678,7 +660,7 @@ const _getNodosConLocalizacionDashboardPrincipal = async (supabase, { limit, fun
           } : null
         } : null
       } : null,
-      entidad: entidadesMap.get(loc.localizacionid) || null
+      entidad: null
     };
 
     // VALIDACIÓN FINAL: Solo agregar si formattedNodo es válido

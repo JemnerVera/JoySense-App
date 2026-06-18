@@ -478,9 +478,9 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                     <div className="font-bold"><strong>{t('dashboard.tooltip.localizacion')}</strong> {node.localizacion}</div>
                   ) : null}
                   <div><strong>{t('dashboard.tooltip.location')}</strong> {node.ubicacion.ubicacion}</div>
-                  <div><strong>{t('dashboard.tooltip.fund')}</strong> {node.ubicacion.fundo.fundo}</div>
-                  <div><strong>{t('dashboard.tooltip.company')}</strong> {node.ubicacion.fundo.empresa.empresa}</div>
-                  <div><strong>{t('dashboard.tooltip.country')}</strong> {node.ubicacion.fundo.empresa.pais.pais}</div>
+                  <div><strong>{t('dashboard.tooltip.fund')}</strong> {node.ubicacion.zona?.fundo?.fundo || '--'}</div>
+                  <div><strong>{t('dashboard.tooltip.company')}</strong> {node.ubicacion.zona?.fundo?.empresa?.empresa || '--'}</div>
+                  <div><strong>{t('dashboard.tooltip.country')}</strong> {node.ubicacion.zona?.fundo?.empresa?.pais?.pais || '--'}</div>
                   <div className="mt-2 pt-2 border-t border-neutral-600">
                     <div><strong>{t('dashboard.tooltip.coordinates')}</strong></div>
                     <div className="text-xs text-neutral-400">

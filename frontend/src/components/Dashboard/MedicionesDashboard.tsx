@@ -1662,7 +1662,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
               <div className="flex items-center gap-2">
                 <span className="text-base font-bold text-gray-700 dark:text-gray-300 font-mono">Fundo:</span>
                 <span className="text-base text-gray-800 dark:text-white font-mono">
-                  {selectedLocalizacion?.nodo?.ubicacion?.fundo?.fundo || '--'}
+                  {selectedLocalizacion?.nodo?.ubicacion?.zona?.fundo?.fundo || '--'}
                 </span>
               </div>
             </div>

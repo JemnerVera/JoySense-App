@@ -168,9 +168,9 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
         const localizacionMatch = node.localizacion?.toLowerCase().includes(term);
         const nodoMatch = node.nodo.toLowerCase().includes(term);
         const ubicacionMatch = node.ubicacion.ubicacion.toLowerCase().includes(term);
-        const fundoMatch = node.ubicacion.fundo.fundo.toLowerCase().includes(term);
-        const empresaMatch = node.ubicacion.fundo.empresa.empresa.toLowerCase().includes(term);
-        const paisMatch = node.ubicacion.fundo.empresa.pais.pais.toLowerCase().includes(term);
+        const fundoMatch = node.ubicacion.zona?.fundo?.fundo?.toLowerCase().includes(term) || false;
+        const empresaMatch = node.ubicacion.zona?.fundo?.empresa?.empresa?.toLowerCase().includes(term) || false;
+        const paisMatch = node.ubicacion.zona?.fundo?.empresa?.pais?.pais?.toLowerCase().includes(term) || false;
         const referenciaMatch = node.referencia?.toLowerCase().includes(term);
 
         return localizacionMatch || nodoMatch || ubicacionMatch || fundoMatch || empresaMatch || paisMatch || referenciaMatch;
@@ -470,7 +470,7 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
                       key={node.nodoid}
                       onClick={() => handleNodeSelect(node)}
                       className="w-full px-4 py-3 text-left hover:bg-gray-200 dark:hover:bg-neutral-600 transition-colors border-b border-gray-300 dark:border-neutral-600 last:border-b-0 group relative"
-                      title={`${node.localizacion || node.nodo} | ${node.nodo} | ${t('dashboard.tooltip.location')} ${node.ubicacion.ubicacion} | ${t('dashboard.tooltip.fund')} ${node.ubicacion.fundo.fundo} | ${t('dashboard.tooltip.company')} ${node.ubicacion.fundo.empresa.empresa} | ${t('dashboard.tooltip.country')} ${node.ubicacion.fundo.empresa.pais.pais}${node.latitud && node.longitud ? ` | ${t('dashboard.tooltip.coordinates')} ${node.latitud}, ${node.longitud}` : ''}`}
+                      title={`${node.localizacion || node.nodo} | ${node.nodo} | ${t('dashboard.tooltip.location')} ${node.ubicacion.ubicacion} | ${t('dashboard.tooltip.fund')} ${node.ubicacion.zona?.fundo?.fundo || ''} | ${t('dashboard.tooltip.company')} ${node.ubicacion.zona?.fundo?.empresa?.empresa || ''} | ${t('dashboard.tooltip.country')} ${node.ubicacion.zona?.fundo?.empresa?.pais?.pais || ''}${node.latitud && node.longitud ? ` | ${t('dashboard.tooltip.coordinates')} ${node.latitud}, ${node.longitud}` : ''}`}
                     >
                       {/* Línea 1: Localización - Nodo */}
                       <div className="font-medium text-gray-800 dark:text-white">
@@ -487,11 +487,11 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
                       </div>
                       {/* Línea 2: Ubicación - Fundo */}
                       <div className="text-sm text-gray-600 dark:text-neutral-400">
-                        {node.ubicacion.ubicacion} - {node.ubicacion.fundo.fundo}
+                        {node.ubicacion.ubicacion} - {node.ubicacion.zona?.fundo?.fundo || ''}
                       </div>
                       {/* Línea 3: Empresa - País */}
                       <div className="text-xs text-gray-500 dark:text-neutral-500">
-                        {node.ubicacion.fundo.empresa.empresa} - {node.ubicacion.fundo.empresa.pais.pais}
+                        {node.ubicacion.zona?.fundo?.empresa?.empresa || ''} - {node.ubicacion.zona?.fundo?.empresa?.pais?.pais || ''}
                       </div>
                     </button>
                   ))}
