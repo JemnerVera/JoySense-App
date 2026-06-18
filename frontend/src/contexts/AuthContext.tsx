@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { authService } from '../services/supabase-auth';
+import { authService, supabaseAuth } from '../services/supabase-auth';
+import { setSessionToken } from '../services/backend-api';
 import { AuthUser } from '../types';
 import { logger } from '../utils/logger';
 
@@ -26,15 +27,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         const { user: currentUser, error } = await authService.getCurrentUser();
         if (error) {
-          // Solo mostrar error si no es por falta de sesión
           if (!error.message.includes('session missing') && !error.message.includes('Auth session missing')) {
             logger.error('Error checking user:', error.message);
           }
         } else {
           setUser(currentUser);
         }
+
+        // Sincronizar token al registry para evitar locks de navegador
+        const { data: { session } } = await supabaseAuth.auth.getSession();
+        setSessionToken(session?.access_token ?? null);
       } catch (error: any) {
-        // Solo mostrar error si no es por falta de sesión
         if (!error?.message?.includes('session missing') && !error?.message?.includes('Auth session missing')) {
           logger.error('Error checking user:', error);
         }
@@ -45,9 +48,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     checkUser();
 
-    // Escuchar cambios en la autenticación
     const { data: { subscription } } = authService.onAuthStateChange((user) => {
       setUser(user);
+      // Sincronizar token también en cambios de sesión (refresh, sign out de otra pestaña)
+      supabaseAuth.auth.getSession().then(({ data: { session } }) => {
+        setSessionToken(session?.access_token ?? null);
+      });
       setLoading(false);
     });
 
@@ -68,6 +74,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         logger.debug('[AuthContext] Usuario autenticado, actualizando estado');
         logger.debug('Usuario:', signedInUser);
         setUser(signedInUser);
+        // Sincronizar token inmediatamente para evitar race condition con onAuthStateChange
+        const { data: { session } } = await supabaseAuth.auth.getSession();
+        setSessionToken(session?.access_token ?? null);
         return { success: true };
       } else {
         logger.error('[AuthContext] No se recibió usuario después de signIn');
@@ -87,6 +96,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         console.error('Error signing out:', error.message);
       } else {
         setUser(null);
+        setSessionToken(null);
       }
     } catch (error) {
       logger.error('Error signing out:', error);

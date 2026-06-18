@@ -172,10 +172,19 @@ export async function checkUserSyncStatus(usuarioid: number): Promise<{
 // SESSION DEDUPLICATION HELPER
 // ============================================================================
 
+// Token registry: AuthContext sincroniza el token aquí para evitar locks de navegador
+let _currentToken: string | null = null;
+
+export function setSessionToken(token: string | null): void {
+  _currentToken = token;
+}
+
 let _sessionPromise: Promise<string | null> | null = null;
 let _sessionTimer: ReturnType<typeof setTimeout> | null = null;
 
 async function getAuthToken(): Promise<string | null> {
+  if (_currentToken) return _currentToken;
+
   if (!_sessionPromise) {
     _sessionPromise = (async () => {
       const { supabaseAuth } = await import('./supabase-auth');
