@@ -81,7 +81,11 @@ function getSupabaseConfig() {
 const config = getSupabaseConfig();
 
 // Crear cliente de Supabase con configuración validada
-export const supabaseAuth = createClient(config.url, config.key);
+export const supabaseAuth = createClient(config.url, config.key, {
+  auth: {
+    lockAcquireTimeout: 10000,
+  },
+});
 
 // Exportar schema para uso en otros servicios
 export { DB_SCHEMA };

@@ -155,9 +155,7 @@ export async function checkUserSyncStatus(usuarioid: number): Promise<{
   error?: string;
 }> {
   try {
-    const { supabaseAuth } = await import('./supabase-auth');
-    const { data: { session } } = await supabaseAuth.auth.getSession();
-    const token = session?.access_token || null;
+    const token = await getAuthToken();
     const response = await backendAPI.get(`/usuario/${usuarioid}/sync-status`, token || undefined);
     return response;
   } catch (error: any) {
@@ -266,9 +264,7 @@ export class JoySenseService {
 
   static async getZonas(): Promise<any[]> {
     try {
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       const data = await backendAPI.get('/zona', token || undefined);
       return data || [];
     } catch (error) {
@@ -297,9 +293,7 @@ export class JoySenseService {
 
   static async getTipos(): Promise<Tipo[]> {
     try {
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       const data = await backendAPI.get('/dispositivos/tipo', token || undefined);
       return data || [];
     } catch (error) {
@@ -310,10 +304,7 @@ export class JoySenseService {
 
   static async getMetricas(): Promise<Metrica[]> {
     try {
-      // Obtener token de sesión de Supabase para enviarlo al backend
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       
       // Usar /metricas en lugar de /metrica porque devuelve un array directo
       const data = await backendAPI.get('/dispositivos/metricas', token || undefined);
@@ -327,9 +318,7 @@ export class JoySenseService {
 
   static async getNodos(): Promise<Nodo[]> {
     try {
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       const data = await backendAPI.get('/geografia/nodo', token || undefined);
       return data || [];
     } catch (error) {
@@ -340,9 +329,7 @@ export class JoySenseService {
 
   static async getSensores(): Promise<Sensor[]> {
     try {
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       const data = await backendAPI.get('/dispositivos/sensor', token || undefined);
       return data || [];
     } catch (error) {
@@ -353,9 +340,7 @@ export class JoySenseService {
 
   static async getLocalizaciones(): Promise<Localizacion[]> {
     try {
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       const data = await backendAPI.get('/geografia/localizacion', token || undefined);
       return data || [];
     } catch (error) {
@@ -375,9 +360,7 @@ export class JoySenseService {
     filters?: { fundoId?: string | number; empresaId?: string | number; paisId?: string | number }
   ): Promise<Localizacion[]> {
     try {
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       const params = new URLSearchParams();
       params.set('limit', String(limit));
       if (filters?.fundoId != null && filters.fundoId !== '') params.set('fundoId', String(filters.fundoId));
@@ -406,9 +389,7 @@ export class JoySenseService {
 
   static async getLocalizacionesByNodo(nodoid: number): Promise<Localizacion[]> {
     try {
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       const data = await backendAPI.get(`/geografia/localizacion?nodoid=${nodoid}`, token || undefined);
       return data || [];
     } catch (error) {
@@ -422,10 +403,7 @@ export class JoySenseService {
     filters?: { fundoId?: string | number; empresaId?: string | number; paisId?: string | number }
   ): Promise<any[]> {
     try {
-      // Obtener token de sesión de Supabase para enviarlo al backend
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
 
       const params = new URLSearchParams();
       params.set('limit', String(limit));
@@ -560,10 +538,7 @@ export class JoySenseService {
     countOnly?: boolean;
   }): Promise<Medicion[] | { count: number }> {
     try {
-      // Obtener token de sesión de Supabase para enviarlo al backend
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       
       const params = new URLSearchParams();
       
@@ -608,9 +583,7 @@ export class JoySenseService {
 
   static async getCriticidades(): Promise<Criticidad[]> {
     try {
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       const data = await backendAPI.get('/alertas/criticidad', token || undefined);
       return data || [];
     } catch (error) {
@@ -621,9 +594,7 @@ export class JoySenseService {
 
   static async getUmbrales(metricaId?: number): Promise<Umbral[]> {
     try {
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       
       let endpoint = '/alertas/umbral';
       if (metricaId) endpoint += `?metricaId=${metricaId}`;
@@ -637,9 +608,7 @@ export class JoySenseService {
 
   static async getUmbralesPorNodo(nodoid: number): Promise<Umbral[]> {
     try {
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       
       const endpoint = `/alertas/umbral/por-nodo?nodoid=${nodoid}`;
       const data = await backendAPI.get(endpoint, token || undefined);
@@ -659,9 +628,7 @@ export class JoySenseService {
     endDate?: string;
   }): Promise<PaginatedResponse<any> | any[]> {
     try {
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
 
       const queryParams = new URLSearchParams();
       if (params?.page) queryParams.append('page', params.page.toString());
@@ -704,9 +671,7 @@ export class JoySenseService {
       
       const queryString = params.toString();
       const endpoint = `/alertas/alerta_regla${queryString ? '?' + queryString : ''}`;
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       const data = await backendAPI.get(endpoint, token || undefined);
       return data || [];
     } catch (error) {
@@ -717,9 +682,7 @@ export class JoySenseService {
 
   static async getAlertasConsolidadas(): Promise<AlertaConsolidado[]> {
     try {
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       const data = await backendAPI.get('/alertas/alerta_regla_consolidado', token || undefined);
       return data || [];
     } catch (error) {
@@ -734,9 +697,7 @@ export class JoySenseService {
 
   static async getUsuarios(): Promise<Usuario[]> {
     try {
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       const data = await backendAPI.get('/usuarios/usuario', token || undefined);
       return data || [];
     } catch (error) {
@@ -747,9 +708,7 @@ export class JoySenseService {
 
   static async getContactos(usuarioId?: number): Promise<Contacto[]> {
     try {
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       let endpoint = '/usuarios/contacto';
       if (usuarioId) endpoint += `?usuarioid=${usuarioId}`;
       const data = await backendAPI.get(endpoint, token || undefined);
@@ -762,9 +721,7 @@ export class JoySenseService {
 
   static async getCorreos(usuarioId?: number): Promise<Correo[]> {
     try {
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       let endpoint = '/usuarios/correo';
       if (usuarioId) endpoint += `?usuarioid=${usuarioId}`;
       const data = await backendAPI.get(endpoint, token || undefined);
@@ -777,9 +734,7 @@ export class JoySenseService {
 
   static async getCodigosTelefonicos(): Promise<CodigoTelefono[]> {
     try {
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       const data = await backendAPI.get('/usuarios/codigotelefono', token || undefined);
       return data || [];
     } catch (error) {
@@ -913,9 +868,7 @@ export class JoySenseService {
    */
   static async searchLocations(query: string): Promise<any[]> {
     try {
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       
       const data = await backendAPI.get(`/geografia/locations/search?query=${encodeURIComponent(query)}`, token || undefined);
       return Array.isArray(data) ? data : [];
@@ -927,9 +880,7 @@ export class JoySenseService {
 
   static async getLocalizacionesByName(nombre: string): Promise<any[]> {
     try {
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       
       const data = await backendAPI.get(`/geografia/localizaciones/by-name?nombre=${encodeURIComponent(nombre)}`, token || undefined);
       return Array.isArray(data) ? data : [];
@@ -941,9 +892,7 @@ export class JoySenseService {
 
   static async searchUsers(query: string): Promise<any[]> {
     try {
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       
       const data = await backendAPI.get(`/usuarios/search?query=${encodeURIComponent(query)}`, token || undefined);
       return Array.isArray(data) ? data : [];
@@ -959,9 +908,7 @@ export class JoySenseService {
    */
   static async getEmpresasByPais(paisId: number): Promise<any[]> {
     try {
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       
       // El backend acepta tanto paisId como paisid
       const data = await backendAPI.get(`/geografia/empresa?paisId=${paisId}`, token || undefined);
@@ -977,9 +924,7 @@ export class JoySenseService {
    */
   static async getFundosByEmpresa(empresaId: number): Promise<any[]> {
     try {
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       
       // El backend acepta tanto empresaId como empresaid
       const data = await backendAPI.get(`/geografia/fundo?empresaId=${empresaId}`, token || undefined);
@@ -995,9 +940,7 @@ export class JoySenseService {
    */
   static async getZonasByFundo(fundoId: number): Promise<any[]> {
     try {
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
 
       const data = await backendAPI.get(`/geografia/zona?fundoId=${fundoId}`, token || undefined);
       return Array.isArray(data) ? data : [];
@@ -1012,9 +955,7 @@ export class JoySenseService {
    */
   static async getUbicacionesByFundo(fundoId: number): Promise<any[]> {
     try {
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
 
       // El backend acepta tanto fundoId como fundoid
       const data = await backendAPI.get(`/geografia/ubicacion?fundoId=${fundoId}`, token || undefined);
@@ -1030,9 +971,7 @@ export class JoySenseService {
    */
   static async getLocalizacionesByUbicacion(ubicacionId: number): Promise<any[]> {
     try {
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       
       const data = await backendAPI.get(`/geografia/localizacion?ubicacionId=${ubicacionId}`, token || undefined);
       return Array.isArray(data) ? data : [];
@@ -1062,10 +1001,7 @@ export class JoySenseService {
         endpoint += filterString ? `&${filterString}` : '';
       }
       
-      // Obtener token de sesión de Supabase para enviarlo al backend
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       
       const data = await backendAPI.get(endpoint, token || undefined);
       const result = Array.isArray(data) ? data : (data?.data || []);
@@ -1083,10 +1019,7 @@ export class JoySenseService {
    */
   static async getCustomEndpoint(endpoint: string): Promise<any[]> {
     try {
-      // Obtener token de sesión de Supabase para enviarlo al backend
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       
       const data = await backendAPI.get(`/generic${endpoint}`, token || undefined);
       const result = Array.isArray(data) ? data : (data?.data || []);
@@ -1253,10 +1186,7 @@ export class JoySenseService {
       
       logger.api('JoySenseService', 'getTableDataPaginated', { table: tableName });
       
-      // Obtener token de sesión de Supabase para enviarlo al backend
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       
       const response = await backendAPI.get(endpoint, token || undefined);
       
@@ -1276,10 +1206,7 @@ export class JoySenseService {
     try {
       const endpoint = `/generic/${tableName}/columns`;
 
-      // Obtener token de sesión de Supabase para enviarlo al backend
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
 
       const data = await backendAPI.get(endpoint, token || undefined);
       
@@ -1329,10 +1256,7 @@ export class JoySenseService {
   static async getTableConstraints(tableName: TableName | string): Promise<any[]> {
     try {
       const endpoint = `/generic/${tableName}/metadata`;
-      // Obtener token de sesión de Supabase para enviarlo al backend
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       
       const data = await backendAPI.get(endpoint, token || undefined);
       return data?.constraints || [];
@@ -1345,10 +1269,7 @@ export class JoySenseService {
   static async insertTableRow(tableName: TableName | string, data: Record<string, any>): Promise<any> {
     try {
       const endpoint = `/generic/${tableName}`;
-      // Obtener token de sesión de Supabase para enviarlo al backend
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       
       const result = await backendAPI.post(endpoint, data, token || undefined);
       return result;
@@ -1361,10 +1282,7 @@ export class JoySenseService {
   static async updateTableRow(tableName: TableName | string, id: string, data: Record<string, any>): Promise<any> {
     try {
       const endpoint = `/generic/${tableName}/${id}`;
-      // Obtener token de sesión de Supabase para enviarlo al backend
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       
       const result = await backendAPI.put(endpoint, data, token || undefined);
       return result;
@@ -1378,10 +1296,7 @@ export class JoySenseService {
     try {
       const keyParams = new URLSearchParams(compositeKey).toString();
       const endpoint = `/generic/${tableName}/composite?${keyParams}`;
-      // Obtener token de sesión de Supabase para enviarlo al backend
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       
       const result = await backendAPI.put(endpoint, data, token || undefined);
       return result;
@@ -1395,10 +1310,7 @@ export class JoySenseService {
     try {
       const keyParams = new URLSearchParams(compositeKey).toString();
       const endpoint = `/generic/${tableName}/composite/upsert?${keyParams}`;
-      // Obtener token de sesión de Supabase para enviarlo al backend
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       
       const result = await backendAPI.post(endpoint, data, token || undefined);
       return result;
@@ -1411,10 +1323,7 @@ export class JoySenseService {
   static async deleteTableRow(tableName: TableName | string, id: string): Promise<any> {
     try {
       const endpoint = `/generic/${tableName}/${id}`;
-      // Obtener token de sesión de Supabase para enviarlo al backend
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       
       const result = await backendAPI.delete(endpoint, token || undefined);
       return result;
@@ -1435,10 +1344,7 @@ export class JoySenseService {
     endDate?: string;
   }): Promise<any[]> {
     try {
-      // Obtener token de sesión de Supabase para enviarlo al backend
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       
       const queryParams = new URLSearchParams();
       queryParams.append('fundoIds', params.fundoIds.join(','));
@@ -1459,10 +1365,7 @@ export class JoySenseService {
     metricaId?: number;
   }): Promise<any[]> {
     try {
-      // Obtener token de sesión de Supabase para enviarlo al backend
-      const { supabaseAuth } = await import('./supabase-auth');
-      const { data: { session } } = await supabaseAuth.auth.getSession();
-      const token = session?.access_token || null;
+      const token = await getAuthToken();
       
       const queryParams = new URLSearchParams();
       queryParams.append('fundoIds', params.fundoIds.join(','));
