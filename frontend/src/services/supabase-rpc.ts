@@ -82,23 +82,6 @@ export interface UmbralPorNodo {
 }
 
 /**
- * KPIs consolidados para un nodo
- */
-export interface KPINodo {
-  metricaid: number;
-  metrica_nombre: string;
-  unidad: string;
-  total_mediciones: number;
-  promedio: number;
-  minimo: number;
-  maximo: number;
-  desviacion: number;
-  ultima_fecha: string;
-  ultima_valor: number;
-  alertas_activas: number;
-}
-
-/**
  * Métricas agregadas por localización
  */
 export interface MetricaPorLocalizacion {
@@ -325,49 +308,6 @@ export class SupabaseRPCService {
       return data;
     } catch (err: any) {
       console.error('[SupabaseRPCService] Error en getUmbralesPorNodo:', err);
-      throw err;
-    }
-  }
-
-  /**
-   * Obtiene KPIs consolidados para un nodo (combinación de estadísticas)
-   * Reemplaza múltiples consultas por una sola
-   * @param params Parámetros de la consulta
-   * @returns Array de KPIs por métrica
-   */
-  static async getKPIsNodo(params: {
-    nodoid: number;
-    startDate?: string;
-    endDate?: string;
-  }): Promise<KPINodo[]> {
-    try {
-      if (!params.nodoid || params.nodoid <= 0) {
-        throw new Error('nodoid inválido');
-      }
-
-      if (this.DEBUG) {
-        console.log('[SupabaseRPCService] getKPIsNodo:', params);
-      }
-
-      const { data, error } = await supabaseAuth
-        .schema(DB_SCHEMA)
-        .rpc('fn_get_kpis_nodo', {
-          p_nodoid: params.nodoid,
-          p_start_date: params.startDate ? `${params.startDate} 00:00:00` : null,
-          p_end_date: params.endDate ? `${params.endDate} 23:59:59` : null
-        });
-
-      if (error) {
-        throw new Error(`RPC error: ${error.message}`);
-      }
-
-      if (!Array.isArray(data)) {
-        return [];
-      }
-
-      return data;
-    } catch (err: any) {
-      console.error('[SupabaseRPCService] Error en getKPIsNodo:', err);
       throw err;
     }
   }
