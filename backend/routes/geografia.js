@@ -78,6 +78,7 @@ router.put('/localizacion/:id', geografiaController.putLocalizacion);
 // ESPECIALIZADOS
 // ============================================================================
 router.get('/nodos-con-localizacion', geografiaController.getNodosConLocalizacionDashboard);
+router.get('/kpis-nodo/:nodoid', geografiaController.getKPIsNodo);
 router.get('/locations/search', geografiaController.searchLocations);
 router.get('/localizaciones/by-name', geografiaController.getLocalizacionesByName);
 

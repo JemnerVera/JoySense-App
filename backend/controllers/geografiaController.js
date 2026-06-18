@@ -384,6 +384,25 @@ exports.searchLocations = async (req, res) => {
   }
 };
 
+exports.getKPIsNodo = async (req, res) => {
+  try {
+    const nodoid = parseInt(req.params.nodoid, 10);
+    const { startDate, endDate } = req.query;
+    if (!nodoid || nodoid <= 0) {
+      return res.status(400).json({ error: 'nodoid inválido' });
+    }
+    const result = await geografiaService.getKPIsNodo(getSupabase(req), {
+      nodoid,
+      startDate,
+      endDate
+    });
+    res.json(result);
+  } catch (error) {
+    logger.error('Error en getKPIsNodo:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 exports.getLocalizacionesByName = async (req, res) => {
   try {
     const { nombre } = req.query;

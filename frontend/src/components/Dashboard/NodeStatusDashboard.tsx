@@ -566,7 +566,7 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
         setMediciones([]);
 
         // Cargar KPIs consolidados (incluye estadísticas y alertas por métrica)
-        const kpisData = await SupabaseRPCService.getKPIsNodo({
+        const kpisData = await JoySenseService.getKPIsNodo({
           nodoid: selectedNode.nodoid,
           startDate: dateRange.start,
           endDate: dateRange.end

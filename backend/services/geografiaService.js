@@ -1042,6 +1042,175 @@ const getLocalizacionesByName = async (supabase, nombre) => {
   }
 };
 
+const getKPIsNodo = async (supabase, { nodoid, startDate, endDate }) => {
+  try {
+    logger.info(`[getKPIsNodo] Iniciando para nodoid=${nodoid}`);
+
+    // 1. Obtener localizaciones del nodo
+    const { data: localizaciones, error: locError } = await supabase
+      .schema(dbSchema)
+      .from('localizacion')
+      .select('localizacionid, sensorid, metricaid')
+      .eq('nodoid', nodoid)
+      .eq('statusid', 1);
+
+    if (locError) throw locError;
+    if (!localizaciones || localizaciones.length === 0) return [];
+
+    // 2. Obtener sensores y filtrar solo tipo cultivo (1=Suelo, 2=Maceta)
+    const sensorIds = [...new Set(localizaciones.map(l => l.sensorid).filter(id => id != null))];
+    const { data: sensores, error: senError } = await supabase
+      .schema(dbSchema)
+      .from('sensor')
+      .select('sensorid, tipoid')
+      .in('sensorid', sensorIds)
+      .in('tipoid', [1, 2])
+      .eq('statusid', 1);
+
+    if (senError) throw senError;
+    const sensoresCultivo = new Set((sensores || []).map(s => s.sensorid));
+
+    const locsValidas = localizaciones.filter(l => sensoresCultivo.has(l.sensorid));
+
+    if (locsValidas.length === 0) {
+      logger.info(`[getKPIsNodo] No hay localizaciones de cultivo para nodoid=${nodoid}`);
+      return [];
+    }
+
+    const locIds = locsValidas.map(l => l.localizacionid);
+    const metricaIds = [...new Set(locsValidas.map(l => l.metricaid))];
+
+    // 2. Obtener nombres de métricas
+    const { data: metricas, error: metError } = await supabase
+      .schema(dbSchema)
+      .from('metrica')
+      .select('metricaid, metrica, unidad')
+      .in('metricaid', metricaIds)
+      .eq('statusid', 1);
+
+    if (metError) throw metError;
+    const metricasMap = new Map((metricas || []).map(m => [m.metricaid, m]));
+
+    // 3. Consultar mediciones por chunks (evita timeout de Supabase)
+    const locMetricaMap = new Map();
+    locsValidas.forEach(l => locMetricaMap.set(l.localizacionid, l.metricaid));
+
+    const statsMap = new Map();
+    const lastValueMap = new Map();
+
+    for (const metricaid of metricaIds) {
+      const idsParaMetrica = locsValidas.filter(l => l.metricaid === metricaid).map(l => l.localizacionid);
+
+      let query = supabase
+        .schema(dbSchema)
+        .from('medicion')
+        .select('medicion, fecha')
+        .in('localizacionid', idsParaMetrica)
+        .order('fecha', { ascending: false });
+
+      if (startDate) query = query.gte('fecha', startDate);
+      if (endDate) query = query.lte('fecha', endDate);
+
+      const CHUNK_SIZE = 5000;
+      let count = 0;
+      let sum = 0;
+      let sumSq = 0;
+      let min = Infinity;
+      let max = -Infinity;
+      let lastVal = null;
+      let lastFecha = null;
+      let offset = 0;
+      let firstRow = true;
+
+      while (true) {
+        const { data: chunk, error: chunkError } = await query.range(offset, offset + CHUNK_SIZE - 1);
+        if (chunkError) throw chunkError;
+        if (!chunk || chunk.length === 0) break;
+
+        for (const row of chunk) {
+          const valor = Number(row.medicion);
+          if (isNaN(valor)) continue;
+
+          if (firstRow) {
+            lastVal = valor;
+            lastFecha = row.fecha;
+            firstRow = false;
+          }
+
+          count++;
+          sum += valor;
+          sumSq += valor * valor;
+          if (valor < min) min = valor;
+          if (valor > max) max = valor;
+        }
+
+        offset += CHUNK_SIZE;
+        if (chunk.length < CHUNK_SIZE) break;
+      }
+
+      if (count > 0) {
+        const avg = sum / count;
+        const variance = (sumSq - (sum * sum / count)) / count;
+        const stddev = variance > 0 ? Math.sqrt(variance) : 0;
+
+        statsMap.set(metricaid, { count, sum, sumSq, min, max, avg, stddev });
+        if (lastVal != null) {
+          lastValueMap.set(metricaid, { valor: lastVal, fecha: lastFecha });
+        }
+      }
+    }
+
+    // 4. Consultar alertas
+    const { data: alertas, error: alertError } = await supabase
+      .schema(dbSchema)
+      .from('alerta_regla')
+      .select('localizacionid')
+      .in('localizacionid', locIds)
+      .eq('statusid', 1);
+
+    if (alertError) throw alertError;
+
+    const alertasByMetric = new Map();
+    (alertas || []).forEach(a => {
+      const metricaid = locMetricaMap.get(a.localizacionid);
+      if (metricaid != null) {
+        alertasByMetric.set(metricaid, (alertasByMetric.get(metricaid) || 0) + 1);
+      }
+    });
+
+    // 5. Formatear resultado
+    const resultado = [];
+    for (const metricaid of metricaIds) {
+      const stats = statsMap.get(metricaid);
+      const lastVal = lastValueMap.get(metricaid);
+      const metricaInfo = metricasMap.get(metricaid);
+
+      if (!stats || stats.count === 0) continue;
+
+      resultado.push({
+        metricaid,
+        metrica_nombre: metricaInfo?.metrica || null,
+        unidad: metricaInfo?.unidad || null,
+        total_mediciones: stats.count,
+        promedio: Number(stats.avg.toFixed(2)),
+        minimo: stats.min === Infinity ? null : Number(stats.min.toFixed(2)),
+        maximo: stats.max === -Infinity ? null : Number(stats.max.toFixed(2)),
+        desviacion: Number(stats.stddev.toFixed(2)),
+        ultima_fecha: lastVal?.fecha || null,
+        ultima_valor: lastVal?.valor != null ? Number(lastVal.valor.toFixed(2)) : null,
+        alertas_activas: alertasByMetric.get(metricaid) || 0
+      });
+    }
+
+    logger.info(`[getKPIsNodo] Completado: ${resultado.length} KPIs calculados para nodoid=${nodoid}`);
+    return resultado;
+
+  } catch (error) {
+    logger.error(`[getKPIsNodo] Error:`, error);
+    throw error;
+  }
+};
+
 module.exports = {
   getPaises,
   getPaisColumns,
@@ -1075,5 +1244,6 @@ module.exports = {
   updateLocalizacion,
   getNodosConLocalizacionDashboard,
   searchLocations,
-  getLocalizacionesByName
+  getLocalizacionesByName,
+  getKPIsNodo
 };

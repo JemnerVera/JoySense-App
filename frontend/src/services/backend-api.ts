@@ -1456,4 +1456,28 @@ export class JoySenseService {
       throw error;
     }
   }
+
+  // --------------------------------------------------------------------------
+  // KPIs NODO
+  // --------------------------------------------------------------------------
+
+  static async getKPIsNodo(params: {
+    nodoid: number;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<any[]> {
+    try {
+      const token = await getAuthToken();
+      const queryParams = new URLSearchParams();
+      if (params.startDate) queryParams.set('startDate', params.startDate);
+      if (params.endDate) queryParams.set('endDate', params.endDate);
+      const query = queryParams.toString();
+      const endpoint = `/geografia/kpis-nodo/${params.nodoid}${query ? `?${query}` : ''}`;
+      const data = await backendAPI.get(endpoint, token || undefined);
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error('[JoySenseService] Error en getKPIsNodo:', error);
+      throw error;
+    }
+  }
 }
