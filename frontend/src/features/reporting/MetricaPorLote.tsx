@@ -5,6 +5,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useFilters } from '../../contexts/FilterContext';
 import MetricaPorLoteModal from './MetricaPorLoteModal';
 import { filterUbicacionesByFundo } from '../../utils/geografiaHierarchy';
+import { CULTIVO_TIPO_IDS } from '../../constants/cultivo';
 
 interface MetricaPorLoteProps {}
 
@@ -201,6 +202,12 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
         endDate
       });
 
+      // Filtrar solo cultivos (tipoid 1=Suelo, 2=Maceta)
+      const metricasCultivo = metricasData.filter((m: any) => {
+        const tipoid = m.tipoid || m.localizacion?.sensor?.tipoid;
+        return !tipoid || CULTIVO_TIPO_IDS.includes(Number(tipoid));
+      });
+
       // Agrupar por nombre de localización (Lote)
       const loteMap = new Map<string, {
         localizacion: string;
@@ -209,7 +216,7 @@ const MetricaPorLote: React.FC<MetricaPorLoteProps> = () => {
         medicionCount: number;
       }>();
 
-      metricasData.forEach((metrica: any) => {
+      metricasCultivo.forEach((metrica: any) => {
         const nombreLocalizacion = metrica.localizacion_nombre;
 
         if (!loteMap.has(nombreLocalizacion)) {

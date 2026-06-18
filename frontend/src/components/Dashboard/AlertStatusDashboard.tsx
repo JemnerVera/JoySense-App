@@ -13,6 +13,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { useFilters } from '../../contexts/FilterContext';
 import { filterNodesByGlobalFilters } from '../../utils/filterNodesUtils';
 import { InteractiveMap } from './InteractiveMap';
+import { CULTIVO_TIPO_IDS } from '../../constants/cultivo';
 
 interface AlertStatusDashboardProps {}
 
@@ -103,6 +104,11 @@ export function AlertStatusDashboard(_props: AlertStatusDashboardProps) {
           empresaSeleccionada,
           fundoSeleccionado
         ) as NodeData[];
+
+        // ✅ Filtrar solo cultivos (tipoid 1=Suelo, 2=Maceta)
+        nodesWithAlertsData = nodesWithAlertsData.filter(node =>
+          !node.tipoid || CULTIVO_TIPO_IDS.includes(Number(node.tipoid))
+        );
 
         setNodesWithAlerts(nodesWithAlertsData);
       } catch (err: any) {

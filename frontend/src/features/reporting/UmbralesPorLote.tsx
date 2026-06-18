@@ -3,6 +3,7 @@ import { JoySenseService } from '../../services/backend-api';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useFilters } from '../../contexts/FilterContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell } from 'recharts';
+import { CULTIVO_TIPO_IDS } from '../../constants/cultivo';
 
 interface UmbralesPorLoteProps {}
 
@@ -123,6 +124,12 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
         metricaId: selectedMetrica
       });
 
+      // Filtrar solo cultivos (tipoid 1=Suelo, 2=Maceta)
+      const umbralesCultivo = umbrales.filter((u: any) => {
+        const tipoid = u.tipoid || u.localizacion?.sensor?.tipoid;
+        return !tipoid || CULTIVO_TIPO_IDS.includes(Number(tipoid));
+      });
+
       // Agrupar por localización
       const loteMap = new Map<number, { 
         localizacion: string; 
@@ -130,7 +137,7 @@ const UmbralesPorLote: React.FC<UmbralesPorLoteProps> = () => {
         umbralCount: number;
       }>();
 
-      umbrales.forEach((umbral: any) => {
+      umbralesCultivo.forEach((umbral: any) => {
         // Obtener localizacionid desde múltiples fuentes posibles
         const localizacionId = umbral.localizacionid || umbral.localizacion?.localizacionid || null;
         // Obtener tipoid desde múltiples fuentes posibles

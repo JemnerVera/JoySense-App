@@ -13,6 +13,7 @@ import { MedicionesAreaChart } from './components/MedicionesAreaChart';
 import { InteractiveMap } from './InteractiveMap';
 import { SVGPlantMap } from './SVGPlantMap';
 import { useSidebar } from '../../contexts/SidebarContext';
+import { CULTIVO_TIPO_IDS } from '../../constants/cultivo';
 
 interface MedicionesDashboardProps {}
 
@@ -131,54 +132,18 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
   const memoizedSensores = useMemo(() => sensores, [sensores]);
   const memoizedTipos = useMemo(() => tipos, [tipos]);
 
-  const localizacionTipoidMap = useMemo(() => {
-    const map = new Map<number, number>();
-    memoizedSensores.forEach((sensor: any) => {
-      localizaciones.forEach((loc: any) => {
-        if (loc.sensorid === sensor.sensorid) {
-          map.set(loc.localizacionid, sensor.tipoid);
-        }
-      });
-    });
-    return map;
-  }, [localizaciones, memoizedSensores]);
-
-  // Función helper para filtrar datos según el tipo de sensor
-  // LoRa (tipoid 1,2): NO filtrar por localizacionid - mostrar métricas de todo el nodo
-  // PLC (tipoid 3,4): SÍ filtrar por localizacionid - mostrar solo métricas de esa localización
-  const filterByTipoSensor = useCallback((data: any[], selectedLocalizacion: any): { data: any[]; isLora: boolean } => {
+  // Función helper para filtrar datos a solo cultivos (tipoid 1=Suelo, 2=Maceta)
+  const filterByTipoSensor = useCallback((data: any[], _selectedLocalizacion: any): { data: any[]; isLora: boolean } => {
     if (!data || data.length === 0) {
       return { data: [], isLora: true };
     }
     
-    const tiposPresentes = new Set<number>();
-    data.forEach((m: any) => {
+    const filteredData = data.filter((m: any) => {
       const tipoid = m.tipoid || m.localizacion?.sensor?.tipoid;
-      if (tipoid) tiposPresentes.add(Number(tipoid));
+      return !tipoid || CULTIVO_TIPO_IDS.includes(Number(tipoid));
     });
     
-    const hasLora = Array.from(tiposPresentes).some(t => [1, 2].includes(t));
-    const hasPlc = Array.from(tiposPresentes).some(t => [3, 4].includes(t));
-    
-    if (hasLora && !hasPlc) {
-      return { data, isLora: true };
-    } else if (hasPlc && !hasLora) {
-      const ids = selectedLocalizacion.localizacionids ?? [selectedLocalizacion.localizacionid];
-      const filtered = data.filter((m: any) => ids.includes(m.localizacionid));
-      return {
-        data: filtered,
-        isLora: false
-      };
-    } else if (hasLora && hasPlc) {
-      return { data, isLora: true };
-    }
-
-    const ids = selectedLocalizacion.localizacionids ?? [selectedLocalizacion.localizacionid];
-    const filtered = data.filter((m: any) => ids.includes(m.localizacionid));
-    return {
-      data: filtered,
-      isLora: false
-    };
+    return { data: filteredData, isLora: true };
   }, []);
 
   // Cargar localizaciones, sensores, tipos y fundos con su información de empresa/país.
@@ -291,7 +256,6 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
       if (loc.localizacion && loc.nodoid) {
         const key = `${loc.localizacion}__${loc.nodoid}`;
         if (!localizacionesMap.has(key)) {
-          const tipoid = localizacionTipoidMap.get(loc.localizacionid);
           localizacionesMap.set(key, {
             localizacionid: loc.localizacionid,
             localizacionids: [loc.localizacionid],
@@ -300,7 +264,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
             latitud: loc.latitud,
             longitud: loc.longitud,
             nodo: loc.nodo,
-            tipoid: tipoid
+            tipoid: loc.tipoid
           });
         } else {
           const existing = localizacionesMap.get(key);
@@ -311,8 +275,11 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
       }
     });
 
-    setUniqueLocalizaciones(Array.from(localizacionesMap.values()));
-  }, [localizaciones, localizacionTipoidMap]);
+    setUniqueLocalizaciones(
+      Array.from(localizacionesMap.values())
+        .filter(entry => !entry.tipoid || CULTIVO_TIPO_IDS.includes(Number(entry.tipoid)))
+    );
+  }, [localizaciones]);
 
   // Agrupar TODAS las localizaciones sin filtro global (para contador del dropdown)
   const allUniqueLocalizaciones = useMemo(() => {
@@ -322,7 +289,6 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
       if (loc.localizacion && loc.nodoid) {
         const key = `${loc.localizacion}__${loc.nodoid}`;
         if (!localizacionesMap.has(key)) {
-          const tipoid = localizacionTipoidMap.get(loc.localizacionid);
           localizacionesMap.set(key, {
             localizacionid: loc.localizacionid,
             localizacionids: [loc.localizacionid],
@@ -331,7 +297,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
             latitud: loc.latitud,
             longitud: loc.longitud,
             nodo: loc.nodo,
-            tipoid: tipoid
+            tipoid: loc.tipoid
           });
         } else {
           const existing = localizacionesMap.get(key);
@@ -342,8 +308,9 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
       }
     });
 
-    return Array.from(localizacionesMap.values());
-  }, [allLocalizaciones, localizacionTipoidMap]);
+    return Array.from(localizacionesMap.values())
+      .filter(entry => !entry.tipoid || CULTIVO_TIPO_IDS.includes(Number(entry.tipoid)));
+  }, [allLocalizaciones]);
 
   // Validar y limpiar la localización seleccionada cuando cambian los filtros globales
   // OPTIMIZACIÓN: Solo ejecutar cuando cambien los filtros reales, no cuando cambie selectedLocalizacion

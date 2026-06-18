@@ -91,7 +91,7 @@ export function useMenuStructure() {
               { id: 'status-alertas', label: t('menu.statusAlertas'), icon: <IconAlertas /> },
               { id: 'metrica', label: t('menu.metricaLocalizacion'), icon: <IconMetricaSensor /> },
               { id: 'umbrales', label: t('menu.umbralesLocalizacion'), icon: <IconUmbralAlt /> },
-              { id: 'sensores-planta', label: t('menu.sensoresPlanta'), icon: <IconSensor /> },
+              // REMOVIDO: sensores-planta (PLC) se moverá a pestaña independiente
             ],
           },
       {

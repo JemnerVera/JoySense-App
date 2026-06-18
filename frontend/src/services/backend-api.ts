@@ -383,6 +383,8 @@ export class JoySenseService {
           localizacionid: loc.localizacionid,
           localizacion: loc.localizacion,
           nodoid: loc.nodo?.nodoid,
+          sensorid: loc.sensorid,
+          tipoid: loc.tipoid,
           latitud: loc.latitud ?? loc.nodo?.latitud,
           longitud: loc.longitud ?? loc.nodo?.longitud,
           nodo: loc.nodo,

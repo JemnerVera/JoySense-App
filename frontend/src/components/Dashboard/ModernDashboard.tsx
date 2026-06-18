@@ -12,6 +12,7 @@ import { loadMedicionesPorNodo } from "../../utils/medicionesPorNodo"
 import { useMedicionesLoader, useSystemData } from "./hooks"
 import { STATUS } from '../../constants/status';
 import { METRICS } from '../../constants/metrics';
+import { CULTIVO_TIPO_IDS } from '../../constants/cultivo';
 import { ErrorAlert, LoadingState, ThresholdRecommendationsModal, DetailedAnalysisModal } from "./components"
 import { MetricMiniChart } from "./components/MetricMiniChart"
 import {
@@ -177,45 +178,18 @@ export function ModernDashboard({ filters, onFiltersChange, onUbicacionChange }:
   // Hook para crear un cache de métricas optimizado que evita recálculos repetidos
   const { hasData: hasMetricDataOptimized, getCurrentValue: getCurrentValueOptimized } = useMetricCache(mediciones, selectedNode)
   
-  // Función helper para filtrar datos según el tipo de sensor
-  // LoRa (tipoid 1,2): NO filtrar por localizacionid - mostrar métricas de todo el nodo
-  // PLC (tipoid 3,4): SÍ filtrar por localizacionid - mostrar solo métricas de esa localización
+  // Función helper para filtrar datos a solo cultivos (tipoid 1=Suelo, 2=Maceta)
   const filterByTipoSensor = useCallback((data: any[], selectedNode: any): { data: any[]; isLora: boolean } => {
     if (!data || data.length === 0) {
       return { data: [], isLora: true }
     }
     
-    // Detectar tipos presentes en los datos
-    const tiposPresentes = new Set<number>()
-    data.forEach((m: any) => {
+    const filteredData = data.filter((m: any) => {
       const tipoid = m.tipoid || m.localizacion?.sensor?.tipoid
-      if (tipoid) tiposPresentes.add(Number(tipoid))
+      return !tipoid || CULTIVO_TIPO_IDS.includes(Number(tipoid))
     })
     
-    const hasLora = Array.from(tiposPresentes).some(t => [1, 2].includes(t))
-    const hasPlc = Array.from(tiposPresentes).some(t => [3, 4].includes(t))
-    
-    // Lógica de filtrado según tipo de sensor
-    if (hasLora && !hasPlc) {
-      // Solo LoRaWAN: devolver todos los datos sin filtrar
-      return { data, isLora: true }
-    } else if (hasPlc && !hasLora) {
-      // Solo PLC: NO filtrar por localizacionid - mostrar todas las localizaciones del nodo
-      // (igual que los minigráficos del Mapeo de Nodos)
-      return { 
-        data: data,
-        isLora: false 
-      }
-    } else if (hasLora && hasPlc) {
-      // Mezcla de ambos: priorizar LoRaWAN (devolver todos)
-      return { data, isLora: true }
-    }
-    
-    // Fallback: asumir PLC y NO filtrar por localizacionid - devolver todos los datos
-    return { 
-      data: data,
-      isLora: false 
-    }
+    return { data: filteredData, isLora: true }
   }, [])
   
   const [loadingDetailedData, setLoadingDetailedData] = useState(false)

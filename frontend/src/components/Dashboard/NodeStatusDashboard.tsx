@@ -16,6 +16,7 @@ import { useFilterSync } from '../../hooks/useFilterSync';
 import { filterNodesByGlobalFilters } from '../../utils/filterNodesUtils';
 import { InteractiveMap } from './InteractiveMap';
 import { useSidebar } from '../../contexts/SidebarContext';
+import { CULTIVO_TIPO_IDS } from '../../constants/cultivo';
 
 interface NodeStatusDashboardProps {}
 
@@ -282,7 +283,10 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
   const localizacionesDisponibles = useMemo(() => {
     const localizacionesMap = new Map<string, any>();
     
-    filteredNodes.forEach((node: any) => {
+    // Filtrar solo cultivos (tipoid 1=Suelo, 2=Maceta)
+    const cultivoNodes = filteredNodes.filter(node => !node.tipoid || CULTIVO_TIPO_IDS.includes(Number(node.tipoid)));
+    
+    cultivoNodes.forEach((node: any) => {
       if (node.localizacion && node.nodoid) {
         // Usar clave compuesta: localización + nodoid para diferenciar nodos en la misma localización
         const key = `${node.localizacion}__${node.nodoid}`;
@@ -710,9 +714,14 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
           endDate: dateRange.end
         });
 
+        // Filtrar solo cultivos (tipoid 1=Suelo, 2=Maceta)
+        const medicionesCultivo = (medicionesDetalladas || []).filter((m: any) => {
+          const tipoid = m.tipoid || m.localizacion?.sensor?.tipoid;
+          return !tipoid || CULTIVO_TIPO_IDS.includes(Number(tipoid));
+        });
+
         // Transformar mediciones detalladas a formato para gráficos
-        // IMPORTANTE: Calcular label aquí para evitar problemas de recreación de funciones
-        const medicionesTransformadas = medicionesDetalladas.map((m: any) => {
+        const medicionesTransformadas = medicionesCultivo.map((m: any) => {
           // getMedicionesNodoDetallado ya viene con estructura anidada de localizacion
           const sensorId = m.sensorid || m.localizacion?.sensorid;
           const sensorInfo = sensores.find(s => s.sensorid === sensorId);

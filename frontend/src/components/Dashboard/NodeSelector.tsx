@@ -6,6 +6,7 @@ import { NodeData } from '../../types/NodeData'
 import { useFilters } from '../../contexts/FilterContext'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { filterNodesByGlobalFilters } from '../../utils/filterNodesUtils'
+import { CULTIVO_TIPO_IDS } from '../../constants/cultivo'
 
 interface NodeSelectorProps {
   selectedUbicacionId: number | null
@@ -95,7 +96,9 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
         } as NodeData
       })
       
-      setNodes(enrichedNodes)
+      // Filtrar solo cultivos (tipoid 1=Suelo, 2=Maceta)
+      const cultivoNodes = enrichedNodes.filter(node => !node.tipoid || CULTIVO_TIPO_IDS.includes(Number(node.tipoid)))
+      setNodes(cultivoNodes)
     } catch (err) {
       setError('Error al cargar nodos')
       console.error('[NodeSelector] loadNodes:', err)

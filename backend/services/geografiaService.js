@@ -592,7 +592,7 @@ const _getNodosConLocalizacionDashboardPrincipal = async (supabase, { limit, fun
   const { data: localizacionesData, error: locError } = await supabase
     .schema(dbSchema)
     .from('localizacion')
-    .select('localizacionid, localizacion, metricaid, nodoid')
+    .select('localizacionid, localizacion, sensorid, metricaid, nodoid')
     .in('nodoid', nodoidList)
     .eq('statusid', 1);
 
@@ -615,6 +615,15 @@ const _getNodosConLocalizacionDashboardPrincipal = async (supabase, { limit, fun
     const metricasRes = await supabase.schema(dbSchema).from('metrica').select('metricaid, metrica, unidad').in('metricaid', metricaIds);
     if (metricasRes.error) throw metricasRes.error;
     metricasMap = new Map((metricasRes.data || []).map(m => [m.metricaid, m]));
+  }
+
+  // Obtener sensores para tipoid
+  const sensorIds = [...new Set(localizacionesData.map(l => l.sensorid).filter(id => id != null))];
+  let sensorTipoidMap = new Map();
+  if (sensorIds.length > 0) {
+    const sensoresRes = await supabase.schema(dbSchema).from('sensor').select('sensorid, tipoid').in('sensorid', sensorIds);
+    if (sensoresRes.error) throw sensoresRes.error;
+    sensorTipoidMap = new Map((sensoresRes.data || []).map(s => [s.sensorid, s.tipoid]));
   }
 
   // Filtrar localizaciones que pertenecen a nodos válidos
@@ -672,6 +681,8 @@ const _getNodosConLocalizacionDashboardPrincipal = async (supabase, { limit, fun
     resultado.push({
       localizacionid: loc.localizacionid,
       localizacion: loc.localizacion,
+      sensorid: loc.sensorid,
+      tipoid: sensorTipoidMap.get(loc.sensorid),
       latitud: nodoRaw?.latitud,
       longitud: nodoRaw?.longitud,
       referencia: nodoRaw?.referencia,
@@ -760,11 +771,20 @@ const _getNodosConLocalizacionDashboardFallback = async (supabase, { limit, fund
   const { data: localizaciones, error: locError } = await supabase
     .schema(dbSchema)
     .from('localizacion')
-    .select('localizacionid, localizacion, nodoid, metricaid')
+    .select('localizacionid, localizacion, sensorid, nodoid, metricaid')
     .in('nodoid', nodoidList)
     .eq('statusid', 1);
 
   if (locError) throw locError;
+
+  // Obtener sensores para tipoid
+  const sensorIds = [...new Set(localizaciones.map(l => l.sensorid).filter(id => id != null))];
+  let sensorTipoidMap = new Map();
+  if (sensorIds.length > 0) {
+    const sensoresRes = await supabase.schema(dbSchema).from('sensor').select('sensorid, tipoid').in('sensorid', sensorIds);
+    if (sensoresRes.error) throw sensoresRes.error;
+    sensorTipoidMap = new Map((sensoresRes.data || []).map(s => [s.sensorid, s.tipoid]));
+  }
 
   const nodosMap = new Map(nodos.map(n => [n.nodoid, n]));
   const resultado = (localizaciones || []).map(loc => {
@@ -772,6 +792,8 @@ const _getNodosConLocalizacionDashboardFallback = async (supabase, { limit, fund
     return {
       localizacionid: loc.localizacionid,
       localizacion: loc.localizacion,
+      sensorid: loc.sensorid,
+      tipoid: sensorTipoidMap.get(loc.sensorid),
       nodoid: loc.nodoid,
       latitud: nodoRaw?.latitud,
       longitud: nodoRaw?.longitud,
