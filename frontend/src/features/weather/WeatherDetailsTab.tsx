@@ -49,6 +49,10 @@ export const WeatherDetailsTab: React.FC<WeatherDetailsTabProps> = ({
     return now.toISOString().slice(0, 10);
   }, []);
 
+  const availableMetrics = useMemo(() => {
+    return new Set(historicalData.map(d => d.metrica_nombre));
+  }, [historicalData]);
+
   const getDayStats = (metricName: string): DayStat => {
     const todayData = historicalData.filter(
       d => d.metrica_nombre === metricName && d.fecha?.startsWith(today)
@@ -100,8 +104,6 @@ export const WeatherDetailsTab: React.FC<WeatherDetailsTabProps> = ({
         { key: 'thsw_index', label: 'THSW', unit: '°C' },
         { key: 'wind_chill', label: 'Viento frío', unit: '°C' },
         { key: 'dew_point', label: 'Punto rocío', unit: '°C' },
-        { key: 'wind_speed_10_min_avg', label: 'Viento', unit: 'km/h' },
-        { key: 'wind_dir', label: 'Dirección', unit: '°' },
         { key: 'solar_rad', label: 'Radiación solar', unit: 'W/m²' },
       ],
     },
@@ -110,13 +112,22 @@ export const WeatherDetailsTab: React.FC<WeatherDetailsTabProps> = ({
       metrics: [
         { key: 'wind_speed_10_min_avg', label: 'Viento 10 min', unit: 'km/h' },
         { key: 'wind_gust_10_min', label: 'Ráfaga 10 min', unit: 'km/h' },
+        { key: 'wind_dir', label: 'Dirección', unit: '°' },
       ],
     },
   ];
 
-  const groups4 = {
-    title: 'LLUVIA Y ET',
-  };
+  const filteredGroups = useMemo(() => {
+    return groups
+      .map(group => ({
+        ...group,
+        metrics: group.metrics.filter(m => availableMetrics.has(m.key)),
+      }))
+      .filter(group => group.metrics.length > 0);
+  }, [groups, availableMetrics]);
+
+  const rainMetrics = ['rain_rate_mm', 'rain_day_mm', 'et_day'];
+  const hasRainOrET = rainMetrics.some(m => availableMetrics.has(m));
 
   if (loading) {
     return (
@@ -132,7 +143,7 @@ export const WeatherDetailsTab: React.FC<WeatherDetailsTabProps> = ({
         Última actualización: {new Date().toLocaleString('es-PE', { timeZone: 'America/Lima' })}
       </div>
 
-      {groups.map((group) => (
+      {filteredGroups.map((group) => (
         <div key={group.title} className="bg-gray-100 dark:bg-neutral-800 rounded-lg border border-gray-300 dark:border-neutral-700 overflow-hidden">
           <div className="bg-gray-200 dark:bg-neutral-700 px-4 py-2 border-b border-gray-300 dark:border-neutral-700">
             <span className="text-sm font-mono font-bold text-gray-700 dark:text-gray-300">
@@ -184,48 +195,50 @@ export const WeatherDetailsTab: React.FC<WeatherDetailsTabProps> = ({
         </div>
       ))}
 
-      <div className="bg-gray-100 dark:bg-neutral-800 rounded-lg border border-gray-300 dark:border-neutral-700 overflow-hidden">
-        <div className="bg-gray-200 dark:bg-neutral-700 px-4 py-2 border-b border-gray-300 dark:border-neutral-700">
-          <span className="text-sm font-mono font-bold text-gray-700 dark:text-gray-300">
-            {groups4.title}
-          </span>
+      {hasRainOrET && (
+        <div className="bg-gray-100 dark:bg-neutral-800 rounded-lg border border-gray-300 dark:border-neutral-700 overflow-hidden">
+          <div className="bg-gray-200 dark:bg-neutral-700 px-4 py-2 border-b border-gray-300 dark:border-neutral-700">
+            <span className="text-sm font-mono font-bold text-gray-700 dark:text-gray-300">
+              LLUVIA Y ET
+            </span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs font-mono">
+              <thead>
+                <tr className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
+                  <th className="px-3 py-2 text-left w-1/4">Métrica</th>
+                  <th className="px-3 py-2 text-right">Tasa</th>
+                  <th className="px-3 py-2 text-right">Día</th>
+                  <th className="px-3 py-2 text-right">Mes</th>
+                  <th className="px-3 py-2 text-right">Año</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 dark:divide-neutral-600">
+                <tr className="hover:bg-gray-50 dark:hover:bg-neutral-700">
+                  <td className="px-3 py-2 text-gray-700 dark:text-gray-300">Lluvia</td>
+                  <td className="px-3 py-2 text-right font-semibold text-blue-600 dark:text-blue-400">
+                    {formatValue(getDayStats('rain_rate_mm').actual, 2)} mm/h
+                  </td>
+                  <td className="px-3 py-2 text-right font-semibold text-gray-800 dark:text-gray-200">
+                    {formatValue(getDayStats('rain_day_mm').actual, 2)} mm
+                  </td>
+                  <td className="px-3 py-2 text-right text-gray-500">-- mm</td>
+                  <td className="px-3 py-2 text-right text-gray-500">-- mm</td>
+                </tr>
+                <tr className="hover:bg-gray-50 dark:hover:bg-neutral-700">
+                  <td className="px-3 py-2 text-gray-700 dark:text-gray-300">ET</td>
+                  <td className="px-3 py-2 text-right text-gray-500">--</td>
+                  <td className="px-3 py-2 text-right font-semibold text-gray-800 dark:text-gray-200">
+                    {formatValue(getDayStats('et_day').actual, 2)} mm
+                  </td>
+                  <td className="px-3 py-2 text-right text-gray-500">-- mm</td>
+                  <td className="px-3 py-2 text-right text-gray-500">-- mm</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs font-mono">
-            <thead>
-              <tr className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400">
-                <th className="px-3 py-2 text-left w-1/4">Métrica</th>
-                <th className="px-3 py-2 text-right">Tasa</th>
-                <th className="px-3 py-2 text-right">Día</th>
-                <th className="px-3 py-2 text-right">Mes</th>
-                <th className="px-3 py-2 text-right">Año</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-neutral-600">
-              <tr className="hover:bg-gray-50 dark:hover:bg-neutral-700">
-                <td className="px-3 py-2 text-gray-700 dark:text-gray-300">Lluvia</td>
-                <td className="px-3 py-2 text-right font-semibold text-blue-600 dark:text-blue-400">
-                  {formatValue(getDayStats('rain_rate_mm').actual, 2)} mm/h
-                </td>
-                <td className="px-3 py-2 text-right font-semibold text-gray-800 dark:text-gray-200">
-                  {formatValue(getDayStats('rain_day_mm').actual, 2)} mm
-                </td>
-                <td className="px-3 py-2 text-right text-gray-500">-- mm</td>
-                <td className="px-3 py-2 text-right text-gray-500">-- mm</td>
-              </tr>
-              <tr className="hover:bg-gray-50 dark:hover:bg-neutral-700">
-                <td className="px-3 py-2 text-gray-700 dark:text-gray-300">ET</td>
-                <td className="px-3 py-2 text-right text-gray-500">--</td>
-                <td className="px-3 py-2 text-right font-semibold text-gray-800 dark:text-gray-200">
-                  {formatValue(getDayStats('et_day').actual, 2)} mm
-                </td>
-                <td className="px-3 py-2 text-right text-gray-500">-- mm</td>
-                <td className="px-3 py-2 text-right text-gray-500">-- mm</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+      )}
     </div>
   );
 };
