@@ -149,7 +149,6 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
 
   const loadMediciones = useCallback(async () => {
     if (!selectedNodo?.nodoid) {
-      console.log('[PLC] loadMediciones: no nodo selected, skipping');
       setMediciones([]);
       return;
     }
@@ -157,7 +156,6 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
     const startDateTime = `${dateRange.start} 00:00:00`;
     const endDateTime = `${dateRange.end} 23:59:59`;
 
-    console.log('[PLC] loadMediciones: calling RPC', { nodoid: selectedNodo.nodoid, start: startDateTime, end: endDateTime });
     try {
       setLoadingData(true);
       const data = await SupabaseRPCService.getMedicionesNodoDetallado({
@@ -165,7 +163,6 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
         startDate: startDateTime,
         endDate: endDateTime
       });
-      console.log('[PLC] loadMediciones: RPC returned', { count: data?.length, data: data?.slice(0, 2) });
       setMediciones(data || []);
     } catch (error) {
       console.error('[PLC] Error loading mediciones:', error);
@@ -235,9 +232,7 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
   }, [isNodoDropdownOpen]);
 
   const chartData = useMemo(() => {
-    console.log('[PLC] chartData memo: processing', { medicionesCount: mediciones?.length });
     if (!mediciones || mediciones.length === 0) {
-      console.log('[PLC] chartData memo: no mediciones, returning empty');
       return [];
     }
 
@@ -680,7 +675,6 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
         </div>
       )}
 
-      {console.log('[PLC] render branch', { selectedNodo: !!selectedNodo, loadingData, chartDataLength: chartData.length, showDataTable }), false}
       {selectedNodo && showDataTable ? (
         <div className="mt-4">
           <PLCDataTable 
