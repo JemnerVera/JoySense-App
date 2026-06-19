@@ -73,6 +73,7 @@ import {
 
 // Componentes directos (no lazy)
 import { PLCMedicionesChart } from './components/Dashboard/PLCMedicionesChart';
+import { PLCMapeoDashboard } from './components/Dashboard/PLCMapeoDashboard';
 
 // 9. Hooks
 import { useAppSidebar } from './hooks/useAppSidebar';
@@ -1813,6 +1814,17 @@ const AppContentInternal: React.FC<{
 
     // Manejar sub-rutas de Planta Proc
     if (activeTab.startsWith('planta-proc-')) {
+      const plantaTab = activeTab.replace('planta-proc-', '');
+
+      if (plantaTab === 'mapeo-sensores') {
+        return (
+          <div className="p-4 h-full">
+            <PLCMapeoDashboard />
+          </div>
+        );
+      }
+
+      // Default: dashboard
       return (
         <div className="p-4">
           <PLCMedicionesChart />
