@@ -170,7 +170,7 @@ function buildDetailedOption(
       orient: 'horizontal' as const,
       top: 0, left: '3%', right: '4%',
       textStyle: { color: '#666', fontSize: 11 },
-      pageTextStyle: '#666',
+      pageTextStyle: { color: '#666' },
       pageIconColor: '#666',
       pageIconInactiveColor: '#ccc',
     },
@@ -199,6 +199,7 @@ export function PLCMapeoDashboard() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [fundosInfo, setFundosInfo] = useState<Map<number, any>>(new Map());
   const [plcNodoids, setPlcNodoids] = useState<Set<number>>(new Set());
+  const [nodoUbicacionMap, setNodoUbicacionMap] = useState<Map<number, number>>(new Map());
   const { syncDashboardSelectionToGlobal } = useFilterSync(fundosInfo);
 
   const [selectedMetricDetail, setSelectedMetricDetail] = useState<MetricConfig | null>(null);
@@ -229,13 +230,14 @@ export function PLCMapeoDashboard() {
     const loadInitialData = async () => {
       try {
         setLoading(true);
-        const [sensorData, localizacionData, ubicacionesData, fundosData, empresasData, tiposData] = await Promise.all([
+        const [sensorData, localizacionData, ubicacionesData, fundosData, empresasData, tiposData, nodoData] = await Promise.all([
           JoySenseService.getTableData('sensor', 100),
           JoySenseService.getTableData('localizacion', 1000),
           JoySenseService.getTableData('ubicacion', 1000),
           JoySenseService.getTableData('fundo', 100),
           JoySenseService.getTableData('empresa', 100),
           JoySenseService.getTableData('tipo', 100),
+          JoySenseService.getTableData('nodo', 1000),
         ]);
 
         const plcSensorids = new Set(
@@ -245,6 +247,12 @@ export function PLCMapeoDashboard() {
           (localizacionData || []).filter((l: any) => plcSensorids.has(l.sensorid)).map((l: any) => l.nodoid)
         );
         setPlcNodoids(plcNodoidsSet);
+
+        const nodoMap = new Map<number, number>();
+        (nodoData || []).forEach((n: any) => {
+          if (n.nodoid && n.ubicacionid) nodoMap.set(n.nodoid, n.ubicacionid);
+        });
+        setNodoUbicacionMap(nodoMap);
 
         setUbicaciones(ubicacionesData || []);
         setTipos(tiposData || []);
@@ -295,14 +303,24 @@ export function PLCMapeoDashboard() {
     setSelectedMetricDetail(null);
   }, [selectedNodo]);
 
-  // ── Available ubicaciones: those belonging to fundos with SVG maps ──
+  // ── Available ubicaciones: those belonging to fundos with SVG maps AND with PLC nodes ──
+  const ubicacionIdsConNodosPlc = useMemo(() => {
+    const ids = new Set<number>();
+    plcNodoids.forEach((nodoid) => {
+      const ubicacionid = nodoUbicacionMap.get(nodoid);
+      if (ubicacionid != null) ids.add(ubicacionid);
+    });
+    return ids;
+  }, [plcNodoids, nodoUbicacionMap]);
+
   const availableUbicaciones = useMemo(() => {
+    if (ubicacionIdsConNodosPlc.size === 0) return [];
     const svgFundoids = new Set(Object.keys(FUNDO_SVG_MAP).map(Number));
     return ubicaciones.filter((u: any) => {
       const fundoid = u.zona?.fundoid;
-      return fundoid != null && svgFundoids.has(fundoid);
+      return fundoid != null && svgFundoids.has(fundoid) && ubicacionIdsConNodosPlc.has(u.ubicacionid);
     });
-  }, [ubicaciones]);
+  }, [ubicaciones, ubicacionIdsConNodosPlc]);
 
   // ── Filtered list for the dropdown search ──
   const filteredUbicaciones = useMemo(() => {
@@ -331,6 +349,8 @@ export function PLCMapeoDashboard() {
     const fundoid = ubicacion.zona?.fundoid;
     if (!fundoid) return;
 
+    syncDashboardSelectionToGlobal(ubicacion, 'ubicacion');
+
     setLoadingNodes(true);
     try {
       const data = await JoySenseService.getNodosConLocalizacion(1000, { fundoId: fundoid });
@@ -341,7 +361,7 @@ export function PLCMapeoDashboard() {
     } finally {
       setLoadingNodes(false);
     }
-  }, []);
+  }, [syncDashboardSelectionToGlobal]);
 
   // ── SVG nodes: from nodosConLocalizacion filtered to PLC ──
   const svgNodes: NodeData[] = useMemo(() => {
