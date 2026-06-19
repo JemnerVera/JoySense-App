@@ -2431,7 +2431,6 @@ const AppContentInternal: React.FC<{
                           if (activeTab.startsWith('reportes-dashboard-')) {
                             const subTab = activeTab.replace('reportes-dashboard-', '');
                             const subTabNames: { [key: string]: string } = {
-                              'mapeo': 'MAPEO',
                               'status-nodos': 'STATUS DE NODOS',
                               'metrica': 'MÉTRICA POR LOCALIZACIÓN',
                               'umbrales': 'UMBRALES POR LOCALIZACIÓN'
@@ -2779,7 +2778,7 @@ const AppContentInternal: React.FC<{
                 </div>
                 
                 {/* Dashboard Filters - Solo mostrar en Dashboard y Mapeo de Nodos */}
-                {(activeTab === 'dashboard' || activeTab === 'reportes-dashboard' || activeTab === 'reportes-dashboard-mapeo') && (
+                {(activeTab === 'dashboard' || activeTab === 'reportes-dashboard') && (
                   <div className="flex items-center gap-4 ml-8">
                     <UserHeader 
                       activeTab={activeTab}
