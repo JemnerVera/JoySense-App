@@ -41,6 +41,7 @@ import {
   IconWeatherDetails,
   IconWeatherHistory,
   IconWeatherResumen,
+  IconPlantaProc,
 } from '../utils/menuIcons';
 
 export function useMenuStructure() {
@@ -253,6 +254,19 @@ export function useMenuStructure() {
             id: 'basicas',
             label: t('menu.ajustesGenerales'),
             icon: <IconConfiguracion />,
+          },
+        ],
+      },
+      {
+        id: 'planta-proc',
+        label: t('tabs.plantaProc'),
+        icon: <IconPlantaProc />,
+        color: 'blue',
+        subMenus: [
+          {
+            id: 'dashboard',
+            label: 'DASHBOARD PLC',
+            icon: <IconSensor />,
           },
         ],
       },

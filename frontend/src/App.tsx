@@ -240,7 +240,7 @@ const AppContentInternal: React.FC<{
   }, [selectedTable]);
   
   // Estados para Dashboard (Reportes)
-  const [dashboardSubTab, setDashboardSubTab] = useState<'mediciones' | 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales' | 'sensores-planta'>('mediciones');
+  const [dashboardSubTab, setDashboardSubTab] = useState<'mediciones' | 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales'>('mediciones');
 
   // Función para convertir nombre de tabla a español (usa configuración centralizada)
   const getTableNameInSpanish = (tableName: string): string => {
@@ -268,8 +268,8 @@ const AppContentInternal: React.FC<{
   // Sincronizar dashboardSubTab con activeTab
   useEffect(() => {
     if (activeTab.startsWith('reportes-dashboard-')) {
-      const subTab = activeTab.replace('reportes-dashboard-', '') as 'mediciones' | 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales' | 'sensores-planta';
-      if (subTab === 'mediciones' || subTab === 'mapeo' || subTab === 'status-nodos' || subTab === 'status-alertas' || subTab === 'metrica' || subTab === 'umbrales' || subTab === 'sensores-planta') {
+      const subTab = activeTab.replace('reportes-dashboard-', '') as 'mediciones' | 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales';
+      if (subTab === 'mediciones' || subTab === 'mapeo' || subTab === 'status-nodos' || subTab === 'status-alertas' || subTab === 'metrica' || subTab === 'umbrales') {
         setDashboardSubTab(subTab);
       }
     }
@@ -1108,7 +1108,7 @@ const AppContentInternal: React.FC<{
   };
 
   // Handler para cambiar el subTab del Dashboard
-  const handleDashboardSubTabChange = (subTab: 'mediciones' | 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales' | 'sensores-planta') => {
+  const handleDashboardSubTabChange = (subTab: 'mediciones' | 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales') => {
     setDashboardSubTab(subTab);
     startTransition(() => {
       setActiveTab(`reportes-dashboard-${subTab}`);
@@ -1811,6 +1811,15 @@ const AppContentInternal: React.FC<{
       );
     }
 
+    // Manejar sub-rutas de Planta Proc
+    if (activeTab.startsWith('planta-proc-')) {
+      return (
+        <div className="p-4">
+          <PLCMedicionesChart />
+        </div>
+      );
+    }
+
     // Manejar sub-rutas de reportes
     if (activeTab.startsWith('reportes-')) {
       const reporteTab = activeTab.replace('reportes-', '');
@@ -1907,12 +1916,6 @@ const AppContentInternal: React.FC<{
               }>
                 <UmbralesPorLoteLazy />
               </Suspense>
-            );
-          case 'sensores-planta':
-            return (
-              <div className="p-4">
-                <PLCMedicionesChart />
-              </div>
             );
           default:
             if (reporteTab === 'dashboard') {

@@ -7,7 +7,7 @@ import type { EChartsOption } from 'echarts';
 import { hexToRgba } from '../../utils/chartUtils';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useFilterSync } from '../../hooks/useFilterSync';
-import { useEChartsReady } from 'hooks/useEChartsReady';
+
 import { PLCDataTable } from './PLCDataTable';
 
 const COLORS = ['#f97316', '#10b981', '#3b82f6', '#ef4444', '#8b5cf6', '#06b6d4', '#84cc16', '#ec4899'];
@@ -19,7 +19,7 @@ interface PLCMedicionesChartProps {}
 
 export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
   const { t } = useLanguage();
-  const { isReady, chartRef } = useEChartsReady();
+  const chartRef = useRef<any>(null);
 
   const [nodos, setNodos] = useState<any[]>([]);
   const [tipos, setTipos] = useState<any[]>([]);
@@ -35,6 +35,7 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
   const [nodoDropdownPosition, setNodoDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
   const nodoDropdownRef = useRef<HTMLDivElement>(null);
   const [fundosInfo, setFundosInfo] = useState<Map<number, any>>(new Map());
+  const [plcNodoids, setPlcNodoids] = useState<Set<number>>(new Set());
   const { syncDashboardSelectionToGlobal } = useFilterSync(fundosInfo);
 
   const enrichNodoForSync = useCallback((nodo: any) => {
@@ -85,13 +86,27 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
     const loadInitialData = async () => {
       try {
         setLoading(true);
-        const [nodosData, tiposData, ubicacionesData, fundosData, empresasData] = await Promise.all([
+        const [nodosData, tiposData, ubicacionesData, fundosData, empresasData, sensorData, localizacionData] = await Promise.all([
           JoySenseService.getTableData('nodo', 1000),
           JoySenseService.getTableData('tipo', 100),
           JoySenseService.getTableData('ubicacion', 1000),
           JoySenseService.getTableData('fundo', 100),
-          JoySenseService.getTableData('empresa', 100)
+          JoySenseService.getTableData('empresa', 100),
+          JoySenseService.getTableData('sensor', 100),
+          JoySenseService.getTableData('localizacion', 1000)
         ]);
+        
+        const plcSensorids = new Set(
+          (sensorData || [])
+            .filter((s: any) => s.tipoid === 3 || s.tipoid === 4)
+            .map((s: any) => s.sensorid)
+        );
+        const plcNodoidsSet = new Set(
+          (localizacionData || [])
+            .filter((l: any) => plcSensorids.has(l.sensorid))
+            .map((l: any) => l.nodoid)
+        );
+        setPlcNodoids(plcNodoidsSet);
         
         const nodesWithInfo = (nodosData || []).map((nodo: any) => {
           const ubicacion = ubicacionesData?.find((u: any) => u.ubicacionid === nodo.ubicacionid);
@@ -134,6 +149,7 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
 
   const loadMediciones = useCallback(async () => {
     if (!selectedNodo?.nodoid) {
+      console.log('[PLC] loadMediciones: no nodo selected, skipping');
       setMediciones([]);
       return;
     }
@@ -141,6 +157,7 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
     const startDateTime = `${dateRange.start} 00:00:00`;
     const endDateTime = `${dateRange.end} 23:59:59`;
 
+    console.log('[PLC] loadMediciones: calling RPC', { nodoid: selectedNodo.nodoid, start: startDateTime, end: endDateTime });
     try {
       setLoadingData(true);
       const data = await SupabaseRPCService.getMedicionesNodoDetallado({
@@ -148,6 +165,7 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
         startDate: startDateTime,
         endDate: endDateTime
       });
+      console.log('[PLC] loadMediciones: RPC returned', { count: data?.length, data: data?.slice(0, 2) });
       setMediciones(data || []);
     } catch (error) {
       console.error('[PLC] Error loading mediciones:', error);
@@ -164,14 +182,15 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
   }, [selectedNodo, dateRange, loadMediciones]);
 
   const filteredNodos = useMemo(() => {
-    if (!nodoSearchTerm) return nodos;
+    const plcNodes = nodos.filter(n => plcNodoids.has(n.nodoid));
+    if (!nodoSearchTerm) return plcNodes;
     const term = nodoSearchTerm.toLowerCase();
-    return nodos.filter(n => 
+    return plcNodes.filter(n => 
       n.fundo_nombre?.toLowerCase().includes(term) ||
       n.ubicacion_nombre?.toLowerCase().includes(term) ||
       n.nodo?.toLowerCase().includes(term)
     );
-  }, [nodos, nodoSearchTerm]);
+  }, [nodos, nodoSearchTerm, plcNodoids]);
 
   useEffect(() => {
     if (isNodoDropdownOpen && nodoDropdownRef.current) {
@@ -216,7 +235,11 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
   }, [isNodoDropdownOpen]);
 
   const chartData = useMemo(() => {
-    if (!mediciones || mediciones.length === 0) return [];
+    console.log('[PLC] chartData memo: processing', { medicionesCount: mediciones?.length });
+    if (!mediciones || mediciones.length === 0) {
+      console.log('[PLC] chartData memo: no mediciones, returning empty');
+      return [];
+    }
 
     const groupedByTime: Map<string, Map<string, number>> = new Map();
 
@@ -657,6 +680,7 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
         </div>
       )}
 
+      {console.log('[PLC] render branch', { selectedNodo: !!selectedNodo, loadingData, chartDataLength: chartData.length, showDataTable }), false}
       {selectedNodo && showDataTable ? (
         <div className="mt-4">
           <PLCDataTable 
@@ -687,14 +711,12 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
 
           {!loadingData && selectedNodo && chartData.length > 0 && (
             <div style={{ height: 'calc(100vh - 320px)', minHeight: '400px', width: '100%' }}>
-              {isReady && (
-                <ReactECharts
-                  ref={chartRef}
-                  option={option}
-                  style={{ height: '100%', width: '100%' }}
-                  opts={{ renderer: 'canvas' }}
-                />
-              )}
+              <ReactECharts
+                ref={chartRef}
+                option={option}
+                style={{ height: '100%', width: '100%' }}
+                opts={{ renderer: 'canvas' }}
+              />
             </div>
           )}
         </>
