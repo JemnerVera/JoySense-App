@@ -477,7 +477,7 @@ export class SupabaseRPCService {
           p_end_date: params.endDate
         }) as any;
       
-      const { data, error } = await query1.range(0, 99999);
+      const { data, error } = await query1.range(0, 9999);
 
       if (error) {
         // Si la función aún no existe, retornar array vacío
@@ -503,9 +503,8 @@ export class SupabaseRPCService {
 
   /**
    * Obtiene mediciones detalladas de un nodo con agregación inteligente según el rango
-   * - Para rangos <= 7 días: Devuelve datos detallados (todos los puntos)
-   * - Para rangos 7-30 días: Agrupa por hora preservando sensores
-   * - Para rangos 30-60 días: Agrupa por 6 horas preservando sensores
+   * - Para rangos <= 1 día: Devuelve datos detallados
+   * - Para rangos > 1 día: Agrupa por buckets (30min hasta 6h)
    * @param params Parámetros de la consulta
    * @returns Array de mediciones con información completa de sensores
    */
@@ -540,7 +539,7 @@ export class SupabaseRPCService {
           p_start_date: params.startDate ? `${params.startDate}` : null
         }) as any; // Type assertion for query builder support
       
-      const { data, error } = await query.range(0, 99999); // Bypass límite 1000 filas; 100k suficiente para intervalos con muchos puntos
+      const { data, error } = await query.range(0, 9999);
 
 
       if (error) {
