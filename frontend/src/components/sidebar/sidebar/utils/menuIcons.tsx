@@ -251,6 +251,13 @@ export const IconWeatherResumen = () => (
   </svg>
 );
 
+export const IconReservorios = () => (
+  <svg className="w-4 h-4" {...svgProps}>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 2C8.5 6 5 9.5 5 13a7 7 0 1014 0c0-3.5-3.5-7-7-11z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15a2 2 0 100-4 2 2 0 000 4z" />
+  </svg>
+);
+
 export const IconPlantaProc = () => (
   <svg className="w-5 h-5" {...svgProps}>
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />

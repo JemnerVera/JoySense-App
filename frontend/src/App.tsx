@@ -74,6 +74,7 @@ import {
 // Componentes directos (no lazy)
 import { PLCMedicionesChart } from './components/Dashboard/PLCMedicionesChart';
 import { PLCMapeoDashboard } from './components/Dashboard/PLCMapeoDashboard';
+import { ReservorioDashboard } from './components/Dashboard/ReservorioDashboard';
 
 // 9. Hooks
 import { useAppSidebar } from './hooks/useAppSidebar';
@@ -1830,6 +1831,19 @@ const AppContentInternal: React.FC<{
           <PLCMedicionesChart />
         </div>
       );
+    }
+
+    // Manejar sub-rutas de Reservorios
+    if (activeTab.startsWith('reservorios-')) {
+      const reservoriosTab = activeTab.replace('reservorios-', '');
+      if (reservoriosTab === 'dashboard') {
+        return (
+          <div className="p-4 h-full">
+            <ReservorioDashboard />
+          </div>
+        );
+      }
+      return <div className="p-4 h-full"><ReservorioDashboard /></div>;
     }
 
     // Manejar sub-rutas de reportes

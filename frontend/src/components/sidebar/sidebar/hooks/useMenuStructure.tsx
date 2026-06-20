@@ -42,6 +42,7 @@ import {
   IconWeatherHistory,
   IconWeatherResumen,
   IconPlantaProc,
+  IconReservorios,
 } from '../utils/menuIcons';
 
 export function useMenuStructure() {
@@ -272,6 +273,19 @@ export function useMenuStructure() {
             id: 'mapeo-sensores',
             label: 'MAPEO DE SENSORES',
             icon: <IconMapeo />,
+          },
+        ],
+      },
+      {
+        id: 'reservorios',
+        label: t('menu.reservorios'),
+        icon: <IconReservorios />,
+        color: 'cyan',
+        subMenus: [
+          {
+            id: 'dashboard',
+            label: 'DASHBOARD RESERVORIO',
+            icon: <IconDashboard />,
           },
         ],
       },
