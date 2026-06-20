@@ -204,44 +204,39 @@ export function ReservorioDashboard() {
     end: getLocalDateString(now),
   });
 
-  // ── Initial load: build reservoir entries from sensor + localizacion + nodo ──
+  // ── Initial load: build reservoir entries from sensor + localizacion (via geografia endpoint) ──
   useEffect(() => {
     const load = async () => {
       setLoading(true);
       try {
-        const [sensorData, localizacionData, nodoData, fundosData, empresasData] = await Promise.all([
+        const [localizacionData, sensorData] = await Promise.all([
+          JoySenseService.getLocalizacionesParaMediciones(1000),
           JoySenseService.getTableData('sensor', 100),
-          JoySenseService.getTableData('localizacion', 1000),
-          JoySenseService.getTableData('nodo', 1000),
-          JoySenseService.getTableData('fundo', 100),
-          JoySenseService.getTableData('empresa', 100),
         ]);
-
-        const empresasMap = new Map();
-        (empresasData || []).forEach((e: any) => empresasMap.set(e.empresaid, e));
-        const fundosMap = new Map();
-        (fundosData || []).forEach((f: any) => {
-          const empresa = empresasMap.get(f.empresaid);
-          fundosMap.set(f.fundoid, { ...f, empresa, paisid: empresa?.paisid });
-        });
-        setFundosInfo(fundosMap);
-
-        const reservorioSensorids = new Set(
-          (sensorData || []).filter((s: any) => RESERVORIO_TIPO_IDS.includes(s.tipoid)).map((s: any) => s.sensorid)
-        );
 
         const sensorMap = new Map<number, any>();
         (sensorData || []).forEach((s: any) => sensorMap.set(s.sensorid, s));
 
-        const nodoMap = new Map<number, any>();
-        (nodoData || []).forEach((n: any) => nodoMap.set(n.nodoid, n));
+        const fundosMap = new Map();
+        (localizacionData || []).forEach((loc: any) => {
+          const fundo = loc.nodo?.ubicacion?.zona?.fundo;
+          if (fundo && !fundosMap.has(fundo.fundoid)) {
+            fundosMap.set(fundo.fundoid, {
+              ...fundo,
+              empresa: fundo.empresa || null,
+              paisid: fundo.empresa?.paisid || null,
+            });
+          }
+        });
+        setFundosInfo(fundosMap);
 
         const grouped = new Map<number, ReservoirEntry>();
 
         (localizacionData || []).forEach((loc: any) => {
-          if (!reservorioSensorids.has(loc.sensorid)) return;
+          if (!loc.tipoid || !RESERVORIO_TIPO_IDS.includes(Number(loc.tipoid))) return;
+
+          const nodo = loc.nodo;
           const sensor = sensorMap.get(loc.sensorid);
-          const nodo = nodoMap.get(loc.nodoid);
           const locId = loc.localizacionid;
 
           if (!grouped.has(locId)) {
@@ -256,11 +251,11 @@ export function ReservorioDashboard() {
           const exists = entry.nodos.some((n) => n.nodoid === loc.nodoid && n.sensorid === loc.sensorid);
           if (!exists) {
             entry.nodos.push({
-              nodoid: loc.nodoid,
+              nodoid: nodo?.nodoid || loc.nodoid,
               nodo: nodo?.nodo || `Nodo ${loc.nodoid}`,
               sensorid: loc.sensorid,
               sensor: sensor?.sensor || `Sensor ${loc.sensorid}`,
-              tipoid: sensor?.tipoid || 0,
+              tipoid: loc.tipoid,
               tipo: sensor?.tipo || '',
             });
           }

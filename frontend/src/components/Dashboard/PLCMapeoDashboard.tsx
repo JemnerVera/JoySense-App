@@ -225,46 +225,53 @@ export function PLCMapeoDashboard() {
     end: getLocalDateString(now),
   });
 
-  // ── Initial load: sensor + localizacion for PLC nodoids, ubicacion + fundo for dropdown ──
+  // ── Initial load: localizaciones (via geografia endpoint) + tipos for dropdown ──
   useEffect(() => {
     const loadInitialData = async () => {
       try {
         setLoading(true);
-        const [sensorData, localizacionData, ubicacionesData, fundosData, empresasData, tiposData, nodoData] = await Promise.all([
-          JoySenseService.getTableData('sensor', 100),
-          JoySenseService.getTableData('localizacion', 1000),
-          JoySenseService.getTableData('ubicacion', 1000),
-          JoySenseService.getTableData('fundo', 100),
-          JoySenseService.getTableData('empresa', 100),
+        const [localizacionData, tiposData] = await Promise.all([
+          JoySenseService.getLocalizacionesParaMediciones(1000),
           JoySenseService.getTableData('tipo', 100),
-          JoySenseService.getTableData('nodo', 1000),
         ]);
 
-        const plcSensorids = new Set(
-          (sensorData || []).filter((s: any) => s.tipoid === 3 || s.tipoid === 4).map((s: any) => s.sensorid)
-        );
-        const plcNodoidsSet = new Set(
-          (localizacionData || []).filter((l: any) => plcSensorids.has(l.sensorid)).map((l: any) => l.nodoid)
-        );
-        setPlcNodoids(plcNodoidsSet);
-
+        const plcNodoidsSet = new Set<number>();
         const nodoMap = new Map<number, number>();
-        (nodoData || []).forEach((n: any) => {
-          if (n.nodoid && n.ubicacionid) nodoMap.set(n.nodoid, n.ubicacionid);
+        const ubicacionesSet = new Map<number, any>();
+        const fundosMap = new Map<number, any>();
+
+        (localizacionData || []).forEach((loc: any) => {
+          const nodo = loc.nodo;
+          if (!nodo || !nodo.nodoid) return;
+
+          if (loc.tipoid && (loc.tipoid === 3 || loc.tipoid === 4)) {
+            plcNodoidsSet.add(loc.nodoid);
+          }
+
+          if (nodo.ubicacionid && !nodoMap.has(nodo.nodoid)) {
+            nodoMap.set(nodo.nodoid, nodo.ubicacionid);
+          }
+
+          const ubicacion = nodo.ubicacion;
+          if (ubicacion?.ubicacionid && !ubicacionesSet.has(ubicacion.ubicacionid)) {
+            ubicacionesSet.set(ubicacion.ubicacionid, ubicacion);
+          }
+
+          const fundo = ubicacion?.zona?.fundo;
+          if (fundo?.fundoid && !fundosMap.has(fundo.fundoid)) {
+            fundosMap.set(fundo.fundoid, {
+              ...fundo,
+              empresa: fundo.empresa || null,
+              paisid: fundo.empresa?.paisid || null,
+            });
+          }
         });
+
+        setPlcNodoids(plcNodoidsSet);
         setNodoUbicacionMap(nodoMap);
-
-        setUbicaciones(ubicacionesData || []);
-        setTipos(tiposData || []);
-
-        const empresasMap = new Map();
-        (empresasData || []).forEach((empresa: any) => empresasMap.set(empresa.empresaid, empresa));
-        const fundosMap = new Map();
-        (fundosData || []).forEach((fundo: any) => {
-          const empresa = empresasMap.get(fundo.empresaid);
-          fundosMap.set(fundo.fundoid, { ...fundo, empresa, paisid: empresa?.paisid });
-        });
+        setUbicaciones(Array.from(ubicacionesSet.values()));
         setFundosInfo(fundosMap);
+        setTipos(tiposData || []);
       } catch (error) {
         console.error('[PLCMapeo] Error loading initial data:', error);
       } finally {

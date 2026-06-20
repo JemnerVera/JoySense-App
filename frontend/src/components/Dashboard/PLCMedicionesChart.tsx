@@ -86,58 +86,50 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
     const loadInitialData = async () => {
       try {
         setLoading(true);
-        const [nodosData, tiposData, ubicacionesData, fundosData, empresasData, sensorData, localizacionData] = await Promise.all([
-          JoySenseService.getTableData('nodo', 1000),
+        const [localizacionData, tiposData] = await Promise.all([
+          JoySenseService.getLocalizacionesParaMediciones(1000),
           JoySenseService.getTableData('tipo', 100),
-          JoySenseService.getTableData('ubicacion', 1000),
-          JoySenseService.getTableData('fundo', 100),
-          JoySenseService.getTableData('empresa', 100),
-          JoySenseService.getTableData('sensor', 100),
-          JoySenseService.getTableData('localizacion', 1000)
         ]);
-        
-        const plcSensorids = new Set(
-          (sensorData || [])
-            .filter((s: any) => s.tipoid === 3 || s.tipoid === 4)
-            .map((s: any) => s.sensorid)
-        );
-        const plcNodoidsSet = new Set(
-          (localizacionData || [])
-            .filter((l: any) => plcSensorids.has(l.sensorid))
-            .map((l: any) => l.nodoid)
-        );
-        setPlcNodoids(plcNodoidsSet);
-        
-        const nodesWithInfo = (nodosData || []).map((nodo: any) => {
-          const ubicacion = ubicacionesData?.find((u: any) => u.ubicacionid === nodo.ubicacionid);
-          const fundo = fundosData?.find((f: any) => f.fundoid === ubicacion?.zona?.fundoid);
-          return {
-            ...nodo,
-            fundo_nombre: fundo?.fundo || '',
-            ubicacion_nombre: ubicacion?.ubicacion || '',
-            fundoid: ubicacion?.zona?.fundoid
-          };
-        });
-        
-        setNodos(nodesWithInfo || []);
-        setTipos(tiposData || []);
-        
-        const empresasMap = new Map();
-        (empresasData || []).forEach((empresa: any) => {
-          empresasMap.set(empresa.empresaid, empresa);
-        });
-        
+
+        const plcNodoidsSet = new Set<number>();
         const fundosMap = new Map();
-        (fundosData || []).forEach((fundo: any) => {
-          const empresa = empresasMap.get(fundo.empresaid);
-          fundosMap.set(fundo.fundoid, {
-            ...fundo,
-            empresa: empresa,
-            paisid: empresa?.paisid
-          });
+        const nodesMap = new Map<number, any>();
+
+        (localizacionData || []).forEach((loc: any) => {
+          const nodo = loc.nodo;
+          if (!nodo || !nodo.nodoid) return;
+
+          if (loc.tipoid && (loc.tipoid === 3 || loc.tipoid === 4)) {
+            plcNodoidsSet.add(loc.nodoid);
+          }
+
+          const ubicacion = nodo.ubicacion;
+          const fundo = ubicacion?.zona?.fundo;
+
+          if (fundo?.fundoid && !fundosMap.has(fundo.fundoid)) {
+            fundosMap.set(fundo.fundoid, {
+              ...fundo,
+              empresa: fundo.empresa || null,
+              paisid: fundo.empresa?.paisid || null,
+            });
+          }
+
+          if (!nodesMap.has(nodo.nodoid)) {
+            nodesMap.set(nodo.nodoid, {
+              nodoid: nodo.nodoid,
+              nodo: nodo.nodo,
+              ubicacionid: nodo.ubicacionid,
+              fundo_nombre: fundo?.fundo || '',
+              ubicacion_nombre: ubicacion?.ubicacion || '',
+              fundoid: fundo?.fundoid || null,
+            });
+          }
         });
+
+        setPlcNodoids(plcNodoidsSet);
         setFundosInfo(fundosMap);
-        console.log('[PLC] fundosInfo cargado, size:', fundosMap.size);
+        setNodos(Array.from(nodesMap.values()));
+        setTipos(tiposData || []);
       } catch (error) {
         console.error('Error loading initial data:', error);
       } finally {
