@@ -75,6 +75,7 @@ import {
 import { PLCMedicionesChart } from './components/Dashboard/PLCMedicionesChart';
 import { PLCMapeoDashboard } from './components/Dashboard/PLCMapeoDashboard';
 import { ReservorioDashboard } from './components/Dashboard/ReservorioDashboard';
+import { TractorDashboard } from './components/Dashboard/TractorDashboard';
 
 // 9. Hooks
 import { useAppSidebar } from './hooks/useAppSidebar';
@@ -1844,6 +1845,19 @@ const AppContentInternal: React.FC<{
         );
       }
       return <div className="p-4 h-full"><ReservorioDashboard /></div>;
+    }
+
+    // Manejar sub-rutas de Tractores
+    if (activeTab.startsWith('tractores-')) {
+      const tractorTab = activeTab.replace('tractores-', '');
+      if (tractorTab === 'dashboard') {
+        return (
+          <div className="p-4 h-full">
+            <TractorDashboard />
+          </div>
+        );
+      }
+      return <div className="p-4 h-full"><TractorDashboard /></div>;
     }
 
     // Manejar sub-rutas de reportes

@@ -43,6 +43,7 @@ import {
   IconWeatherResumen,
   IconPlantaProc,
   IconReservorios,
+  IconTractor,
 } from '../utils/menuIcons';
 
 export function useMenuStructure() {
@@ -285,6 +286,19 @@ export function useMenuStructure() {
           {
             id: 'dashboard',
             label: 'DASHBOARD RESERVORIO',
+            icon: <IconDashboard />,
+          },
+        ],
+      },
+      {
+        id: 'tractores',
+        label: t('menu.tractores'),
+        icon: <IconTractor />,
+        color: 'yellow',
+        subMenus: [
+          {
+            id: 'dashboard',
+            label: 'DASHBOARD TRACTOR',
             icon: <IconDashboard />,
           },
         ],
