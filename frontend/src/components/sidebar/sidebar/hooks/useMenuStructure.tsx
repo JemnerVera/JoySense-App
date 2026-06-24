@@ -109,6 +109,80 @@ export function useMenuStructure() {
         ],
       },
       {
+        id: 'planta-proc',
+        label: t('tabs.plantaProc'),
+        icon: <IconPlantaProc />,
+        color: 'blue',
+        subMenus: [
+          {
+            id: 'dashboard',
+            label: 'DASHBOARD PLC',
+            icon: <IconSensor />,
+          },
+          {
+            id: 'mapeo-sensores',
+            label: 'MAPEO DE SENSORES',
+            icon: <IconMapeo />,
+          },
+        ],
+      },
+      {
+        id: 'meteorologia',
+        label: t('menu.meteorologia'),
+        icon: <IconWeather />,
+        color: 'gray',
+        requiresPermission: true,
+        requiredMenu: 'METEOROLOGÍA',
+        subMenus: [
+          {
+            id: 'conditions',
+            label: t('menu.condicionActual'),
+            icon: <IconWeatherConditions />,
+          },
+          {
+            id: 'details',
+            label: t('menu.detalles'),
+            icon: <IconWeatherDetails />,
+          },
+          {
+            id: 'data-historica',
+            label: t('menu.dataHistorica'),
+            icon: <IconWeatherHistory />,
+          },
+          {
+            id: 'resumen',
+            label: t('menu.resumen'),
+            icon: <IconWeatherResumen />,
+          },
+        ],
+      },
+      {
+        id: 'reservorios',
+        label: t('menu.reservorios'),
+        icon: <IconReservorios />,
+        color: 'cyan',
+        subMenus: [
+          {
+            id: 'dashboard',
+            label: 'DASHBOARD RESERVORIO',
+            icon: <IconDashboard />,
+          },
+        ],
+      },
+      {
+        id: 'tractores',
+        label: t('menu.tractores'),
+        icon: <IconTractor />,
+        color: 'yellow',
+        subMenus: [
+          {
+            id: 'dashboard',
+            label: 'DASHBOARD TRACTOR',
+            icon: <IconDashboard />,
+          },
+        ],
+      },
+      {
         id: 'agrupacion',
         label: t('menu.carpeta'),
         icon: <IconAgrupacion />,
@@ -256,80 +330,6 @@ export function useMenuStructure() {
             id: 'basicas',
             label: t('menu.ajustesGenerales'),
             icon: <IconConfiguracion />,
-          },
-        ],
-      },
-      {
-        id: 'planta-proc',
-        label: t('tabs.plantaProc'),
-        icon: <IconPlantaProc />,
-        color: 'blue',
-        subMenus: [
-          {
-            id: 'dashboard',
-            label: 'DASHBOARD PLC',
-            icon: <IconSensor />,
-          },
-          {
-            id: 'mapeo-sensores',
-            label: 'MAPEO DE SENSORES',
-            icon: <IconMapeo />,
-          },
-        ],
-      },
-      {
-        id: 'reservorios',
-        label: t('menu.reservorios'),
-        icon: <IconReservorios />,
-        color: 'cyan',
-        subMenus: [
-          {
-            id: 'dashboard',
-            label: 'DASHBOARD RESERVORIO',
-            icon: <IconDashboard />,
-          },
-        ],
-      },
-      {
-        id: 'tractores',
-        label: t('menu.tractores'),
-        icon: <IconTractor />,
-        color: 'yellow',
-        subMenus: [
-          {
-            id: 'dashboard',
-            label: 'DASHBOARD TRACTOR',
-            icon: <IconDashboard />,
-          },
-        ],
-      },
-      {
-        id: 'meteorologia',
-        label: t('menu.meteorologia'),
-        icon: <IconWeather />,
-        color: 'gray',
-        requiresPermission: true,
-        requiredMenu: 'METEOROLOGÍA',
-        subMenus: [
-          {
-            id: 'conditions',
-            label: t('menu.condicionActual'),
-            icon: <IconWeatherConditions />,
-          },
-          {
-            id: 'details',
-            label: t('menu.detalles'),
-            icon: <IconWeatherDetails />,
-          },
-          {
-            id: 'data-historica',
-            label: t('menu.dataHistorica'),
-            icon: <IconWeatherHistory />,
-          },
-          {
-            id: 'resumen',
-            label: t('menu.resumen'),
-            icon: <IconWeatherResumen />,
           },
         ],
       },
