@@ -582,10 +582,8 @@ export function ReservorioDashboard() {
                     <StatusMiniChart
                       key={metric.id}
                       metric={metric}
-                      chartData={chartData}
                       currentValue={currentValue}
                       hasData={chartData.length > 0}
-                      onOpenAnalysis={handleOpenMetricDetail}
                       t={t}
                     />
                   );
