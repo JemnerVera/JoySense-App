@@ -230,24 +230,24 @@ export function ReservorioDashboard() {
         });
         setFundosInfo(fundosMap);
 
-        const grouped = new Map<number, ReservoirEntry>();
+        const grouped = new Map<string, ReservoirEntry>();
 
         (localizacionData || []).forEach((loc: any) => {
           if (!loc.tipoid || !RESERVORIO_TIPO_IDS.includes(Number(loc.tipoid))) return;
 
           const nodo = loc.nodo;
           const sensor = sensorMap.get(loc.sensorid);
-          const locId = loc.localizacionid;
+          const locName = loc.localizacion || `Localización ${loc.localizacionid}`;
 
-          if (!grouped.has(locId)) {
-            grouped.set(locId, {
-              localizacionid: locId,
-              localizacion: loc.localizacion || `Localización ${locId}`,
+          if (!grouped.has(locName)) {
+            grouped.set(locName, {
+              localizacionid: loc.localizacionid,
+              localizacion: locName,
               nodos: [],
             });
           }
 
-          const entry = grouped.get(locId)!;
+          const entry = grouped.get(locName)!;
           const exists = entry.nodos.some((n) => n.nodoid === loc.nodoid && n.sensorid === loc.sensorid);
           if (!exists) {
             entry.nodos.push({
@@ -503,9 +503,9 @@ export function ReservorioDashboard() {
                   <div className="max-h-48 overflow-y-auto dashboard-scrollbar-blue">
                     {filteredEntries.length > 0 ? filteredEntries.map((entry) => (
                       <button
-                        key={entry.localizacionid}
+                        key={entry.localizacion}
                         onClick={() => handleEntrySelect(entry)}
-                        className={`w-full text-left px-3 py-2 text-base transition-colors font-mono tracking-wider ${selectedEntry?.localizacionid === entry.localizacionid ? 'bg-cyan-500 text-white' : 'text-gray-700 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-800'}`}
+                        className={`w-full text-left px-3 py-2 text-base transition-colors font-mono tracking-wider ${selectedEntry?.localizacion === entry.localizacion ? 'bg-cyan-500 text-white' : 'text-gray-700 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-800'}`}
                       >
                         <div>{entry.localizacion}</div>
                         <div className="text-xs text-gray-500 dark:text-neutral-400">
