@@ -10,6 +10,7 @@ import { useFilterSync } from '../../hooks/useFilterSync';
 import { useEChartsReady } from '../../hooks/useEChartsReady';
 import { PLCDataTable } from './PLCDataTable';
 import { MetricMiniChart } from './components/MetricMiniChart';
+import { StatusMiniChart } from './components/StatusMiniChart';
 import type { MetricConfig } from './types';
 
 const RESERVORIO_TIPO_IDS = [13, 14, 19];
@@ -33,18 +34,19 @@ function deriveMetricColor(name: string): string {
   return COLORS[Math.abs(name.split('').reduce((a, c) => a + c.charCodeAt(0), 0)) % COLORS.length];
 }
 
-function processChartData(mediciones: any[], metricName: string) {
+function processChartData(mediciones: any[], metricName: string, nodoName?: string) {
   if (!mediciones || mediciones.length === 0) return [];
   const groupedByTime: Map<string, Map<string, number>> = new Map();
   mediciones.forEach((m: any) => {
     const mName = (m.metrica_nombre || '').toLowerCase().trim();
     if (!mName.includes(metricName.toLowerCase())) return;
+    if (nodoName && m._nodo !== nodoName) return;
     const fecha = new Date(m.fecha);
     const minutes = fecha.getMinutes();
     const roundedMinutes = Math.floor(minutes / AGGREGATION_MINUTES) * AGGREGATION_MINUTES;
     fecha.setHours(fecha.getHours(), roundedMinutes, 0, 0);
     const timeKey = fecha.toISOString().replace('T', ' ').slice(0, 16);
-    const label = m.localizacion_nombre || `Localización ${m.localizacionid}`;
+    const label = m._nodo || m.localizacion_nombre || `Localización ${m.localizacionid}`;
     const valor = Number(m.medicion);
     if (!groupedByTime.has(timeKey)) groupedByTime.set(timeKey, new Map());
     const existing = groupedByTime.get(timeKey)!.get(label);
@@ -284,7 +286,11 @@ export function ReservorioDashboard() {
             nodoid: n.nodoid,
             startDate: startDateTime,
             endDate: endDateTime,
-          })
+          }).then(data => (data || []).map(m => ({
+            ...m,
+            _nodoid: n.nodoid,
+            _nodo: n.nodo,
+          })))
         )
       );
       const merged = results.flat().filter(Boolean);
@@ -330,15 +336,20 @@ export function ReservorioDashboard() {
   // ── Metric derivation ──
   const availableMetrics = useMemo<MetricConfig[]>(() => {
     if (!mediciones || mediciones.length === 0) return [];
-    const metricSet = new Map<string, { name: string; values: number[] }>();
+    const metricSet = new Map<string, { name: string; values: number[]; nodo: string }>();
     mediciones.forEach((m: any) => {
-      const name = (m.metrica_nombre || 'Métrica').trim();
-      if (!metricSet.has(name)) metricSet.set(name, { name, values: [] });
+      const nodo = m._nodo || `Nodo ${m._nodoid}`;
+      const key = `${(m.metrica_nombre || 'Métrica').trim()}||${nodo}`;
+      if (!metricSet.has(key)) {
+        metricSet.set(key, { name: `${(m.metrica_nombre || 'Métrica').trim()} (${nodo})`, values: [], nodo });
+      }
       const val = Number(m.medicion);
-      if (!isNaN(val) && val !== null) metricSet.get(name)!.values.push(val);
+      if (!isNaN(val) && val !== null) metricSet.get(key)!.values.push(val);
     });
     return Array.from(metricSet.values()).map((entry) => {
+      const rawName = entry.name.replace(/\s*\([^)]*\)\s*$/, '').trim();
       const dataKey = entry.name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+      const allBinary = entry.values.every(v => v === 0 || v === 1);
       return {
         id: dataKey,
         title: entry.name,
@@ -347,6 +358,9 @@ export function ReservorioDashboard() {
         dataKey,
         description: `Medición de ${entry.name}`,
         ranges: { min: 0, max: 100, optimal: [20, 80] },
+        isBinary: allBinary,
+        nodo: entry.nodo,
+        rawName,
       } as MetricConfig;
     });
   }, [mediciones]);
@@ -355,7 +369,7 @@ export function ReservorioDashboard() {
     const cache: { [key: string]: any[] } = {};
     if (!mediciones || mediciones.length === 0) return cache;
     availableMetrics.forEach((metric) => {
-      cache[metric.dataKey] = processChartData(mediciones, metric.title);
+      cache[metric.dataKey] = processChartData(mediciones, metric.rawName || metric.title, metric.nodo);
     });
     return cache;
   }, [mediciones, availableMetrics]);
@@ -364,8 +378,13 @@ export function ReservorioDashboard() {
     const values: { [key: string]: number } = {};
     if (!mediciones || mediciones.length === 0) return values;
     availableMetrics.forEach((metric) => {
-      const metricName = metric.title.toLowerCase();
-      const m = mediciones.filter((m: any) => (m.metrica_nombre || '').toLowerCase().includes(metricName));
+      const rawName = (metric.rawName || metric.title).toLowerCase();
+      const nodoFilter = metric.nodo;
+      const m = mediciones.filter((m: any) => {
+        const matchesMetric = (m.metrica_nombre || '').toLowerCase().includes(rawName);
+        const matchesNodo = !nodoFilter || m._nodo === nodoFilter;
+        return matchesMetric && matchesNodo;
+      });
       if (m.length > 0) {
         const sorted = [...m].sort((a: any, b: any) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
         for (const item of sorted) {
@@ -558,6 +577,19 @@ export function ReservorioDashboard() {
               {availableMetrics.map((metric) => {
                 const chartData = chartDataCache[metric.dataKey] || [];
                 const currentValue = currentValues[metric.dataKey] ?? 0;
+                if (metric.isBinary) {
+                  return (
+                    <StatusMiniChart
+                      key={metric.id}
+                      metric={metric}
+                      chartData={chartData}
+                      currentValue={currentValue}
+                      hasData={chartData.length > 0}
+                      onOpenAnalysis={handleOpenMetricDetail}
+                      t={t}
+                    />
+                  );
+                }
                 return (
                   <MetricMiniChart
                     key={metric.id}

@@ -48,6 +48,9 @@ export interface MetricConfig {
     max: number;
     optimal: [number, number];
   };
+  isBinary?: boolean;
+  nodo?: string;
+  rawName?: string;
 }
 
 export interface ModernDashboardProps {
