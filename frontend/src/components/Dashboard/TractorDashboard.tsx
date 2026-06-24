@@ -231,6 +231,7 @@ export function TractorDashboard() {
   const [initialYAxisDomain, setInitialYAxisDomain] = useState<{ min: number | null; max: number | null }>({ min: null, max: null });
   const { isReady: modalChartReady, containerRef: modalChartContainerRef, chartRef: modalChartRef } = useEChartsReady();
   const { syncDashboardSelectionToGlobal } = useFilterSync(fundosInfo);
+  const [selectedDays, setSelectedDays] = useState<Set<string>>(new Set());
 
   const getLocalDateString = (date: Date): string => {
     const year = date.getFullYear();
@@ -405,6 +406,54 @@ export function TractorDashboard() {
     });
     return coords;
   }, [mediciones]);
+
+  interface DayRoute {
+    day: string;
+    label: string;
+    coords: [number, number][];
+    opacity: number;
+  }
+
+  const daysCoords = useMemo<DayRoute[]>(() => {
+    if (!mediciones || mediciones.length === 0) return [];
+    const pairs = new Map<string, { lat: number; lng: number; time: Date }>();
+    mediciones.forEach((m: any) => {
+      const name = (m.metrica_nombre || '').toLowerCase().trim();
+      const val = Number(m.medicion);
+      if (isNaN(val)) return;
+      const fecha = new Date(m.fecha);
+      fecha.setMilliseconds(0);
+      const timeKey = fecha.toISOString();
+      if (!pairs.has(timeKey)) {
+        pairs.set(timeKey, { lat: 0, lng: 0, time: fecha });
+      }
+      const pair = pairs.get(timeKey)!;
+      if (name.includes('latitud')) pair.lat = val;
+      if (name.includes('longitud')) pair.lng = val;
+    });
+    const byDay = new Map<string, { time: Date; coords: [number, number][] }>();
+    pairs.forEach((p) => {
+      if (p.lat === 0 || p.lng === 0) return;
+      const dayKey = p.time.toISOString().slice(0, 10);
+      if (!byDay.has(dayKey)) byDay.set(dayKey, { time: p.time, coords: [] });
+      byDay.get(dayKey)!.coords.push([p.lat, p.lng]);
+    });
+    const sorted = Array.from(byDay.entries())
+      .sort(([, a], [, b]) => a.time.getTime() - b.time.getTime());
+    if (sorted.length === 0) return [];
+    const minOpacity = 0.25;
+    const maxOpacity = 1.0;
+    return sorted.map(([day, entry], idx) => {
+      const opacity = sorted.length === 1
+        ? maxOpacity
+        : minOpacity + (maxOpacity - minOpacity) * (idx / (sorted.length - 1));
+      const date = new Date(day + 'T12:00:00');
+      const label = date.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' });
+      return { day, label, coords: entry.coords, opacity };
+    });
+  }, [mediciones]);
+
+  useEffect(() => { setSelectedDays(new Set(daysCoords.map(d => d.day))); }, [daysCoords]);
 
   const availableMetrics = useMemo<MetricConfig[]>(() => {
     if (!mediciones || mediciones.length === 0) return [];
@@ -690,6 +739,32 @@ export function TractorDashboard() {
                 </div>
               )}
 
+              {daysCoords.length > 1 && (
+                <div className="flex flex-wrap items-center gap-2">
+                  {daysCoords.map((day) => {
+                    const active = selectedDays.has(day.day);
+                    return (
+                      <button
+                        key={day.day}
+                        onClick={() => {
+                          const next = new Set(selectedDays);
+                          if (active) next.delete(day.day);
+                          else next.add(day.day);
+                          setSelectedDays(next);
+                        }}
+                        className={`px-3 py-1 rounded-full text-xs font-mono font-medium transition-colors ${
+                          active
+                            ? 'bg-yellow-500 text-white'
+                            : 'border border-gray-300 dark:border-neutral-600 text-gray-500 dark:text-neutral-400 hover:bg-gray-100 dark:hover:bg-neutral-800'
+                        }`}
+                      >
+                        {day.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
               {/* Route Map */}
               {routeCoords.length > 1 && (
                 <div className="border border-gray-300 dark:border-neutral-700 rounded-lg overflow-hidden" style={{ height: '450px' }}>
@@ -698,10 +773,13 @@ export function TractorDashboard() {
                       attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                       url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     />
-                    <Polyline
-                      positions={routeCoords}
-                      pathOptions={{ color: '#eab308', weight: 4, opacity: 0.8 }}
-                    />
+                    {daysCoords.filter(d => selectedDays.has(d.day)).map((day) => (
+                      <Polyline
+                        key={day.day}
+                        positions={day.coords}
+                        pathOptions={{ color: '#eab308', weight: 4, opacity: day.opacity }}
+                      />
+                    ))}
                     <Marker position={routeCoords[0]} icon={createTractorIcon('#22c55e', true)}>
                       <Popup>Inicio — {selectedEntry.localizacion}</Popup>
                     </Marker>
