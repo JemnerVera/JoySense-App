@@ -333,12 +333,15 @@ export function TractorDashboard() {
         )
       );
       const merged = results.flat().filter(Boolean);
-      const seen = new Set<number>();
-      setMediciones(merged.filter((m: any) => {
-        if (!m.medicionid || seen.has(m.medicionid)) return false;
-        seen.add(m.medicionid);
-        return true;
-      }));
+      console.log('[TractorDashboard] mediciones load:', {
+        nodosSolicitados: selectedEntry.nodos.length,
+        startDateTime,
+        endDateTime,
+        rawCount: merged.length,
+        metricasUnicas: [...new Set(merged.map((m: any) => m.metrica_nombre))],
+        sample: merged.slice(0, 2),
+      });
+      setMediciones(merged);
     } catch (error) {
       console.error('[TractorDashboard] Error loading mediciones:', error);
       setMediciones([]);
@@ -347,7 +350,10 @@ export function TractorDashboard() {
     }
   }, [selectedEntry, dateRange]);
 
-  useEffect(() => { if (selectedEntry) loadMediciones(); }, [selectedEntry, dateRange, loadMediciones]);
+  const loadMedicionesRef = useRef(loadMediciones);
+  loadMedicionesRef.current = loadMediciones;
+
+  useEffect(() => { if (selectedEntry) loadMedicionesRef.current(); }, [selectedEntry, dateRange]);
   useEffect(() => { setSelectedMetricDetail(null); }, [selectedEntry]);
 
   const filteredEntries = useMemo(() => {
@@ -387,10 +393,17 @@ export function TractorDashboard() {
       if (name.includes('latitud')) pair.lat = val;
       if (name.includes('longitud')) pair.lng = val;
     });
-    return Array.from(pairs.values())
+    const coords = Array.from(pairs.values())
       .filter(p => p.lat !== 0 && p.lng !== 0)
       .sort((a, b) => a.time.getTime() - b.time.getTime())
       .map(p => [p.lat, p.lng] as [number, number]);
+    console.log('[TractorDashboard] routeCoords:', {
+      totalPairs: pairs.size,
+      validCoords: coords.length,
+      first: coords[0],
+      last: coords[coords.length - 1],
+    });
+    return coords;
   }, [mediciones]);
 
   const availableMetrics = useMemo<MetricConfig[]>(() => {
@@ -406,6 +419,15 @@ export function TractorDashboard() {
       }
       const val = Number(m.medicion);
       if (!isNaN(val) && val !== null) metricSet.get(key)!.values.push(val);
+    });
+    console.log('[TractorDashboard] availableMetrics:', {
+      medicionesCount: mediciones.length,
+      metricKeys: Array.from(metricSet.keys()),
+      metricDetails: Array.from(metricSet.entries()).map(([k, v]) => ({
+        key: k,
+        valuesCount: v.values.length,
+        sampleValue: v.values[0],
+      })),
     });
     return Array.from(metricSet.values()).map((entry) => {
       const rawName = entry.name.replace(/\s*\([^)]*\)\s*$/, '').trim();
@@ -431,6 +453,13 @@ export function TractorDashboard() {
     if (!mediciones || mediciones.length === 0) return cache;
     availableMetrics.forEach((metric) => {
       cache[metric.dataKey] = processChartData(mediciones, metric.rawName || metric.title, metric.nodo);
+      console.log(`[TractorDashboard] chartData for ${metric.dataKey}:`, {
+        rawName: metric.rawName,
+        nodo: metric.nodo,
+        chartDataLength: cache[metric.dataKey]?.length ?? 0,
+        firstPoint: cache[metric.dataKey]?.[0] ?? null,
+        lastPoint: cache[metric.dataKey]?.[cache[metric.dataKey].length - 1] ?? null,
+      });
     });
     return cache;
   }, [mediciones, availableMetrics]);
