@@ -346,12 +346,12 @@ export function ReservorioDashboard() {
   // ── Metric derivation ──
   const availableMetrics = useMemo<MetricConfig[]>(() => {
     if (!mediciones || mediciones.length === 0) return [];
-    const metricSet = new Map<string, { name: string; values: number[]; nodo: string }>();
+    const metricSet = new Map<string, { name: string; values: number[]; nodo: string; unit: string }>();
     mediciones.forEach((m: any) => {
       const nodo = m._nodo || `Nodo ${m._nodoid}`;
       const key = `${(m.metrica_nombre || 'Métrica').trim()}||${nodo}`;
       if (!metricSet.has(key)) {
-        metricSet.set(key, { name: `${(m.metrica_nombre || 'Métrica').trim()} (${nodo})`, values: [], nodo });
+        metricSet.set(key, { name: `${(m.metrica_nombre || 'Métrica').trim()} (${nodo})`, values: [], nodo, unit: m.unidad || '' });
       }
       const val = Number(m.medicion);
       if (!isNaN(val) && val !== null) metricSet.get(key)!.values.push(val);
@@ -364,7 +364,7 @@ export function ReservorioDashboard() {
         id: dataKey,
         title: entry.name,
         color: deriveMetricColor(entry.name),
-        unit: '',
+        unit: entry.unit,
         dataKey,
         description: `Medición de ${entry.name}`,
         ranges: { min: 0, max: 100, optimal: [20, 80] },
