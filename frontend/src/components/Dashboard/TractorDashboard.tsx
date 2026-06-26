@@ -212,6 +212,31 @@ interface TractorEntry {
   nodos: NodoSensorInfo[];
 }
 
+interface GpsPoint {
+  lat: number;
+  lng: number;
+  heading: number;
+  speed: number;
+  time: Date;
+  timestamp: string;
+}
+
+function createHeadingIcon(heading: number) {
+  return L.divIcon({
+    className: '',
+    html: `<div style="width:24px;height:24px;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5));">
+        <svg viewBox="0 0 24 24" width="24" height="24" style="display:block;">
+          <g transform="rotate(${heading}, 12, 12)">
+            <polygon points="12,2 5,20 12,15 19,20" fill="#eab308" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+          </g>
+        </svg>
+      </div>`,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+    popupAnchor: [0, -14],
+  });
+}
+
 export function TractorDashboard() {
   const { t } = useLanguage();
 
@@ -377,9 +402,9 @@ export function TractorDashboard() {
     setSearchTerm('');
   }, []);
 
-  const routeCoords = useMemo<[number, number][]>(() => {
+  const gpsPoints = useMemo<GpsPoint[]>(() => {
     if (!mediciones || mediciones.length === 0) return [];
-    const pairs = new Map<string, { lat: number; lng: number; time: Date }>();
+    const pointMap = new Map<string, GpsPoint>();
     mediciones.forEach((m: any) => {
       const name = (m.metrica_nombre || '').toLowerCase().trim();
       const val = Number(m.medicion);
@@ -387,25 +412,35 @@ export function TractorDashboard() {
       const fecha = new Date(m.fecha);
       fecha.setMilliseconds(0);
       const timeKey = fecha.toISOString();
-      if (!pairs.has(timeKey)) {
-        pairs.set(timeKey, { lat: 0, lng: 0, time: fecha });
+      if (!pointMap.has(timeKey)) {
+        pointMap.set(timeKey, {
+          lat: 0, lng: 0, heading: NaN, speed: NaN,
+          time: fecha, timestamp: timeKey.replace('T', ' ').slice(0, 19),
+        });
       }
-      const pair = pairs.get(timeKey)!;
-      if (name.includes('latitud')) pair.lat = val;
-      if (name.includes('longitud')) pair.lng = val;
+      const point = pointMap.get(timeKey)!;
+      if (name.includes('latitud')) point.lat = val;
+      if (name.includes('longitud')) point.lng = val;
+      if (name.includes('rumbo')) point.heading = val;
+      if (name.includes('velocidad')) point.speed = val;
     });
-    const coords = Array.from(pairs.values())
+    const result = Array.from(pointMap.values())
       .filter(p => p.lat !== 0 && p.lng !== 0)
-      .sort((a, b) => a.time.getTime() - b.time.getTime())
-      .map(p => [p.lat, p.lng] as [number, number]);
-    console.log('[TractorDashboard] routeCoords:', {
-      totalPairs: pairs.size,
-      validCoords: coords.length,
-      first: coords[0],
-      last: coords[coords.length - 1],
+      .sort((a, b) => a.time.getTime() - b.time.getTime());
+    console.log('[TractorDashboard] gpsPoints:', {
+      rawPairs: pointMap.size,
+      validPoints: result.length,
+      first: result[0] ? { lat: result[0].lat, lng: result[0].lng } : null,
+      last: result[result.length - 1] ? { lat: result[result.length - 1].lat, lng: result[result.length - 1].lng } : null,
+      withHeading: result.filter(p => !isNaN(p.heading)).length,
+      withSpeed: result.filter(p => !isNaN(p.speed)).length,
     });
-    return coords;
+    return result;
   }, [mediciones]);
+
+  const routeCoords = useMemo<[number, number][]>(() => {
+    return gpsPoints.map(p => [p.lat, p.lng] as [number, number]);
+  }, [gpsPoints]);
 
   interface DayRoute {
     day: string;
@@ -415,25 +450,8 @@ export function TractorDashboard() {
   }
 
   const daysCoords = useMemo<DayRoute[]>(() => {
-    if (!mediciones || mediciones.length === 0) return [];
-    const pairs = new Map<string, { lat: number; lng: number; time: Date }>();
-    mediciones.forEach((m: any) => {
-      const name = (m.metrica_nombre || '').toLowerCase().trim();
-      const val = Number(m.medicion);
-      if (isNaN(val)) return;
-      const fecha = new Date(m.fecha);
-      fecha.setMilliseconds(0);
-      const timeKey = fecha.toISOString();
-      if (!pairs.has(timeKey)) {
-        pairs.set(timeKey, { lat: 0, lng: 0, time: fecha });
-      }
-      const pair = pairs.get(timeKey)!;
-      if (name.includes('latitud')) pair.lat = val;
-      if (name.includes('longitud')) pair.lng = val;
-    });
     const byDay = new Map<string, { time: Date; coords: [number, number][] }>();
-    pairs.forEach((p) => {
-      if (p.lat === 0 || p.lng === 0) return;
+    gpsPoints.forEach((p) => {
       const dayKey = p.time.toISOString().slice(0, 10);
       if (!byDay.has(dayKey)) byDay.set(dayKey, { time: p.time, coords: [] });
       byDay.get(dayKey)!.coords.push([p.lat, p.lng]);
@@ -451,7 +469,7 @@ export function TractorDashboard() {
       const label = date.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' });
       return { day, label, coords: entry.coords, opacity };
     });
-  }, [mediciones]);
+  }, [gpsPoints]);
 
   useEffect(() => { setSelectedDays(new Set(daysCoords.map(d => d.day))); }, [daysCoords]);
 
@@ -780,6 +798,22 @@ export function TractorDashboard() {
                         pathOptions={{ color: '#eab308', weight: 4, opacity: day.opacity }}
                       />
                     ))}
+                    {gpsPoints
+                      .filter((_, idx) => idx % 5 === 0)
+                      .map((p, idx) => (
+                        <Marker
+                          key={`h-${p.timestamp}`}
+                          position={[p.lat, p.lng]}
+                          icon={createHeadingIcon(p.heading)}
+                        >
+                          <Popup>
+                            <div className="font-mono text-sm">
+                              <div>Velocidad: {isNaN(p.speed) ? '-' : `${p.speed.toFixed(1)} km/h`}</div>
+                              <div className="text-gray-500 text-xs mt-1">{p.timestamp}</div>
+                            </div>
+                          </Popup>
+                        </Marker>
+                      ))}
                     <Marker position={routeCoords[0]} icon={createTractorIcon('#22c55e', true)}>
                       <Popup>Inicio — {selectedEntry.localizacion}</Popup>
                     </Marker>
