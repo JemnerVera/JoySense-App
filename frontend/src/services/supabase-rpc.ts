@@ -539,7 +539,7 @@ export class SupabaseRPCService {
           p_start_date: params.startDate ? `${params.startDate}` : null
         }) as any; // Type assertion for query builder support
       
-      const { data, error } = await query.range(0, 9999);
+      const { data, error } = await query;
 
 
       if (error) {

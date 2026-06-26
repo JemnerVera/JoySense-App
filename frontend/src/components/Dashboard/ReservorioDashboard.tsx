@@ -280,27 +280,31 @@ export function ReservorioDashboard() {
     const endDateTime = `${dateRange.end} 23:59:59`;
     try {
       setLoadingData(true);
+      // 🔍 LOG: parámetros del RPC
+      selectedEntry.nodos.forEach((n) => console.log(`[ReservorioDashboard] 📞 RPC params: nodoid=${n.nodoid} nodo="${n.nodo}" start="${startDateTime}" end="${endDateTime}"`));
       const results = await Promise.all(
         selectedEntry.nodos.map((n) =>
           SupabaseRPCService.getMedicionesNodoDetallado({
             nodoid: n.nodoid,
             startDate: startDateTime,
             endDate: endDateTime,
-          }).then(data => (data || []).map(m => ({
-            ...m,
-            _nodoid: n.nodoid,
-            _nodo: n.nodo,
-          })))
+          }).then(data => {
+            console.log(`[ReservorioDashboard] 📞 RPC devolvió ${(data || []).length} registros para nodoid=${n.nodoid} nodo="${n.nodo}"`);
+            return (data || []).map(m => ({
+              ...m,
+              _nodoid: n.nodoid,
+              _nodo: n.nodo,
+            }));
+          })
         )
       );
       const merged = results.flat().filter(Boolean);
-      // Deduplicate by medicionid
-      const seen = new Set<number>();
-      setMediciones(merged.filter((m: any) => {
-        if (!m.medicionid || seen.has(m.medicionid)) return false;
-        seen.add(m.medicionid);
-        return true;
-      }));
+      // RPC already returns unique rows per node (SQL GROUP BY guarantees it).
+      // No dedup needed — the old `.range(0,9999)` pagination was removed.
+      // Filter out any rows without a valid metrica_nombre.
+      const valid = merged.filter((m: any) => m.metrica_nombre);
+      console.log('[ReservorioDashboard] 📥 RPC devolvió mediciones:', valid.length, 'registros');
+      setMediciones(valid);
     } catch (error) {
       console.error('[ReservorioDashboard] Error loading mediciones:', error);
       setMediciones([]);
@@ -346,7 +350,7 @@ export function ReservorioDashboard() {
       const val = Number(m.medicion);
       if (!isNaN(val) && val !== null) metricSet.get(key)!.values.push(val);
     });
-    return Array.from(metricSet.values()).map((entry) => {
+    const result = Array.from(metricSet.values()).map((entry) => {
       const rawName = entry.name.replace(/\s*\([^)]*\)\s*$/, '').trim();
       const dataKey = entry.name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
       const allBinary = entry.values.every(v => v === 0 || v === 1);
@@ -363,6 +367,9 @@ export function ReservorioDashboard() {
         rawName,
       } as MetricConfig;
     });
+    // 🔍 LOG: métricas disponibles generadas
+    console.log('[ReservorioDashboard] 📊 availableMetrics:', result.map(m => ({ title: m.title, rawName: m.rawName, dataKey: m.dataKey, isBinary: m.isBinary, nodo: m.nodo })));
+    return result;
   }, [mediciones]);
 
   const chartDataCache = useMemo<{ [key: string]: any[] }>(() => {
@@ -370,6 +377,10 @@ export function ReservorioDashboard() {
     if (!mediciones || mediciones.length === 0) return cache;
     availableMetrics.forEach((metric) => {
       cache[metric.dataKey] = processChartData(mediciones, metric.rawName || metric.title, metric.nodo);
+    });
+    // 🔍 LOG: cuántos puntos de chartData por cada métrica
+    Object.entries(cache).forEach(([key, data]) => {
+      console.log(`[ReservorioDashboard] 📈 chartDataCache["${key}"] = ${data.length} puntos`);
     });
     return cache;
   }, [mediciones, availableMetrics]);
@@ -393,6 +404,8 @@ export function ReservorioDashboard() {
         }
       }
     });
+    // 🔍 LOG: valores actuales calculados
+    console.log('[ReservorioDashboard] 💡 currentValues:', Object.entries(values).map(([k, v]) => `${k}=${v}`).join(', '));
     return values;
   }, [mediciones, availableMetrics]);
 
@@ -577,6 +590,8 @@ export function ReservorioDashboard() {
               {availableMetrics.map((metric) => {
                 const chartData = chartDataCache[metric.dataKey] || [];
                 const currentValue = currentValues[metric.dataKey] ?? 0;
+                // 🔍 LOG: renderizando métrica
+                console.log(`[ReservorioDashboard] 🖼 Render: title="${metric.title}" type=${metric.isBinary ? 'StatusMiniChart' : 'MetricMiniChart'} hasData=${chartData.length > 0} currentValue=${currentValue} dataKey=${metric.dataKey}`);
                 if (metric.isBinary) {
                   return (
                     <StatusMiniChart
