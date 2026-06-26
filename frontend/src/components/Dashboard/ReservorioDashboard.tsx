@@ -309,8 +309,15 @@ export function ReservorioDashboard() {
       // No dedup needed — the old `.range(0,9999)` pagination was removed.
       // Filter out any rows without a valid metrica_nombre.
       const valid = merged.filter((m: any) => m.metrica_nombre);
-      console.log('[ReservorioDashboard] 📥 RPC devolvió mediciones:', valid.length, 'registros');
-      setMediciones(valid);
+      // Normalize Nivel values > 50 from cm to m (nodoid=393 reports in cm)
+      const normalized = valid.map((m: any) => {
+        if ((m.metrica_nombre || '').toLowerCase() === 'nivel' && Number(m.medicion) > 50) {
+          return { ...m, medicion: Number(m.medicion) / 100 };
+        }
+        return m;
+      });
+      console.log('[ReservorioDashboard] 📥 RPC devolvió mediciones:', normalized.length, 'registros');
+      setMediciones(normalized);
     } catch (error) {
       console.error('[ReservorioDashboard] Error loading mediciones:', error);
       setMediciones([]);
