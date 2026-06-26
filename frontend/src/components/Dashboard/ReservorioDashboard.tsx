@@ -7,7 +7,7 @@ import type { EChartsOption } from 'echarts';
 import { hexToRgba } from '../../utils/chartUtils';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { useFilterSync } from '../../hooks/useFilterSync';
-import { useEChartsReady } from '../../hooks/useEChartsReady';
+
 import { PLCDataTable } from './PLCDataTable';
 import { MetricMiniChart } from './components/MetricMiniChart';
 import { StatusMiniChart } from './components/StatusMiniChart';
@@ -119,8 +119,15 @@ function buildDetailedOption(
       boundaryGap: false,
       data: xAxisData,
       axisLabel: {
-        color: '#666', fontFamily: 'Inter, sans-serif', rotate: 45,
-        interval: Math.floor(xAxisData.length / 24),
+        color: '#666', fontFamily: 'Inter, sans-serif', interval: Math.floor(xAxisData.length / 24),
+        formatter: (value: string) => {
+          const parts = value.split(' ');
+          if (parts.length < 2) return value;
+          const dateParts = parts[0].split('-');
+          const timeParts = parts[1].split(':');
+          if (dateParts.length < 3) return value;
+          return `${timeParts[0]}:${timeParts[1]}\n${dateParts[2]}/${dateParts[1]}`;
+        },
       },
       axisLine: { lineStyle: { color: '#ccc' } },
       splitLine: { show: false },
@@ -129,7 +136,7 @@ function buildDetailedOption(
       type: 'value' as const,
       min: yDomain.min !== null ? yDomain.min : (calcDomain.min ?? undefined),
       max: yDomain.max !== null ? yDomain.max : (calcDomain.max ?? undefined),
-      axisLabel: { color: '#666', fontFamily: 'Inter, sans-serif', formatter: (v: number) => v.toFixed(1) },
+      axisLabel: { color: '#666', fontFamily: 'Inter, sans-serif', formatter: (v: number) => Number.isInteger(v) ? v.toString() : v.toFixed(1) },
       splitLine: { lineStyle: { color: '#eee' } },
       nameTextStyle: { color: '#666', fontSize: 10 },
     },
@@ -183,7 +190,6 @@ export function ReservorioDashboard() {
   const [selectedMetricDetail, setSelectedMetricDetail] = useState<MetricConfig | null>(null);
   const [yAxisDomain, setYAxisDomain] = useState<{ min: number | null; max: number | null }>({ min: null, max: null });
   const [initialYAxisDomain, setInitialYAxisDomain] = useState<{ min: number | null; max: number | null }>({ min: null, max: null });
-  const { isReady: modalChartReady, containerRef: modalChartContainerRef, chartRef: modalChartRef } = useEChartsReady();
   const { syncDashboardSelectionToGlobal } = useFilterSync(fundosInfo);
 
   const getLocalDateString = (date: Date): string => {
@@ -433,8 +439,13 @@ export function ReservorioDashboard() {
       });
     });
     if (minVal === Infinity || maxVal === -Infinity) return { min: null, max: null };
-    const padding = (maxVal - minVal) * 0.1;
-    return { min: Math.floor(minVal - padding), max: Math.ceil(maxVal + padding) };
+    const padding = Math.max((maxVal - minVal) * 0.1, 0.5);
+    const rawMin = minVal - padding;
+    const rawMax = maxVal + padding;
+    // Round to nice numbers: if range < 10, use 1-decimal precision; else integer
+    const precision = (maxVal - minVal + padding * 2) < 10 ? 1 : 0;
+    const round = (v: number, p: number) => Math.round(v * Math.pow(10, p)) / Math.pow(10, p);
+    return { min: round(rawMin, precision), max: round(rawMax, precision) };
   }, [selectedDetailChartData]);
 
   useEffect(() => {
@@ -632,8 +643,9 @@ export function ReservorioDashboard() {
       {/* Metric Detail Modal */}
       {selectedMetricDetail && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-neutral-900 rounded-xl border border-gray-300 dark:border-neutral-700 w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between px-6 py-3 border-b border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 rounded-t-xl flex-shrink-0">
+          <div className="bg-white dark:bg-neutral-900 w-full h-screen flex flex-col">
+            {/* Top bar: title only */}
+            <div className="flex items-center justify-between px-6 py-3 border-b border-gray-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 flex-shrink-0">
               <div className="flex items-center gap-3">
                 <button onClick={handleCloseMetricDetail} className="flex items-center gap-2 px-4 py-2 bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg font-mono text-sm font-bold transition-colors">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
@@ -641,22 +653,22 @@ export function ReservorioDashboard() {
                 </button>
                 <h3 className="text-lg font-bold text-cyan-500 font-mono">{selectedMetricDetail.title}</h3>
               </div>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1">
-                  <label className="text-gray-600 dark:text-neutral-400 text-xs font-medium font-mono uppercase">Y:</label>
-                  <input type="number" step="0.1" value={yAxisDomain.min !== null && !isNaN(yAxisDomain.min) ? Math.round(yAxisDomain.min * 100) / 100 : ''}
-                    onChange={(e) => { const v = e.target.value; if (v === '') { setYAxisDomain({ ...yAxisDomain, min: null }); return; } const n = Number(v); if (!isNaN(n) && isFinite(n)) setYAxisDomain({ ...yAxisDomain, min: n }); }} placeholder="Min" className="h-8 w-20 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-sm font-mono" />
-                  <span className="text-gray-600 dark:text-neutral-400 text-sm">-</span>
-                  <input type="number" step="0.1" value={yAxisDomain.max !== null && !isNaN(yAxisDomain.max) ? Math.round(yAxisDomain.max * 100) / 100 : ''}
-                    onChange={(e) => { const v = e.target.value; if (v === '') { setYAxisDomain({ ...yAxisDomain, max: null }); return; } const n = Number(v); if (!isNaN(n) && isFinite(n)) setYAxisDomain({ ...yAxisDomain, max: n }); }} placeholder="Max" className="h-8 w-20 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-sm font-mono" />
-                  <button onClick={() => setYAxisDomain(initialYAxisDomain)} className="h-8 px-3 bg-gray-500 hover:bg-gray-600 text-white rounded text-sm font-mono">RESET</button>
-                </div>
-                <div className="w-px h-8 bg-gray-300 dark:border-neutral-600"></div>
-                <button onClick={() => setShowDataTable(!showDataTable)}
-                  className={`h-8 px-4 rounded font-mono text-sm font-medium ${showDataTable ? 'bg-cyan-600 text-white' : 'bg-gray-200 dark:bg-neutral-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-neutral-600'}`}>
-                  {showDataTable ? 'GRÁFICO' : 'DATOS'}
-                </button>
+            </div>
+            {/* Controls bar: Y-axis limits + DATOS button */}
+            <div className="flex items-center justify-between px-6 py-2 border-b border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 flex-shrink-0">
+              <div className="flex items-center gap-1">
+                <label className="text-gray-600 dark:text-neutral-400 text-xs font-medium font-mono uppercase mr-1">Y:</label>
+                <input type="number" step="0.1" value={yAxisDomain.min !== null && !isNaN(yAxisDomain.min) ? Math.round(yAxisDomain.min * 100) / 100 : ''}
+                  onChange={(e) => { const v = e.target.value; if (v === '') { setYAxisDomain({ ...yAxisDomain, min: null }); return; } const n = Number(v); if (!isNaN(n) && isFinite(n)) setYAxisDomain({ ...yAxisDomain, min: n }); }} placeholder="Min" className="h-8 w-20 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-sm font-mono" />
+                <span className="text-gray-600 dark:text-neutral-400 text-sm mx-1">-</span>
+                <input type="number" step="0.1" value={yAxisDomain.max !== null && !isNaN(yAxisDomain.max) ? Math.round(yAxisDomain.max * 100) / 100 : ''}
+                  onChange={(e) => { const v = e.target.value; if (v === '') { setYAxisDomain({ ...yAxisDomain, max: null }); return; } const n = Number(v); if (!isNaN(n) && isFinite(n)) setYAxisDomain({ ...yAxisDomain, max: n }); }} placeholder="Max" className="h-8 w-20 px-2 bg-white dark:bg-neutral-800 border border-gray-300 dark:border-neutral-600 rounded text-sm font-mono" />
+                <button onClick={() => setYAxisDomain(initialYAxisDomain)} className="h-8 px-3 bg-gray-500 hover:bg-gray-600 text-white rounded text-sm font-mono ml-2">RESET</button>
               </div>
+              <button onClick={() => setShowDataTable(!showDataTable)}
+                className={`h-8 px-4 rounded font-mono text-sm font-medium ${showDataTable ? 'bg-cyan-600 text-white' : 'bg-gray-200 dark:bg-neutral-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-neutral-600'}`}>
+                {showDataTable ? 'GRÁFICO' : 'DATOS'}
+              </button>
             </div>
 
             <div className="flex-1 p-4 overflow-auto">
@@ -668,11 +680,7 @@ export function ReservorioDashboard() {
                   <p className="text-gray-500 dark:text-neutral-400 font-mono text-sm">No hay datos disponibles</p>
                 </div>
               ) : (
-                <div ref={modalChartContainerRef} style={{ width: '100%', minHeight: '500px', height: '65vh' }}>
-                  {modalChartReady && (
-                    <ReactECharts ref={modalChartRef} option={detailOption} style={{ width: '100%', height: '100%' }} opts={{ renderer: 'canvas' }} />
-                  )}
-                </div>
+                <ReactECharts option={detailOption} style={{ width: '100%', height: '65vh' }} opts={{ renderer: 'canvas' }} />
               )}
             </div>
           </div>
