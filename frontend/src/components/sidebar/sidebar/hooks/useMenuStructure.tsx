@@ -167,6 +167,11 @@ export function useMenuStructure() {
             label: 'DASHBOARD RESERVORIO',
             icon: <IconDashboard />,
           },
+          {
+            id: 'estado',
+            label: 'ESTADO DEL RESERVORIO',
+            icon: <IconDashboard />,
+          },
         ],
       },
       {

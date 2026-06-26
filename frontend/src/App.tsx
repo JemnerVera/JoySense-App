@@ -76,6 +76,7 @@ import { PLCMedicionesChart } from './components/Dashboard/PLCMedicionesChart';
 import { PLCMapeoDashboard } from './components/Dashboard/PLCMapeoDashboard';
 import { ReservorioDashboard } from './components/Dashboard/ReservorioDashboard';
 import { TractorDashboard } from './components/Dashboard/TractorDashboard';
+import { EstadoReservorioDashboard } from './components/Dashboard/EstadoReservorioDashboard';
 
 // 9. Hooks
 import { useAppSidebar } from './hooks/useAppSidebar';
@@ -1841,6 +1842,13 @@ const AppContentInternal: React.FC<{
         return (
           <div className="p-4 h-full">
             <ReservorioDashboard />
+          </div>
+        );
+      }
+      if (reservoriosTab === 'estado') {
+        return (
+          <div className="p-4 h-full">
+            <EstadoReservorioDashboard />
           </div>
         );
       }
