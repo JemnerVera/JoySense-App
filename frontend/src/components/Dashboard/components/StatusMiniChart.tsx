@@ -28,15 +28,22 @@ function StatusMiniChartComponent({
 
   return (
     <div
-      className={`bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-700 rounded-lg p-1.5 min-w-0 max-w-[180px] ${
+      className={`bg-gray-100 dark:bg-neutral-800 border border-gray-300 dark:border-neutral-700 rounded-lg px-3 py-6 w-full ${
         !hasData ? 'opacity-60' : ''
       }`}
     >
-      <div className="flex items-center space-x-1 min-w-0">
-        <span className="text-xs text-gray-800 dark:text-white flex-shrink-0">⚡</span>
-        <h3 className="text-xs font-bold text-gray-800 dark:text-white font-mono tracking-wider truncate leading-tight">
-          {metric.title}
-        </h3>
+      <div className="flex items-start space-x-1 min-w-0">
+        <span className="text-xs text-gray-800 dark:text-white flex-shrink-0 mt-0.5">⚡</span>
+        <div className="min-w-0">
+          <h3 className="text-xs font-bold text-gray-800 dark:text-white font-mono tracking-wider leading-tight">
+            {metric.rawName || metric.title}
+          </h3>
+          {metric.nodo && (
+            <span className="text-[10px] text-gray-500 dark:text-neutral-400 font-mono leading-none">
+              ({metric.nodo})
+            </span>
+          )}
+        </div>
       </div>
       {hasData ? (
         <div className="pt-0.5 flex items-center gap-1">

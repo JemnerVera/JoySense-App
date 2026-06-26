@@ -287,36 +287,29 @@ export function ReservorioDashboard() {
     try {
       setLoadingData(true);
       // 🔍 LOG: parámetros del RPC
-      selectedEntry.nodos.forEach((n) => console.log(`[ReservorioDashboard] 📞 RPC params: nodoid=${n.nodoid} nodo="${n.nodo}" start="${startDateTime}" end="${endDateTime}"`));
       const results = await Promise.all(
         selectedEntry.nodos.map((n) =>
           SupabaseRPCService.getMedicionesNodoDetallado({
             nodoid: n.nodoid,
             startDate: startDateTime,
             endDate: endDateTime,
-          }).then(data => {
-            console.log(`[ReservorioDashboard] 📞 RPC devolvió ${(data || []).length} registros para nodoid=${n.nodoid} nodo="${n.nodo}"`);
-            return (data || []).map(m => ({
+          }).then(data =>
+            (data || []).map(m => ({
               ...m,
               _nodoid: n.nodoid,
               _nodo: n.nodo,
-            }));
-          })
+            }))
+          )
         )
       );
       const merged = results.flat().filter(Boolean);
-      // RPC already returns unique rows per node (SQL GROUP BY guarantees it).
-      // No dedup needed — the old `.range(0,9999)` pagination was removed.
-      // Filter out any rows without a valid metrica_nombre.
       const valid = merged.filter((m: any) => m.metrica_nombre);
-      // Normalize Nivel values > 50 from cm to m (nodoid=393 reports in cm)
       const normalized = valid.map((m: any) => {
         if ((m.metrica_nombre || '').toLowerCase() === 'nivel' && Number(m.medicion) > 50) {
           return { ...m, medicion: Number(m.medicion) / 100 };
         }
         return m;
       });
-      console.log('[ReservorioDashboard] 📥 RPC devolvió mediciones:', normalized.length, 'registros');
       setMediciones(normalized);
     } catch (error) {
       console.error('[ReservorioDashboard] Error loading mediciones:', error);
@@ -380,8 +373,6 @@ export function ReservorioDashboard() {
         rawName,
       } as MetricConfig;
     });
-    // 🔍 LOG: métricas disponibles generadas
-    console.log('[ReservorioDashboard] 📊 availableMetrics:', result.map(m => ({ title: m.title, rawName: m.rawName, dataKey: m.dataKey, isBinary: m.isBinary, nodo: m.nodo })));
     return result;
   }, [mediciones]);
 
@@ -390,10 +381,6 @@ export function ReservorioDashboard() {
     if (!mediciones || mediciones.length === 0) return cache;
     availableMetrics.forEach((metric) => {
       cache[metric.dataKey] = processChartData(mediciones, metric.rawName || metric.title, metric.nodo);
-    });
-    // 🔍 LOG: cuántos puntos de chartData por cada métrica
-    Object.entries(cache).forEach(([key, data]) => {
-      console.log(`[ReservorioDashboard] 📈 chartDataCache["${key}"] = ${data.length} puntos`);
     });
     return cache;
   }, [mediciones, availableMetrics]);
@@ -417,8 +404,6 @@ export function ReservorioDashboard() {
         }
       }
     });
-    // 🔍 LOG: valores actuales calculados
-    console.log('[ReservorioDashboard] 💡 currentValues:', Object.entries(values).map(([k, v]) => `${k}=${v}`).join(', '));
     return values;
   }, [mediciones, availableMetrics]);
 
@@ -604,12 +589,10 @@ export function ReservorioDashboard() {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 overflow-hidden">
               {availableMetrics.map((metric) => {
                 const chartData = chartDataCache[metric.dataKey] || [];
                 const currentValue = currentValues[metric.dataKey] ?? 0;
-                // 🔍 LOG: renderizando métrica
-                console.log(`[ReservorioDashboard] 🖼 Render: title="${metric.title}" type=${metric.isBinary ? 'StatusMiniChart' : 'MetricMiniChart'} hasData=${chartData.length > 0} currentValue=${currentValue} dataKey=${metric.dataKey}`);
                 if (metric.isBinary) {
                   return (
                     <StatusMiniChart
