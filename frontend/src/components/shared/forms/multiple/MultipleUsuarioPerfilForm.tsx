@@ -144,13 +144,6 @@ const MultipleUsuarioPerfilForm: React.FC<MultipleUsuarioPerfilFormProps> = ({
 
   // Obtener usuarios que no tienen perfil asignado
   const getUsuariosSinPerfil = () => {
-    console.log('🔍 Debug - getUsuariosSinPerfil INPUT:', {
-      userData: userData,
-      usuarioperfilData: usuarioperfilData,
-      userDataLength: userData?.length,
-      usuarioperfilDataLength: usuarioperfilData?.length
-    });
-
     // Usar los datos reales de usuarioperfil de la base de datos
     const usuariosConPerfil = new Set(
       usuarioperfilData
@@ -158,27 +151,12 @@ const MultipleUsuarioPerfilForm: React.FC<MultipleUsuarioPerfilFormProps> = ({
         .map(up => up.usuarioid)
     );
     
-    console.log('🔍 Debug - getUsuariosSinPerfil PROCESSING:', {
-      totalUsuarios: userData.length,
-      usuariosConPerfil: usuariosConPerfil.size,
-      usuarioperfilData: usuarioperfilData.length,
-      usuariosConPerfilIds: Array.from(usuariosConPerfil),
-      usuariosActivos: userData.filter(u => u.statusid === STATUS.ACTIVO).length,
-      usuariosInactivos: userData.filter(u => u.statusid === STATUS.INACTIVO).length
-    });
-
     const usuariosSinPerfil = userData.filter(usuario => 
       !usuariosConPerfil.has(usuario.usuarioid)
       // Removido: && usuario.statusid === 1
       // Ahora incluye usuarios activos e inactivos
     );
 
-    console.log('🔍 Debug - getUsuariosSinPerfil RESULT:', {
-      usuariosSinPerfil: usuariosSinPerfil,
-      usuariosSinPerfilCount: usuariosSinPerfil.length,
-      usuariosSinPerfilIds: usuariosSinPerfil.map(u => u.usuarioid)
-    });
-    
     return usuariosSinPerfil;
   };
 
@@ -196,16 +174,6 @@ const MultipleUsuarioPerfilForm: React.FC<MultipleUsuarioPerfilFormProps> = ({
     const loginMatch = usuario.login?.toLowerCase().includes(usuariosSearchTerm.toLowerCase());
     const firstnameMatch = usuario.firstname?.toLowerCase().includes(usuariosSearchTerm.toLowerCase());
     const lastnameMatch = usuario.lastname?.toLowerCase().includes(usuariosSearchTerm.toLowerCase());
-    
-    console.log('🔍 Debug - filtrado usuario:', {
-      usuario: usuario,
-      usuariosSearchTerm: usuariosSearchTerm,
-      nombreMatch: nombreMatch,
-      emailMatch: emailMatch,
-      loginMatch: loginMatch,
-      firstnameMatch: firstnameMatch,
-      lastnameMatch: lastnameMatch
-    });
     
     return nombreMatch || emailMatch || loginMatch || firstnameMatch || lastnameMatch;
   });

@@ -6,14 +6,6 @@ export const hasSignificantChanges = (
   multipleData: any[] = [],
   massiveFormData: Record<string, any> = {}
 ): boolean => {
-  console.log('🔍 hasSignificantChanges called:', {
-    formData,
-    selectedTable,
-    activeSubTab,
-    multipleData,
-    massiveFormData
-  });
-
   // Solo verificar cambios en pestañas de inserción o masivo
   if (activeSubTab !== 'insert' && activeSubTab !== 'massive') {
     return false;
@@ -85,14 +77,6 @@ export const hasSignificantChanges = (
   if (activeSubTab === 'massive' && massiveFormData.hasData) {
     hasMassiveFormDataChanges = true;
   }
-
-  console.log('🔍 Change detection result:', {
-    significantFields,
-    hasFormDataChanges,
-    hasMultipleDataChanges,
-    hasMassiveFormDataChanges,
-    result: hasFormDataChanges || hasMultipleDataChanges || hasMassiveFormDataChanges
-  });
 
   return hasFormDataChanges || hasMultipleDataChanges || hasMassiveFormDataChanges;
 };

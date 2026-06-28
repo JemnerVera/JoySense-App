@@ -65,17 +65,6 @@ const DashboardUmbrales: React.FC = () => {
         JoySenseService.getTableData('criticidad', 1000)
       ]);
 
-      console.log('📊 Datos cargados para dashboard:', {
-        alertas: alertasData?.length || 0,
-        umbrales: umbralesData?.length || 0,
-        mediciones: medicionesData?.length || 0,
-        nodos: nodosData?.length || 0,
-        metricas: metricasData?.length || 0,
-        tipos: tiposData?.length || 0,
-        ubicaciones: ubicacionesData?.length || 0,
-        criticidades: criticidadesData?.length || 0
-      });
-
       // Procesar alertas reales para el dashboard
       const datosReales: DatosHistoricos[] = [];
       const resumenReal: ResumenAlertas[] = [];

@@ -247,9 +247,6 @@ export class SupabaseRPCService {
         throw new Error('nodoid inválido');
       }
 
-      if (this.DEBUG) {
-        console.log('[SupabaseRPCService] getAlertasPorNodo:', params);
-      }
 
       const { data, error } = await supabaseAuth
         .schema(DB_SCHEMA)
@@ -287,9 +284,6 @@ export class SupabaseRPCService {
         throw new Error('nodoid inválido');
       }
 
-      if (this.DEBUG) {
-        console.log('[SupabaseRPCService] getUmbralesPorNodo:', params);
-      }
 
       const { data, error } = await supabaseAuth
         .schema(DB_SCHEMA)
@@ -333,9 +327,6 @@ export class SupabaseRPCService {
         throw new Error('fundoIds y metricaId son requeridos');
       }
 
-      if (this.DEBUG) {
-        console.log('[SupabaseRPCService] getMetricasPorLocalizacion:', params);
-      }
 
       const { data, error } = await supabaseAuth
         .schema(DB_SCHEMA)
@@ -377,9 +368,6 @@ export class SupabaseRPCService {
    */
   static async getNodosConAlertas(): Promise<NodoConAlertas[]> {
     try {
-      if (this.DEBUG) {
-        console.log('[SupabaseRPCService] getNodosConAlertas');
-      }
 
       const { data, error } = await supabaseAuth
         .schema(DB_SCHEMA)
@@ -416,9 +404,6 @@ export class SupabaseRPCService {
     ubicacionId?: number;
   }): Promise<ResumenMapaNodo[]> {
     try {
-      if (this.DEBUG) {
-        console.log('[SupabaseRPCService] getResumenMapaNodos:', params);
-      }
 
       const { data, error } = await supabaseAuth
         .schema(DB_SCHEMA)
@@ -465,9 +450,6 @@ export class SupabaseRPCService {
         throw new Error('localizacionids es requerido');
       }
 
-      if (this.DEBUG) {
-        console.log('[SupabaseRPCService] getMedicionesAgregadasPorRango:', params);
-      }
 
       const query1 = supabaseAuth
         .schema(DB_SCHEMA)
@@ -620,9 +602,6 @@ export class SupabaseRPCService {
    */
   static async getWeatherStations(): Promise<any[]> {
     try {
-      if (this.DEBUG) {
-        console.log('[SupabaseRPCService] getWeatherStations');
-      }
 
       const { data, error } = await supabaseAuth
         .schema(DB_SCHEMA)

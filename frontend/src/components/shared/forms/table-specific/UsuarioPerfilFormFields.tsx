@@ -69,11 +69,6 @@ export const UsuarioPerfilFormFields: React.FC<UsuarioPerfilFormFieldsProps> = (
         );
         
         setPerfilesExistentes(perfilesDelUsuario);
-        console.log('[UsuarioPerfilFormFields] Perfiles existentes cargados:', {
-          usuarioid,
-          totalPerfiles: perfilesDelUsuario.length,
-          perfiles: perfilesDelUsuario.map((p: any) => ({ perfilid: p.perfilid, statusid: p.statusid }))
-        });
       } catch (error) {
         console.error('[UsuarioPerfilFormFields] Error cargando perfiles existentes:', error);
         setPerfilesExistentes([]);

@@ -848,7 +848,6 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
   // Inicializar métricas disponibles con la métrica inicial cuando se abre el modal
   useEffect(() => {
     if (isOpen && initialMetricaId) {
-      console.log('[MetricaPorLoteModal] Inicializando métricas disponibles con initialMetricaId:', initialMetricaId);
       // Inicializar con la métrica que se pasó como prop
       setAvailableMetricIds(new Set([initialMetricaId]));
     }
@@ -1298,12 +1297,6 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
             <div className="flex-1 flex justify-center">
               <div className="flex flex-wrap items-center justify-center gap-2">
                 {(() => {
-                  console.log('[MetricaPorLoteModal] Renderizando botones de métricas:', {
-                    metricsToShowLength: metricsToShow.length,
-                    metricsToShow: metricsToShow.map(m => ({ id: m.id, title: m.title })),
-                    availableMetricIds: Array.from(availableMetricIds),
-                    initialMetricaId
-                  });
                   
                   if (metricsToShow.length > 0) {
                     return metricsToShow.map((metric) => (
@@ -1345,7 +1338,6 @@ const MetricaPorLoteModal: React.FC<MetricaPorLoteModalProps> = ({
                         };
                       }
                       
-                      console.log('[MetricaPorLoteModal] Usando fallback con initialMetric:', initialMetric);
                       if (initialMetric) {
                         const metric = initialMetric; // Crear una constante para que TypeScript sepa que no es undefined
                         return (

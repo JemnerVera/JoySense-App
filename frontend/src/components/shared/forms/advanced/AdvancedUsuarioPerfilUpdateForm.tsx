@@ -138,13 +138,6 @@ export function AdvancedUsuarioPerfilUpdateForm({
         });
       });
       
-      console.log('🔍 Debug - Entradas a enviar:', updatedEntries.map(entry => ({
-        usuarioid: entry.usuarioid,
-        perfilid: entry.perfilid,
-        statusid: entry.statusid,
-        isNew: !entry.usercreatedid ? 'NUEVA' : 'EXISTENTE'
-      })));
-      
       await onUpdate(updatedEntries);
     } catch (error) {
       console.error('❌ Error en handleUpdate:', error);

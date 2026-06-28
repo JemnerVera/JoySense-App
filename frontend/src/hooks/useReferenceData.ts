@@ -114,15 +114,6 @@ export const useReferenceData = () => {
       setFundos(fundosData);
       setEmpresas(empresasData);
 
-      console.log('✅ Datos de referencia cargados:', {
-        nodos: nodosData.length,
-        metricas: metricasData.length,
-        tipos: tiposData.length,
-        criticidades: criticidadesData.length,
-        ubicaciones: ubicacionesData.length,
-        fundos: fundosData.length,
-        empresas: empresasData.length
-      });
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';

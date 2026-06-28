@@ -269,9 +269,7 @@ export const DetailedEChart: React.FC<DetailedEChartProps> = ({
             
             // Para rangos > 7 días: mostrar solo fechas, respetando el intervalo
             if (dateRangeDays > 7) {
-              if (index === 0 || index === xAxisData.length - 1) {
-                console.log(`[formatter] dateRangeDays > 7, index=${index}, returning date: ${currentDate}`);
-              }
+  
               return currentDate;
             }
             

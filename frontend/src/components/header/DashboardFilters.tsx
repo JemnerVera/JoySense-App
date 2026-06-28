@@ -271,7 +271,6 @@ export const DashboardFilters: React.FC<DashboardFiltersProps> = ({
         setStartDate('');
         setEndDate('');
         setIsFechasDropdownOpen(false);
-        console.log('🔄 Filtros reseteados con Ctrl+R');
       }
     };
     window.addEventListener('keydown', handleKeyDown);

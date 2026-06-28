@@ -996,7 +996,6 @@ const AppContentInternal: React.FC<{
     // IMPORTANTE: requestLeave solo muestra el modal si hay cambios, no ejecuta el cambio inmediatamente
     // Pasar el nuevo activeTab como target, currentTab para revertir, y executeTableChange como onConfirm
     sidebar.requestLeave(newActiveTab, currentTab, () => {
-      console.log('[App] onRevert ejecutado en handleTableSelect, revirtiendo activeTab a', currentTab);
       // Revertir activeTab al valor que tenía antes del click
       setActiveTab(currentTab);
       activeTabRef.current = currentTab;
@@ -1131,37 +1130,15 @@ const AppContentInternal: React.FC<{
   };
 
   const handleDashboardUbicacionChange = (ubicacionIdOrObject: any) => {
-    console.log('[App handleDashboardUbicacionChange] Recibido:', ubicacionIdOrObject, 'tipo:', typeof ubicacionIdOrObject);
-    console.log('[App handleDashboardUbicacionChange] Array ubicaciones disponible:', {
-      length: ubicaciones.length,
-      primeras: ubicaciones.slice(0, 3)
-    });
-    
     let ubicacion = null;
     
-    // Si es un string (ID), buscar el objeto ubicación
     if (typeof ubicacionIdOrObject === 'string') {
       const id = parseInt(ubicacionIdOrObject, 10);
-      console.log('[App handleDashboardUbicacionChange] Buscando ubicacionid:', id, 'en array de', ubicaciones.length, 'ubicaciones');
-      
-      // Debug: mostrar todas las ubicaciones disponibles
-      console.log('[App handleDashboardUbicacionChange] Ubicaciones disponibles:', ubicaciones.map(u => ({
-        ubicacionid: u.ubicacionid,
-        ubicacion: u.ubicacion
-      })));
-      
       ubicacion = ubicaciones.find(u => u.ubicacionid === id) || null;
-      console.log('[App handleDashboardUbicacionChange] Resultado de búsqueda:', {
-        idBuscado: id,
-        ubicacionEncontrada: ubicacion
-      });
     } else if (ubicacionIdOrObject && typeof ubicacionIdOrObject === 'object') {
-      // Si ya es un objeto, usarlo directamente
       ubicacion = ubicacionIdOrObject;
-      console.log('[App handleDashboardUbicacionChange] Ya es objeto:', ubicacion);
     }
     
-    console.log('[App handleDashboardUbicacionChange] ✓ Estableciendo ubicación:', ubicacion);
     setDashboardSelectedUbicacion(ubicacion);
   };
 

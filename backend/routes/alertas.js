@@ -336,10 +336,7 @@ router.get('/umbral/por-nodo', async (req, res) => {
     
     if (reglasUmbralError) throw reglasUmbralError;
     
-    console.log(`[DEBUG /umbral/por-nodo] Paso 3: reglasUmbral encontradas:`, reglasUmbral?.length || 0, 'reglaIds usados:', reglaIds);
-    
     if (!reglasUmbral || reglasUmbral.length === 0) {
-      console.log(`[DEBUG /umbral/por-nodo] No hay umbrales asociados. reglaIds que se buscaron:`, reglaIds);
       return res.json([]);
     }
     
@@ -385,11 +382,6 @@ router.get('/umbral/por-nodo', async (req, res) => {
     
     if (reglasDataError) throw reglasDataError;
     
-    console.log(`[DEBUG /umbral/por-nodo] Paso 5: reglas encontradas:`, reglas?.length || 0);
-    if (reglas && reglas.length > 0) {
-      console.log(`[DEBUG /umbral/por-nodo] Reglas details:`, JSON.stringify(reglas));
-    }
-    
     // Crear mapa de reglas
     const reglasMap = new Map(reglas?.map(r => [r.reglaid, r]) || []);
     
@@ -406,7 +398,6 @@ router.get('/umbral/por-nodo', async (req, res) => {
     // Paso 6: Obtener criticidades desde las reglas asociadas a los umbrales
     // Extraer los criticidadids de las reglas
     const criticidadIds = [...new Set(reglas?.map(r => r.criticidadid).filter(Boolean) || [])];
-    console.log(`[DEBUG /umbral/por-nodo] Paso 6: criticidadIds a buscar (desde reglas):`, criticidadIds);
     
     let criticidadesMap = new Map();
     
@@ -418,16 +409,8 @@ router.get('/umbral/por-nodo', async (req, res) => {
         .in('criticidadid', criticidadIds)
         .eq('statusid', 1);
       
-      console.log(`[DEBUG /umbral/por-nodo] Paso 6b: criticidades encontradas:`, criticidades?.length || 0);
-      if (criticidades && criticidades.length > 0) {
-        console.log(`[DEBUG /umbral/por-nodo] Criticidades details:`, JSON.stringify(criticidades));
-      }
-      
       if (!criticidadesError && criticidades) {
         criticidadesMap = new Map(criticidades.map(c => [c.criticidadid, c]));
-        console.log(`[DEBUG /umbral/por-nodo] criticidadesMap keys:`, Array.from(criticidadesMap.keys()));
-      } else if (criticidadesError) {
-        console.log(`[DEBUG /umbral/por-nodo] Error obteniendo criticidades:`, criticidadesError);
       }
     }
     
@@ -441,22 +424,12 @@ router.get('/umbral/por-nodo', async (req, res) => {
       const criticidad = primeraRegla?.criticidadid ? criticidadesMap.get(primeraRegla.criticidadid) : null;
       const metrica = u.metricaid ? metricasMap.get(u.metricaid) : null;
       
-      // Log para debug
-      console.log(`[DEBUG /umbral/por-nodo] Umbral ${u.umbralid}:`, {
-        reglaIds: reglaIdsDelUmbral,
-        primeraRegla: primeraRegla,
-        criticidadid: primeraRegla?.criticidadid,
-        criticidad: criticidad
-      });
-      
       return {
         ...u,
         metrica: metrica || null,
         criticidad: criticidad || null
       };
     });
-    
-    console.log(`[DEBUG /umbral/por-nodo] Respuesta final:`, transformed);
     
     res.json(transformed);
   } catch (error) {

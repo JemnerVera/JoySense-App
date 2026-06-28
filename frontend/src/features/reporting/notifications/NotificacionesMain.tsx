@@ -200,24 +200,8 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
   // Filtrar columnas duplicadas (basándose en columnName)
   // También filtrar campos ocultos y de solo lectura que no deberían aparecer en formularios
   const uniqueColumns = useMemo(() => {
-    console.log('[SystemParameters] Calculando uniqueColumns', {
-      selectedTable,
-      columnsCount: columns.length,
-      columnsNames: columns.map(c => c.columnName),
-      hasColumns: !!columns && columns.length > 0,
-      timestamp: Date.now()
-    });
-    
     if (!columns || columns.length === 0) {
-      console.log('[SystemParameters] uniqueColumns retornando vacío - no hay columnas', {
-        selectedTable,
-        timestamp: Date.now()
-      });
       return [];
-    }
-    
-    // Debug: mostrar columnas originales para la tabla perfil
-    if (selectedTable === 'perfil') {
     }
     
     const seen = new Set<string>();
@@ -258,17 +242,6 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
       
       filtered.push(col);
     }
-    
-    // Debug: mostrar columnas únicas para la tabla perfil
-    if (selectedTable === 'perfil') {
-    }
-    
-    console.log('[SystemParameters] uniqueColumns calculado', {
-      selectedTable,
-      filteredCount: filtered.length,
-      filteredNames: filtered.map(c => c.columnName),
-      timestamp: Date.now()
-    });
     
     return filtered;
   }, [columns, selectedTable]);
@@ -703,12 +676,6 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
     // IMPORTANTE: Si el cambio viene de ProtectedSubTabButton, ya se validó y mostró el modal allí
     // No mostrar el modal de nuevo aquí para evitar duplicación
     if (activeSubTab === 'insert' && !changeFromProtectedButtonRef.current) {
-      console.log('[NotificacionesMain] Verificando cambios en INSERT', {
-        formData: insertForm?.formData || {},
-        selectedTable,
-        activeSubTab
-      });
-      
       // Verificar con hasUnsavedChanges para detectar cambios reales
       const hasChanges = hasUnsavedChanges({
         formData: insertForm?.formData || {},
@@ -734,13 +701,6 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
         
         const currentTabName = getSubTabName(activeSubTab);
         const targetTabName = getSubTabName(tab);
-        
-        console.log('[SystemParameters] Llamando a showModal', {
-          currentTabName,
-          targetTabName,
-          activeSubTab,
-          tab
-        });
         
         // Usar el sistema del sidebar para mostrar el modal
         const panelId = `notificaciones-${selectedTable}-${activeSubTab}`;
@@ -785,17 +745,11 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
     }
     
     // No hay cambios o ya se confirmó, proceder con el cambio
-    console.log('[SystemParameters] No hay cambios o ya se confirmó, procediendo con el cambio', {
-      from: activeSubTab,
-      to: tab,
-      selectedTable
-    });
     
     // Marcar para saltar la próxima sincronización ya que el cambio fue iniciado internamente
     skipNextSyncRef.current = true;
     setActiveSubTabState(tab); // Actualizar estado directamente (ya pasó validación o no había cambios)
     // IMPORTANTE: Llamar al onSubTabChange del padre solo después de pasar todas las validaciones
-    console.log('[SystemParameters] Llamando a propOnSubTabChange (sin cambios)', tab);
     propOnSubTabChange?.(tab); // Llamar al callback del padre
     setMessage(null);
     // Limpiar formulario cuando se cambia a 'insert' o se sale de 'insert'
@@ -815,12 +769,6 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
   }, [handleSubTabChangeInternal]);
 
   const handleRowSelect = useCallback((row: any) => {
-    console.log('[NotificacionesMain] handleRowSelect llamado:', {
-      tableName: selectedTable,
-      row: row,
-      hasRow: !!row,
-      rowKeys: row ? Object.keys(row) : []
-    });
     setSelectedRow(row);
     // NO llamar setFormData aquí - useUpdateForm maneja su propio estado interno
     // setFormData(row); // <-- ESTO CONTAMINABA EL ESTADO COMPARTIDO
@@ -1055,21 +1003,6 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
                 themeColor={themeColor}
               />
             )}
-            {(() => {
-              if (activeSubTab === 'insert') {
-                console.log('[SystemParameters] Condición para InsertTab', {
-                  activeSubTab,
-                  hasInsertForm: !!insertForm,
-                  selectedTable,
-                  resetKey: getResetKey(),
-                  insertTabKey,
-                  columnsCount: columns.length,
-                  hasConfig: !!config,
-                  timestamp: Date.now()
-                });
-              }
-              return null;
-            })()}
             {activeSubTab === 'insert' && insertForm && (
               <InsertTab
                 key={`insert-${selectedTable}-${activeSubTab}-${getResetKey()}-${insertTabKey}`}
@@ -1092,15 +1025,6 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
                 empresaSeleccionada={empresaSeleccionada}
                 fundoSeleccionado={fundoSeleccionado}
                 visibleColumns={(() => {
-                  console.log('[SystemParameters] Calculando visibleColumns para InsertTab', {
-                    selectedTable,
-                    uniqueColumnsCount: uniqueColumns.length,
-                    uniqueColumnsNames: uniqueColumns.map(c => c.columnName),
-                    columnsCount: columns.length,
-                    columnsNames: columns.map(c => c.columnName),
-                    timestamp: Date.now()
-                  });
-                  
                   const filtered = uniqueColumns.filter(col => {
                     // Filtrar campos automáticos que no deben aparecer en formularios
                     const excludedFields = ['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified'];
@@ -1126,14 +1050,6 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
                     return !excludedFields.includes(col.columnName);
                   });
                   
-                  console.log('[SystemParameters] visibleColumns calculado', {
-                    selectedTable,
-                    filteredCount: filtered.length,
-                    filteredNames: filtered.map(c => c.columnName),
-                    excludedFields: ['usercreatedid', 'usermodifiedid', 'datecreated', 'datemodified'],
-                    timestamp: Date.now()
-                  });
-                  
                   return filtered;
                 })()}
                 getColumnDisplayName={(columnName: string) => 
@@ -1147,16 +1063,6 @@ const NotificacionesMain = forwardRef<NotificacionesMainRef, NotificacionesMainP
               />
             )}
             {activeSubTab === 'update' && (() => {
-              console.log('[NotificacionesMain] Renderizando UpdateTab:', {
-                activeSubTab,
-                selectedTable,
-                hasConfig: !!config,
-                configAllowUpdate: config?.allowUpdate,
-                hasSelectedRow: !!selectedRow,
-                selectedRowKeys: selectedRow ? Object.keys(selectedRow) : [],
-                tableDataCount: tableState.data?.length || 0,
-                columnsCount: uniqueColumns.length
-              });
               return (
                 <UpdateTab
                   tableName={selectedTable}

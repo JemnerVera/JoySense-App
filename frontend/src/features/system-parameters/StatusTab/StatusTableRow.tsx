@@ -44,11 +44,6 @@ const StatusTableRowComponent: React.FC<StatusTableRowProps> = ({
   const userData = useMemo(() => relatedData.userData || [], [relatedData.userData]);
 
   const handleRowClick = useCallback((e: React.MouseEvent) => {
-    console.log('[StatusTableRow] Click en fila:', {
-      hasOnRowClick: !!onRowClick,
-      rowKeys: Object.keys(row),
-      rowId: row.reglaid || row.regla_perfilid || row.regla_umbralid || row.regla_objetoid || 'unknown'
-    });
     onRowClick?.(row);
   }, [onRowClick, row]);
 

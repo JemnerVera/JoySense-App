@@ -117,11 +117,6 @@ export const SVGPlantMap: React.FC<SVGPlantMapProps> = ({
   const containerRef = useRef<HTMLDivElement>(null)
   const [svgContent, setSvgContent] = useState<string>('')
 
-  // Monitor selectedNode prop changes
-  useEffect(() => {
-    console.log('[SVGPlantMap] Props received - selectedNode:', selectedNode?.nodo, 'fundoid:', fundoid)
-  }, [selectedNode])
-
   // Obtener la ruta del SVG según el fundoid
   const svgPath = FUNDO_SVG_MAP[fundoid]
 

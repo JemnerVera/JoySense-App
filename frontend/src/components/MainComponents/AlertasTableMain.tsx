@@ -194,7 +194,6 @@ const AlertasTableMain = forwardRef<AlertasTableMainRef, AlertasTableMainProps>(
   // Cargar datos de la tabla cuando cambia el subTab
   useEffect(() => {
     if (activeSubTab === 'status' || activeSubTab === 'update' || activeSubTab === 'insert') {
-      console.log(`[AlertasTableMain-${tableName}] Cargando datos/columnas para subTab:`, activeSubTab);
       loadTableData(selectedTable);
     }
   }, [activeSubTab, loadTableData, selectedTable, tableName]);

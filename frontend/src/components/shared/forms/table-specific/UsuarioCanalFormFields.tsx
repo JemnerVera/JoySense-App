@@ -68,7 +68,6 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
   useEffect(() => {
     const loadUsuarioData = async () => {
       if (!formData.usuarioid) {
-        console.log('[UsuarioCanalFormFields] No hay usuarioid, limpiando datos');
         setUsuarioSeleccionado(null);
         setCanalesGrid([]);
         setTelegramCodigoPorCanal({});
@@ -77,25 +76,12 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
         return;
       }
 
-      console.log('[UsuarioCanalFormFields] Cargando datos del usuario:', {
-        usuarioid: formData.usuarioid,
-        canalesDataLength: canalesData.length,
-        contactosDataLength: contactosData.length,
-        correosDataLength: correosData.length,
-        isUpdateMode
-      });
-
       setLoadingGrid(true);
 
       try {
         const usuariosData = await JoySenseService.getTableData('usuario', 1000);
         const usuarios = Array.isArray(usuariosData) ? usuariosData : (usuariosData as any)?.data || [];
         const usuario = usuarios.find((u: any) => Number(u.usuarioid) === Number(formData.usuarioid));
-        
-        console.log('[UsuarioCanalFormFields] Usuario encontrado:', {
-          usuario: usuario ? { usuarioid: usuario.usuarioid, login: usuario.login } : null,
-          totalUsuarios: usuarios.length
-        });
         
         if (usuario) {
           setUsuarioSeleccionado(usuario);
@@ -108,10 +94,6 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
             canalesExistentes = canalesExistentes.filter((uc: any) => 
               Number(uc.usuarioid) === Number(formData.usuarioid)
             );
-            console.log('[UsuarioCanalFormFields] Canales existentes del usuario:', {
-              total: canalesExistentes.length,
-              canales: canalesExistentes.map((c: any) => ({ canalid: c.canalid, statusid: c.statusid, identificador: c.identificador }))
-            });
           } catch (error) {
             console.error('[UsuarioCanalFormFields] Error cargando canales existentes:', error);
             canalesExistentes = [];
@@ -119,31 +101,14 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
           
           // Inicializar el grid con todos los canales disponibles
           const canalesActivos = canalesData.filter((c: any) => c.statusid === STATUS.ACTIVO);
-          console.log('[UsuarioCanalFormFields] Canales activos:', {
-            total: canalesActivos.length,
-            canales: canalesActivos.map((c: any) => ({ canalid: c.canalid, canal: c.canal }))
-          });
-          
           // Buscar contacto del usuario (para WhatsApp)
           const contactoUsuario = contactosData.find((c: any) => 
             Number(c.usuarioid) === Number(formData.usuarioid) && c.statusid === STATUS.ACTIVO
           );
-          console.log('[UsuarioCanalFormFields] Contacto encontrado:', {
-            contacto: contactoUsuario ? { usuarioid: contactoUsuario.usuarioid, celular: contactoUsuario.celular } : null,
-            contactosDataSample: contactosData.slice(0, 3).map((c: any) => ({ usuarioid: c.usuarioid, statusid: c.statusid }))
-          });
-          
           // Buscar correo activo del usuario (para CORREO)
           const correoUsuario = correosData.find((c: any) => 
             Number(c.usuarioid) === Number(formData.usuarioid) && c.statusid === STATUS.ACTIVO
           );
-          console.log('[UsuarioCanalFormFields] Correo encontrado:', {
-            correo: correoUsuario ? { usuarioid: correoUsuario.usuarioid, correo: correoUsuario.correo, statusid: correoUsuario.statusid } : null,
-            correosDataSample: correosData.slice(0, 5).map((c: any) => ({ usuarioid: c.usuarioid, correo: c.correo, statusid: c.statusid })),
-            buscandoUsuarioid: formData.usuarioid,
-            tipoUsuarioid: typeof formData.usuarioid
-          });
-          
           const grid: CanalRow[] = canalesActivos.map((canal: any) => {
             const nombreCanalOriginal = canal.canal || '';
             const nombreCanal = nombreCanalOriginal.toLowerCase();
@@ -170,47 +135,20 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
             const tieneEntrada = !!canalExistente;
             const statusIdReal = canalExistente ? Number(canalExistente.statusid) : 0;
             
-            console.log('[UsuarioCanalFormFields] Procesando canal:', {
-              canalid: canal.canalid,
-              nombreCanalOriginal,
-              nombreCanalLowercase: nombreCanal,
-              esWhatsapp: nombreCanal === 'whatsapp',
-              esCorreo: nombreCanal === 'correo',
-              esEmail: nombreCanal === 'email',
-              esTelegram: nombreCanal === 'telegram',
-              esExistente,
-              estadoExistente
-            });
-            
             // Calcular identificador según el canal
             let identificador = '';
             if (esExistente && canalExistente?.identificador) {
               // Usar el identificador existente solo si el canal está activo
               identificador = canalExistente.identificador;
-              console.log('[UsuarioCanalFormFields] Usando identificador existente:', identificador);
             } else if (nombreCanal === 'whatsapp' && contactoUsuario?.celular && esExistente) {
               // Solo usar el celular del contacto si el canal existe como activo
               identificador = contactoUsuario.celular;
-              console.log('[UsuarioCanalFormFields] WhatsApp identificador calculado:', identificador);
             } else if (nombreCanal === 'correo' || nombreCanal === 'email') {
-              console.log('[UsuarioCanalFormFields] Procesando canal CORREO/EMAIL:', {
-                nombreCanalOriginal,
-                nombreCanalLowercase: nombreCanal,
-                correoUsuario: correoUsuario ? { correo: correoUsuario.correo, usuarioid: correoUsuario.usuarioid, statusid: correoUsuario.statusid } : null,
-                tieneCorreo: !!correoUsuario?.correo,
-                correoValue: correoUsuario?.correo
-              });
               if (esExistente && correoUsuario?.correo) {
                 identificador = correoUsuario.correo;
-                console.log('[UsuarioCanalFormFields] CORREO identificador calculado:', identificador);
-              } else {
-                console.log('[UsuarioCanalFormFields] CORREO: No se encontró correo activo para el usuario');
               }
             } else if (nombreCanal === 'telegram') {
               identificador = ''; // Dejar vacío por el momento
-              console.log('[UsuarioCanalFormFields] TELEGRAM: identificador vacío');
-            } else {
-              console.log('[UsuarioCanalFormFields] Canal no reconocido:', nombreCanalOriginal);
             }
             
             return {
@@ -222,11 +160,6 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
               tieneEntrada: tieneEntrada,
               statusIdReal: statusIdReal
             };
-          });
-          
-          console.log('[UsuarioCanalFormFields] Grid final:', {
-            totalCanales: grid.length,
-            grid: grid.map((g: CanalRow) => ({ canalid: g.canalid, canal: g.canal, identificador: g.identificador, existente: g.existente, status: g.status }))
           });
           
           setCanalesGrid(grid);
@@ -259,11 +192,9 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
           }
           
           if (Object.keys(codigosTelegramInicial).length > 0) {
-            console.log('[UsuarioCanalFormFields] Códigos Telegram existentes:', codigosTelegramInicial);
             setTelegramCodigoPorCanal(codigosTelegramInicial);
           }
         } else {
-          console.log('[UsuarioCanalFormFields] Usuario no encontrado');
           setUsuarioSeleccionado(null);
           setCanalesGrid([]);
         }
@@ -303,12 +234,8 @@ export const UsuarioCanalFormFields: React.FC<UsuarioCanalFormFieldsProps> = ({
     setMessagesTelegram(prev => ({ ...prev, [canalid]: '' }));
     
     try {
-      console.log('[UsuarioCanalFormFields] Generando código Telegram para usuario:', usuarioid);
-      
       // Llamar al método del servicio
       const codigo = await JoySenseService.crearCodigoTelegram(usuarioid, 30);
-      
-      console.log('[UsuarioCanalFormFields] Código Telegram generado:', { canalid, codigo });
       
       if (codigo) {
         setTelegramCodigoPorCanal(prev => ({ ...prev, [canalid]: codigo }));

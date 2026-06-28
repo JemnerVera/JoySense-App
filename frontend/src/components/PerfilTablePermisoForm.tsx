@@ -95,11 +95,6 @@ const PerfilTablePermisoForm: React.FC<PerfilTablePermisoFormProps> = ({
     const fuente = fuentesData.find(f => 
       f.fuente?.toLowerCase() === type.toLowerCase()
     );
-    console.log(`🔍 [PerfilTablePermisoForm] getFuenteIdByType(${type}):`, {
-      fuentesData: fuentesData,
-      found: fuente,
-      fuenteid: fuente?.fuenteid
-    });
     return fuente?.fuenteid || null;
   };
   
@@ -137,14 +132,12 @@ const PerfilTablePermisoForm: React.FC<PerfilTablePermisoFormProps> = ({
 
   // Cambiar tipo de tabla y establecer origenid y fuenteid
   const handleTablaTypeChange = (type: TablaType) => {
-    console.log('✏️ [PerfilTablePermisoForm] handleTablaTypeChange:', type);
     setTablaType(type);
     const newData = { ...formData };
     
     // Establecer origenid (TABLA) si aún no está establecido
     if (!newData.origenid && getTablaOrigenId) {
       newData.origenid = getTablaOrigenId;
-      console.log('📌 Set origenid:', getTablaOrigenId);
     }
     
     // Establecer fuenteid según el tipo
@@ -152,7 +145,6 @@ const PerfilTablePermisoForm: React.FC<PerfilTablePermisoFormProps> = ({
       const fuenteId = getFuenteIdByType(type);
       if (fuenteId) {
         newData.fuenteid = fuenteId;
-        console.log('📌 Set fuenteid:', fuenteId);
       } else {
         console.warn('⚠️ No fuenteid found for type:', type);
       }

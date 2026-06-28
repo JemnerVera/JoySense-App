@@ -49,23 +49,15 @@ const LoginForm: React.FC<LoginFormProps> = ({ activeTab }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('📝 [LoginForm] handleSubmit llamado');
-    console.log('📧 Email:', email);
-    console.log('🔑 Password proporcionada:', password ? 'SÍ' : 'NO');
-    
     setIsLoading(true);
     setError('');
 
     try {
-      console.log('⏳ [LoginForm] Llamando a signIn...');
       const result = await signIn(email, password);
-      console.log('📦 [LoginForm] Resultado de signIn:', result);
       
       if (!result.success) {
         console.error('❌ [LoginForm] Login falló:', result.error);
         setError(result.error || 'Error al iniciar sesión');
-      } else {
-        console.log('✅ [LoginForm] Login exitoso');
       }
     } catch (error: any) {
       console.error('❌ [LoginForm] Excepción durante handleSubmit:', error);
@@ -73,7 +65,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ activeTab }) => {
       setError('Error inesperado durante el inicio de sesión');
     } finally {
       setIsLoading(false);
-      console.log('🏁 [LoginForm] handleSubmit finalizado');
     }
   };
 

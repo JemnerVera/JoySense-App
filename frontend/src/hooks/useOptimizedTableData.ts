@@ -66,7 +66,6 @@ export const useOptimizedTableData = (): UseOptimizedTableDataReturn => {
       const endTime = performance.now();
       
       setReferenceData(data);
-      console.log(`✅ Datos de referencia cargados en ${(endTime - startTime).toFixed(2)}ms`);
     } catch (error) {
       console.error('Error loading reference data:', error);
       setError(error instanceof Error ? error.message : 'Error loading reference data');

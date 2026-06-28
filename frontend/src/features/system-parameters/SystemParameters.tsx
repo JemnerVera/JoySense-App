@@ -746,18 +746,9 @@ const SystemParameters = forwardRef<SystemParametersRef, SystemParametersProps>(
     }
     
     // No hay cambios o ya se confirmó, proceder con el cambio
-    console.log('[SystemParameters] No hay cambios o ya se confirmó, procediendo con el cambio', {
-      from: activeSubTab,
-      to: tab,
-      selectedTable
-    });
-    
-    // Marcar para saltar la próxima sincronización ya que el cambio fue iniciado internamente
     skipNextSyncRef.current = true;
-    setActiveSubTabState(tab); // Actualizar estado directamente (ya pasó validación o no había cambios)
-    // IMPORTANTE: Llamar al onSubTabChange del padre solo después de pasar todas las validaciones
-    console.log('[SystemParameters] Llamando a propOnSubTabChange (sin cambios)', tab);
-    propOnSubTabChange?.(tab); // Llamar al callback del padre
+    setActiveSubTabState(tab);
+    propOnSubTabChange?.(tab);
     setMessage(null);
     // Limpiar formulario cuando se cambia a 'insert' o se sale de 'insert'
     if (tab === 'insert') {

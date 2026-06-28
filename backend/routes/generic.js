@@ -232,7 +232,6 @@ router.post('/:table/composite/upsert', async (req, res) => {
     if (existingData && existingData.length > 0) {
       // El registro existe, hacer UPDATE
       logger.info(`[UPSERT] Registro existe (${existingData.length}), haciendo UPDATE`);
-      console.log(`[UPSERT] Registro existente:`, JSON.stringify(existingData[0]));
       let updateQuery = userSupabase.schema(dbSchema).from(table).update(req.body);
       Object.keys(pkParams).forEach(key => {
         updateQuery = updateQuery.eq(key, pkParams[key]);
@@ -247,7 +246,6 @@ router.post('/:table/composite/upsert', async (req, res) => {
       
       result = updateData || [];
       logger.info(`[UPSERT] UPDATE completado. Registros actualizados: ${result.length}`);
-      console.log(`[UPSERT] Datos después del UPDATE:`, JSON.stringify(result));
     } else {
       // El registro no existe, hacer INSERT
       logger.info(`[UPSERT] Registro no existe, haciendo INSERT`);
@@ -271,7 +269,6 @@ router.post('/:table/composite/upsert', async (req, res) => {
       
       result = insertData || [];
       logger.info(`[UPSERT] INSERT completado. Registros insertados: ${result.length}`);
-      console.log(`[UPSERT] Datos después del INSERT:`, JSON.stringify(result));
     }
     
     clearMetadataCache(table);

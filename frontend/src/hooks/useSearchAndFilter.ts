@@ -32,14 +32,6 @@ export const useSearchAndFilter = () => {
   const searchByCriteria = useCallback((criteria: string, filterFn: (dataRow: any) => boolean, data: any[]) => {
     const results = data.filter(filterFn);
 
-    if (results.length > 0) {
-      console.log(`📋 Detalles de ${criteria}:`, results.map(e => ({
-        nodoid: e.nodoid,
-        tipoid: e.tipoid,
-        datecreated: e.datecreated,
-        statusid: e.statusid
-      })));
-    }
 
     return results;
   }, []);

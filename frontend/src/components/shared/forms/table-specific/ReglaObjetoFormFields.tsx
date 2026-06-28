@@ -363,8 +363,6 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
 
   // Limpiar selecciones cuando se resetea el formulario o cuando _objetosSeleccionados es vacío
   useEffect(() => {
-    console.log('[CLEANUP EFFECT] reglaid=', formData.reglaid, '_objetosSeleccionados=', formData._objetosSeleccionados, 'initialLoadComplete=', initialLoadCompleteRef.current);
-    
     if (!formData.reglaid || formData.reglaid === null || formData.reglaid === undefined) {
       setSelectedPaises([]);
       setSelectedEmpresas([]);
@@ -409,16 +407,6 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
     const nivel = fuente?.fuente?.toLowerCase() || 'pais';
     const objetoid = formData._objetosSeleccionados[0];
 
-    console.log('[INIT EFFECT] START:', {
-      nivel,
-      objetoid,
-      fuenteid: formData.fuenteid,
-      paisesData_len: paisesData?.length,
-      empresasData_len: empresasData?.length,
-      fundosData_len: fundosData?.length,
-      ubicacionesData_len: ubicacionesData?.length
-    });
-
     // Validar que tenemos los datos geográficos necesarios antes de intentar resolver
     const datosFaltantes = 
       !paisesData || paisesData.length === 0 ||
@@ -427,16 +415,12 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
       (nivel === 'ubicacion' && (!ubicacionesData || ubicacionesData.length === 0));
     
     if (datosFaltantes) {
-      console.log('[INIT EFFECT] DATOS FALTANTES - retornando', { datosFaltantes });
       initialLoadCompleteRef.current = true;
       return;
     }
 
-    console.log('[INIT EFFECT] DATOS OK - procesando nivel', nivel);
-
     switch (nivel) {
       case 'pais':
-        console.log('[INIT EFFECT] PAIS:', formData._objetosSeleccionados);
         setSelectedPaises(formData._objetosSeleccionados);
         setSelectedEmpresas([]);
         setSelectedFundos([]);
@@ -446,7 +430,6 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
       case 'empresa': {
         const empresa = empresasData?.find(e => e.empresaid === objetoid);
         const paisid = empresa?.paisid;
-        console.log('[INIT EFFECT] EMPRESA:', { objetoid, empresa_encontrada: !!empresa, paisid });
         setSelectedPaises(paisid != null ? [paisid] : []);
         setSelectedEmpresas(formData._objetosSeleccionados);
         setSelectedFundos([]);
@@ -459,7 +442,6 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
         const empresaid = fundo?.empresaid;
         const empresa = empresaid != null ? empresasData?.find(e => e.empresaid === empresaid) : null;
         const paisid = empresa?.paisid;
-        console.log('[INIT EFFECT] FUNDO:', { objetoid, fundo_encontrado: !!fundo, empresaid, empresa_encontrada: !!empresa, paisid });
         setSelectedPaises(paisid != null ? [paisid] : []);
         setSelectedEmpresas(empresaid != null ? [empresaid] : []);
         setSelectedFundos(formData._objetosSeleccionados);
@@ -474,7 +456,6 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
         const empresaid = fundo?.empresaid;
         const empresa = empresaid != null ? empresasData?.find(e => e.empresaid === empresaid) : null;
         const paisid = empresa?.paisid;
-        console.log('[INIT EFFECT] UBICACION:', { objetoid, ubicacion_encontrada: !!ubicacion, fundoid, fundo_encontrado: !!fundo, empresaid, empresa_encontrada: !!empresa, paisid });
         setSelectedPaises(paisid != null ? [paisid] : []);
         setSelectedEmpresas(empresaid != null ? [empresaid] : []);
         setSelectedFundos(fundoid != null ? [fundoid] : []);
@@ -483,10 +464,8 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
         break;
       }
       default:
-        console.log('[INIT EFFECT] NIVEL NO RECONOCIDO:', nivel);
         break;
     }
-    console.log('[INIT EFFECT] COMPLETADO - initialLoadCompleteRef = true');
     initialLoadCompleteRef.current = true;
   }, [mode, formData._objetosSeleccionados, formData.regla_objetoid, formData.fuenteid, fuentesData, empresasData, fundosData, ubicacionesData]);
 
@@ -516,7 +495,6 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
   // En modo update, no sincronizar hasta que la carga inicial esté completa para no pisar valores
   useEffect(() => {
     if (mode === 'update' && !initialLoadCompleteRef.current) {
-      console.log('[SYNC EFFECT] BLOQUEADO - initialLoadCompleteRef.current es false');
       return;
     }
 
@@ -525,22 +503,12 @@ export const ReglaObjetoFormFields: React.FC<ReglaObjetoFormFieldsProps> = ({
     const fuente = fuentesData?.find(f => f.fuente?.toLowerCase() === activeLevel.toLowerCase());
     const fuenteid = fuente?.fuenteid || null;
 
-    console.log('[SYNC EFFECT]:', {
-      mode,
-      initialLoadCompleteRef: initialLoadCompleteRef.current,
-      activeLevel,
-      currentSelectedObjects,
-      fuenteid,
-      lastSync: lastSyncRef.current
-    });
-
     // Solo actualizar si algo relevante cambió
     if (
       objetosStr !== lastSyncRef.current.objetos ||
       fuenteid !== lastSyncRef.current.fuenteid ||
       activeLevel !== lastSyncRef.current.activeLevel
     ) {
-      console.log('[SYNC EFFECT] ACTUALIZANDO formData');
       // Actualizar objetos seleccionados
       updateField('_objetosSeleccionados', currentSelectedObjects);
 

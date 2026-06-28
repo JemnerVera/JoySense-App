@@ -526,14 +526,11 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
                         <button
                           key={nodo.nodoid}
                           onClick={() => {
-                            console.log('[PLC] Seleccionando nodo:', nodo.nodo, 'nodoid:', nodo.nodoid, 'ubicacionid:', nodo.ubicacionid);
                             setSelectedNodo(nodo);
                             setIsNodoDropdownOpen(false);
                             setNodoSearchTerm('');
                             const enrichedNodo = enrichNodoForSync(nodo);
-                            console.log('[PLC] Llamando syncDashboardSelectionToGlobal con:', enrichedNodo);
                             syncDashboardSelectionToGlobal(enrichedNodo, 'localizacion');
-                            console.log('[PLC] syncDashboardSelectionToGlobal completado');
                           }}
                           className={`w-full text-left px-3 py-2 text-base transition-colors font-mono tracking-wider ${
                             selectedNodo?.nodoid === nodo.nodoid

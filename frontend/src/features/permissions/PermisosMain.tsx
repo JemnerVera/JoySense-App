@@ -276,28 +276,12 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
 
   // Cargar datos relacionados al montar
   useEffect(() => {
-    console.log('📊 [PermisosMain] Loading related tables data...');
     loadRelatedTablesData();
     if (activeSubTab !== 'status') {
       loadRelatedData();
     }
   }, [activeSubTab, loadRelatedData, loadRelatedTablesData]);
   
-  // Log cuando se cargan los datos
-  useEffect(() => {
-    console.log('📊 [PermisosMain] Related data loaded:', {
-      paisesData: paisesData.length,
-      empresasData: empresasData.length,
-      fundosData: fundosData.length,
-      ubicacionesData: ubicacionesData.length,
-      nodosData: nodosData.length,
-      localizacionesData: localizacionesData.length,
-      perfilesData: perfilesData.length,
-      fuentesData: fuentesData.length,
-      origenesData: origenesData.length
-    });
-  }, [paisesData, empresasData, fundosData, ubicacionesData, nodosData, localizacionesData, perfilesData, fuentesData, origenesData]);
-
   // Cargar datos de la tabla cuando cambia el subTab
   // Para 'insert' también necesitamos cargar las columnas (aunque no los datos)
   useEffect(() => {
@@ -473,8 +457,6 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
 
   // Función helper para obtener opciones únicas - MEJORADA para usar datos directos
   const getUniqueOptionsForField = useCallback((columnName: string): Array<{value: any, label: string}> => {
-    console.log(`🔍 [PermisosMain] getUniqueOptionsForField(${columnName})`);
-    
     let dataArray: any[] = [];
     let displayField = '';
     
@@ -548,8 +530,6 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
         displayField = columnName.replace('id', '');
     }
     
-    console.log(`  ➜ dataArray for ${columnName}:`, dataArray, 'displayField:', displayField);
-    
     if (!Array.isArray(dataArray) || dataArray.length === 0) {
       console.warn(`  ⚠️ No data found for ${columnName}`);
       return [];
@@ -567,7 +547,6 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
         }
         return true;
       });
-      console.log(`  ➜ Filtered origenid options:`, filteredTable);
     }
 
     const result = filteredTable.map((item: any) => {
@@ -577,7 +556,6 @@ const PermisosMain = forwardRef<PermisosMainRef, PermisosMainProps>(({
       return { value, label };
     });
     
-    console.log(`  ✅ Final options for ${columnName}:`, result);
     return result;
   }, [
     perfilesData, origenesData, fuentesData, paisesData, empresasData, fundosData, 

@@ -102,11 +102,6 @@ export class DashboardService {
       !metricaIds.includes(metrica.metricaid)
     );
     
-    if (metricasNoDisponibles.length > 0) {
-      console.log('⚠️ DashboardService: Métricas NO disponibles en mediciones:', 
-        metricasNoDisponibles.map(m => m.metrica));
-    }
-
     return metricasDisponibles;
   }
 

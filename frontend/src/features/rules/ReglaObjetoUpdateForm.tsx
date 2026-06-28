@@ -140,12 +140,6 @@ export const ReglaObjetoUpdateForm: React.FC<ReglaObjetoUpdateFormProps> = ({
         origenid: item.origenid
       };
 
-      console.log('[loadReglaObjetoData]:', {
-        reglaObjetoid,
-        item,
-        initialFormData
-      });
-
       setReglaObjetoItem(item);
       setFormData(initialFormData);
       // La notificación se hará a través del useEffect que monitorea formData

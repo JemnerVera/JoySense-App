@@ -81,10 +81,6 @@ export const useSystemParametersState = (
   // Sincronizar estado local con props
   useEffect(() => {
     if (propSelectedTable !== undefined && propSelectedTable !== selectedTable) {
-      console.log('🔄 useSystemParametersState: Syncing with propSelectedTable:', { 
-        propSelectedTable, 
-        currentSelectedTable: selectedTable 
-      });
       setSelectedTable(propSelectedTable);
     }
   }, [propSelectedTable, selectedTable]);

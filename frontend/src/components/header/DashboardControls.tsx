@@ -33,21 +33,6 @@ export const DashboardControls: React.FC<DashboardControlsProps> = ({
   endDate = '',
   onDateFilter
 }) => {
-  console.log('🔍 DashboardControls - Props recibidas:', {
-    selectedPais: !!selectedPais,
-    selectedEmpresa: !!selectedEmpresa,
-    fundos: fundos.length,
-    ubicaciones: ubicaciones.length,
-    selectedFundo: !!selectedFundo,
-    selectedUbicacion: !!selectedUbicacion
-  });
-  
-  // Debug específico para el problema de ubicaciones
-  console.log('🔍 DashboardControls - Debug ubicaciones:', {
-    selectedFundo: selectedFundo,
-    ubicaciones: ubicaciones,
-    condicionUbicacion: !!(selectedPais && selectedEmpresa && selectedFundo)
-  });
   // Función helper para formatear fechas correctamente
   const formatDateForDisplay = (dateString: string) => {
     try {

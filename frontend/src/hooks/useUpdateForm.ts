@@ -374,13 +374,6 @@ export const useUpdateForm = ({
           !(formData.localizacionids || []).includes(id)
         );
 
-        console.log('[useUpdateForm] Entidad update:', {
-          entidadid,
-          existingLocalizacionids: formData._existingLocalizacionids,
-          selectedLocalizacionids: formData.localizacionids,
-          toAdd: localizacionidsToAdd,
-          toRemove: localizacionidsToRemove
-        });
 
         // Actualizar entidad
         const entidadPk = { entidadid };
@@ -392,16 +385,13 @@ export const useUpdateForm = ({
         // Eliminar localizaciones no seleccionadas (statusid=0 en entidad_localizacion)
         // Usar UPSERT para asegurar que el registro se actualice o cree si no existe
         const { JoySenseService } = await import('../services/backend-api');
-        console.log('[useUpdateForm] Desactivando localizaciones:', localizacionidsToRemove);
         for (const localizacionid of localizacionidsToRemove) {
           try {
-            console.log(`[useUpdateForm] Desactivando localizacionid ${localizacionid}`);
             await JoySenseService.upsertTableRowByCompositeKey(
               'entidad_localizacion',
               { entidadid, localizacionid },
               { statusid: STATUS.INACTIVO, usermodifiedid: currentUserId, datemodified: now }
             );
-            console.log(`[useUpdateForm] ✅ Desactivada localizacionid ${localizacionid}`);
           } catch (error) {
             console.warn(`Error al desactivar localización ${localizacionid}:`, error);
           }

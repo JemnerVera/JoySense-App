@@ -252,7 +252,6 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
     const result = filtered.filter(node => node.ubicacionid === selectedUbicacion.ubicacionid);
     if (result.length === 0 && filtered.length > 0) {
       console.warn('[NodeStatusDashboard FILTEREDNODES] ⚠️ ADVERTENCIA: Filtro de ubicación resultó en 0 nodos');
-      console.log('Ubicaciones en nodos filtrados:', Array.from(new Set(filtered.map(n => n.ubicacionid))));
     }
     return result;
   }, [nodes, selectedUbicacion, paisSeleccionado, empresaSeleccionada, fundoSeleccionado]);
@@ -494,16 +493,11 @@ export function NodeStatusDashboard(_props: NodeStatusDashboardProps) {
       };
       
       if (!selectedLocalizacion || selectedLocalizacion.nodoid !== selectedNode.nodoid) {
-        console.log('[NodeStatusDashboard] ✓ SINCRONIZANDO localización desde nodo seleccionado:', {
-          localizacion: selectedNode.localizacion,
-          nodoid: selectedNode.nodoid
-        });
         setSelectedLocalizacion(localizacionObj);
         // Sincronizar también con el contexto global para que el MAPEO DE NODOS lo refleje
         syncDashboardSelectionToGlobal(localizacionObj, 'localizacion');
       }
     } else if (selectedLocalizacion && !selectedNode) {
-      console.log('[NodeStatusDashboard] ✓ LIMPIANDO localización seleccionada');
       setSelectedLocalizacion(null);
     }
   }, [selectedNode?.nodoid, selectedNode?.localizacion, syncDashboardSelectionToGlobal]);

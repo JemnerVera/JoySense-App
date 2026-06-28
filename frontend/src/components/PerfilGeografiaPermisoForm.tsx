@@ -68,11 +68,6 @@ const PerfilGeografiaPermisoForm: React.FC<PerfilGeografiaPermisoFormProps> = ({
     const fuente = fuentesData.find(f => 
       f.fuente?.toLowerCase() === type.toLowerCase()
     );
-    console.log(`🔍 [PerfilGeografiaPermisoForm] getFuenteIdByType(${type}):`, {
-      fuentesData: fuentesData,
-      found: fuente,
-      fuenteid: fuente?.fuenteid
-    });
     return fuente?.fuenteid || null;
   };
   
@@ -167,14 +162,12 @@ const PerfilGeografiaPermisoForm: React.FC<PerfilGeografiaPermisoFormProps> = ({
 
   // Limpiar otros campos de geografía cuando se selecciona un tipo
   const handleGeografiaTypeChange = (type: GeografiaType) => {
-    console.log('✏️ [PerfilGeografiaPermisoForm] handleGeografiaTypeChange:', type);
     setGeografiaType(type);
     const newData = { ...formData };
     
     // Establecer origenid si aún no está establecido
     if (!newData.origenid && getGeografiaOrigenId) {
       newData.origenid = getGeografiaOrigenId;
-      console.log('📌 Set origenid:', getGeografiaOrigenId);
     }
     
     // Establecer fuenteid según el tipo
@@ -182,7 +175,6 @@ const PerfilGeografiaPermisoForm: React.FC<PerfilGeografiaPermisoFormProps> = ({
       const fuenteId = getFuenteIdByType(type);
       if (fuenteId) {
         newData.fuenteid = fuenteId;
-        console.log('📌 Set fuenteid:', fuenteId);
       } else {
         console.warn('⚠️ No fuenteid found for type:', type);
       }
@@ -290,7 +282,6 @@ const PerfilGeografiaPermisoForm: React.FC<PerfilGeografiaPermisoFormProps> = ({
             label: p.pais || `País ${p.paisid}`
           }));
         }
-        console.log('🌍 [PerfilGeografiaPermisoForm] PAIS options:', options, 'paisesData:', paisesData);
         break;
       case 'empresa':
         if (getUniqueOptionsForField) {
@@ -301,7 +292,6 @@ const PerfilGeografiaPermisoForm: React.FC<PerfilGeografiaPermisoFormProps> = ({
             label: e.empresa || `Empresa ${e.empresaid}`
           }));
         }
-        console.log('🏢 [PerfilGeografiaPermisoForm] EMPRESA options:', options, 'empresasData:', empresasData);
         break;
       case 'fundo':
         if (getUniqueOptionsForField) {
@@ -312,7 +302,6 @@ const PerfilGeografiaPermisoForm: React.FC<PerfilGeografiaPermisoFormProps> = ({
             label: f.fundo || `Fundo ${f.fundoid}`
           }));
         }
-        console.log('🌱 [PerfilGeografiaPermisoForm] FUNDO options:', options, 'fundosData:', fundosData);
         break;
       case 'ubicacion':
         if (getUniqueOptionsForField) {
@@ -323,7 +312,6 @@ const PerfilGeografiaPermisoForm: React.FC<PerfilGeografiaPermisoFormProps> = ({
             label: u.ubicacion || `Ubicación ${u.ubicacionid}`
           }));
         }
-        console.log('📍 [PerfilGeografiaPermisoForm] UBICACION options:', options, 'ubicacionesData:', ubicacionesData);
         break;
       case 'nodo':
         if (getUniqueOptionsForField) {
@@ -334,7 +322,6 @@ const PerfilGeografiaPermisoForm: React.FC<PerfilGeografiaPermisoFormProps> = ({
             label: n.nodo || `Nodo ${n.nodoid}`
           }));
         }
-        console.log('🔌 [PerfilGeografiaPermisoForm] NODO options:', options, 'nodosData:', nodosData);
         break;
       case 'localizacion':
         if (getUniqueOptionsForField) {
@@ -345,7 +332,6 @@ const PerfilGeografiaPermisoForm: React.FC<PerfilGeografiaPermisoFormProps> = ({
             label: l.localizacion || `Localización ${l.localizacionid}`
           }));
         }
-        console.log('🗺️ [PerfilGeografiaPermisoForm] LOCALIZACION options:', options, 'localizacionesData:', localizacionesData);
         break;
     }
     

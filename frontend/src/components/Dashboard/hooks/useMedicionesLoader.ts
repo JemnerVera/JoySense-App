@@ -153,7 +153,6 @@ export function useMedicionesLoader({
         } else {
           // Sin nodo seleccionado - no cargar datos (caso no común)
           // El usuario debe seleccionar un nodo específico para ver mediciones
-          console.log('[useMedicionesLoader] No node selected, skipping data load');
         }
 
         if (currentRequestKeyRef.current === thisRequestKey) {

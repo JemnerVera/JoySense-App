@@ -17,21 +17,17 @@ export const useSimpleChangeDetection = () => {
     
     // Para update: verificar si formData tiene datos reales (no es solo el marcador)
     if (activeSubTab === 'update') {
-      console.log('[useSimpleChangeDetection] Verificando cambios en update - formData:', formData);
       if (!formData || Object.keys(formData).length === 0) {
-        console.log('[useSimpleChangeDetection] No hay formData o está vacío');
         return false;
       }
       // Si es el marcador de formulario abierto sin cambios, no hay cambios
       if (formData.__formOpen === true && formData.__hasChanges === false) {
-        console.log('[useSimpleChangeDetection] Es marcador sin cambios - retornando false');
         return false;
       }
       // Si tiene datos reales (no es el marcador), hay cambios
       // Excluir el marcador de las keys para verificar si hay datos reales
       const realKeys = Object.keys(formData).filter(key => key !== '__formOpen' && key !== '__hasChanges');
       const hasChanges = realKeys.length > 0;
-      console.log('[useSimpleChangeDetection] realKeys:', realKeys, 'hasChanges:', hasChanges);
       return hasChanges;
     }
 
@@ -130,9 +126,6 @@ export const useSimpleChangeDetection = () => {
           const trimmed = value.trim();
           if (trimmed !== '' && trimmed.length > 0) {
             changes.push(key);
-            if (process.env.NODE_ENV === 'development') {
-              console.log(`✅ [useSimpleChangeDetection] Cambio detectado en campo string: ${key} = "${value}"`);
-            }
           }
           return;
         }
@@ -147,7 +140,6 @@ export const useSimpleChangeDetection = () => {
             const fieldConfig = config.fields.find(f => f.name === key);
             if (fieldConfig && fieldConfig.defaultValue !== undefined && value === fieldConfig.defaultValue) {
               // Es un valor por defecto, no contar como cambio
-              console.log(`⚠️ [useSimpleChangeDetection] Ignorando valor por defecto: ${key} = ${value} (defaultValue: ${fieldConfig.defaultValue})`);
               return;
             }
           }
@@ -175,9 +167,6 @@ export const useSimpleChangeDetection = () => {
                 
                 if (hasRelatedData && value > 0 && value !== null && value !== undefined) {
                   changes.push(key);
-                  console.log(`✅ [useSimpleChangeDetection] Cambio detectado en campo foreign key (insert): ${key} = ${value} (hay datos relacionados)`);
-                } else if (value > 0 && value !== null && value !== undefined) {
-                  console.log(`⚠️ [useSimpleChangeDetection] Foreign key ${key} = ${value} pero no hay datos relacionados, ignorando como valor por defecto`);
                 }
               } else {
               // Para otras pestañas (update, etc.), verificar si hay datos relacionados
@@ -205,9 +194,6 @@ export const useSimpleChangeDetection = () => {
                 
                 if (hasRelatedData) {
                   changes.push(key);
-                  console.log(`✅ [useSimpleChangeDetection] Cambio detectado en campo foreign key: ${key} = ${value} (hay datos relacionados)`);
-                } else {
-                  console.log(`⚠️ [useSimpleChangeDetection] Foreign key ${key} = ${value} pero no hay datos relacionados, ignorando como valor por defecto`);
                 }
               }
             }
@@ -222,14 +208,10 @@ export const useSimpleChangeDetection = () => {
               const fieldConfig = config.fields.find(f => f.name === key);
               if (fieldConfig && fieldConfig.defaultValue !== undefined && value === fieldConfig.defaultValue) {
                 // Es un valor por defecto, no contar como cambio
-                console.log(`⚠️ [useSimpleChangeDetection] Ignorando valor por defecto en número: ${key} = ${value} (defaultValue: ${fieldConfig.defaultValue})`);
                 return;
               }
             }
             changes.push(key);
-            if (process.env.NODE_ENV === 'development') {
-              console.log(`✅ [useSimpleChangeDetection] Cambio detectado en campo number: ${key} = ${value}`);
-            }
           }
           return;
         }
@@ -238,9 +220,6 @@ export const useSimpleChangeDetection = () => {
         if (typeof value === 'boolean') {
           if (value === true) {
             changes.push(key);
-            if (process.env.NODE_ENV === 'development') {
-              console.log(`✅ [useSimpleChangeDetection] Cambio detectado en campo boolean: ${key} = true`);
-            }
           }
           return;
         }
@@ -249,9 +228,6 @@ export const useSimpleChangeDetection = () => {
         if (Array.isArray(value)) {
           if (value.length > 0) {
             changes.push(key);
-            if (process.env.NODE_ENV === 'development') {
-              console.log(`✅ [useSimpleChangeDetection] Cambio detectado en campo array: ${key} = [${value.length} items]`);
-            }
           }
           return;
         }
@@ -317,23 +293,6 @@ export const useSimpleChangeDetection = () => {
       selectedTable === 'regla' ||
       selectedTable === 'regla_umbral';
     
-    if (shouldLog) {
-      console.log('🔍 [useSimpleChangeDetection] Change detection result:', {
-        selectedTable,
-        activeSubTab,
-        formDataKeys: Object.keys(formData),
-        formDataValues: Object.entries(formData).filter(([k, v]) => {
-          const val = v;
-          return val !== null && val !== undefined && val !== '' && val !== 0 && val !== 1;
-        }).map(([k, v]) => `${k}: ${v}`),
-        significantFields,
-        hasFormDataChanges,
-        hasMultipleDataChanges,
-        hasMassiveFormDataChanges,
-        result: hasFormDataChanges || hasMultipleDataChanges || hasMassiveFormDataChanges
-      });
-    }
-
     return hasFormDataChanges || hasMultipleDataChanges || hasMassiveFormDataChanges;
   }, []);
 

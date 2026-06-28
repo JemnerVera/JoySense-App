@@ -139,27 +139,8 @@ const processSensorStates = (
 ): EstadoPorCriticidad => {
   const estadosPorCriticidad: EstadoPorCriticidad = {};
 
-  console.log('📊 Datos recibidos:', {
-    alertas: alertas.length,
-    umbrales: umbrales.length,
-    metricasensores: metricasensores.length,
-    mediciones: mediciones.length,
-    nodos: nodos.length,
-    metricas: metricas.length,
-    tipos: tipos.length,
-    ubicaciones: ubicaciones.length,
-    criticidades: criticidades.length
-  });
-
   // Procesar desde alertas existentes
   if (alertas.length > 0) {
-    console.log('📋 Alertas encontradas:', alertas.map(a => ({
-      alertaid: a.alertaid,
-      umbralid: a.umbralid,
-      medicionid: a.medicionid,
-      fecha: a.fecha
-    })));
-    
     for (const alerta of alertas) {
       try {
         // Buscar el umbral de esta alerta
@@ -370,18 +351,6 @@ const EstadoActualSensores: React.FC<EstadoActualSensoresProps> = ({
   }, [estadosSensores, onDataLoaded]);
 
   useEffect(() => {
-    console.log('🔄 useEffect triggered with data:', {
-      metricasensores: data.metricasensores.length,
-      umbrales: data.umbrales.length,
-      alertas: data.alertas.length,
-      mediciones: data.mediciones.length,
-      nodos: data.nodos.length,
-      metricas: data.metricas.length,
-      tipos: data.tipos.length,
-      ubicaciones: data.ubicaciones.length,
-      criticidades: data.criticidades.length
-    });
-
     if (data.metricasensores.length > 0) {
       const estados = processSensorStates(
         data.alertas,

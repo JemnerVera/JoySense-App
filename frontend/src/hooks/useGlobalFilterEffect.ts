@@ -204,16 +204,6 @@ export const useGlobalFilterEffect = ({ tableName, data, relatedData }: GlobalFi
     });
   }, [data, paisSeleccionado, empresaSeleccionada, fundoSeleccionado, ubicacionSeleccionada, localizacionSeleccionada, tableName, relatedData]);
 
-  const hasAnyFilter = paisSeleccionado || empresaSeleccionada || fundoSeleccionado || ubicacionSeleccionada || localizacionSeleccionada;
-  if (filteredData.length !== data.length || hasAnyFilter) {
-    console.log('📊 Resultado del filtrado global:', {
-      tableName,
-      originalCount: data.length,
-      filteredCount: filteredData.length,
-      hasFilters: hasAnyFilter,
-      filtros: { paisSeleccionado, empresaSeleccionada, fundoSeleccionado }
-    });
-  }
 
   return filteredData;
 };

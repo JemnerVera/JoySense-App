@@ -57,11 +57,6 @@ const ReplicateModal: React.FC<ReplicateModalProps> = ({
           return tipo && tipo.entidadid && tipo.entidadid.toString() === selectedEntidad;
         });
       });
-      console.log('🔍 Nodos filtrados por entidad (sensor):', {
-        selectedEntidad,
-        totalNodos: tableData.length,
-        nodosFiltrados: nodosConEntidad.length
-      });
       return nodosConEntidad;
     }
     
@@ -74,11 +69,6 @@ const ReplicateModal: React.FC<ReplicateModalProps> = ({
           const tipo = tiposData.find(t => t.tipoid === ms.tipoid);
           return tipo && tipo.entidadid && tipo.entidadid.toString() === selectedEntidad;
         });
-      });
-      console.log('🔍 Nodos filtrados por entidad (metricasensor):', {
-        selectedEntidad,
-        totalNodos: tableData.length,
-        nodosFiltrados: nodosConMetricasEntidad.length
       });
       return nodosConMetricasEntidad;
     }
