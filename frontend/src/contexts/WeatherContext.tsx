@@ -5,6 +5,7 @@ import React, {
   useEffect,
   useCallback,
   useMemo,
+  useRef,
   ReactNode,
 } from 'react';
 import SupabaseRPCService from '../services/supabase-rpc';
@@ -77,22 +78,24 @@ export const WeatherProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<'today' | 'yesterday' | '7days'>('today');
 
-  useEffect(() => {
-    const loadStations = async () => {
-      try {
-        setStationsLoading(true);
-        const data = await SupabaseRPCService.getWeatherStations();
-        setStations(data);
-        if (data.length > 0) {
-          setSelectedStation((prev) => prev ?? data[0]);
-        }
-      } catch (err) {
-        console.error('[WeatherContext] Error cargando estaciones:', err);
-      } finally {
-        setStationsLoading(false);
+  const hasLoadedRef = useRef(false);
+
+  const ensureLoaded = useCallback(async () => {
+    if (hasLoadedRef.current) return;
+    hasLoadedRef.current = true;
+
+    try {
+      setStationsLoading(true);
+      const data = await SupabaseRPCService.getWeatherStations();
+      setStations(data);
+      if (data.length > 0) {
+        setSelectedStation((prev) => prev ?? data[0]);
       }
-    };
-    loadStations();
+    } catch (err) {
+      console.error('[WeatherContext] Error cargando estaciones:', err);
+    } finally {
+      setStationsLoading(false);
+    }
   }, []);
 
   const refreshCurrent = useCallback(async () => {
@@ -247,6 +250,7 @@ export const WeatherProvider: React.FC<{ children: ReactNode }> = ({ children })
       refreshOpenMeteo,
       dateRange,
       setDateRange,
+      ensureLoaded,
     }),
     [
       stations,
@@ -265,6 +269,7 @@ export const WeatherProvider: React.FC<{ children: ReactNode }> = ({ children })
       refreshHistorical,
       refreshOpenMeteo,
       dateRange,
+      ensureLoaded,
     ]
   );
 
@@ -280,5 +285,11 @@ export function useWeatherContext(): UseWeatherDataResult {
 }
 
 export function useWeatherData(): UseWeatherDataResult {
-  return useWeatherContext();
+  const context = useWeatherContext();
+
+  useEffect(() => {
+    context.ensureLoaded();
+  }, [context.ensureLoaded]);
+
+  return context;
 }

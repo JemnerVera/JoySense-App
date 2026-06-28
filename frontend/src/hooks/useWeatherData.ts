@@ -56,6 +56,7 @@ export interface UseWeatherDataResult {
   refreshOpenMeteo: () => Promise<void>;
   dateRange: 'today' | 'yesterday' | '7days';
   setDateRange: (range: 'today' | 'yesterday' | '7days') => void;
+  ensureLoaded: () => Promise<void>;
 }
 
 const getWindDirection = (degrees: number | null): string => {
