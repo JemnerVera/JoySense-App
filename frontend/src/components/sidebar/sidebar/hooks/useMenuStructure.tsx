@@ -113,6 +113,8 @@ export function useMenuStructure() {
         label: t('tabs.plantaProc'),
         icon: <IconPlantaProc />,
         color: 'blue',
+        requiresPermission: true,
+        requiredMenu: 'PLANTA_PROC',
         subMenus: [
           {
             id: 'dashboard',
@@ -161,6 +163,8 @@ export function useMenuStructure() {
         label: t('menu.reservorios'),
         icon: <IconReservorios />,
         color: 'cyan',
+        requiresPermission: true,
+        requiredMenu: 'RESERVORIO',
         subMenus: [
           {
             id: 'dashboard',
@@ -179,6 +183,8 @@ export function useMenuStructure() {
         label: t('menu.tractores'),
         icon: <IconTractor />,
         color: 'yellow',
+        requiresPermission: true,
+        requiredMenu: 'TRACTORES',
         subMenus: [
           {
             id: 'dashboard',
@@ -359,6 +365,9 @@ export function useMenuStructure() {
       if (tab.id === 'reportes') return hasAccessToMenu('REPORTES');
       if (tab.id === 'ajustes') return hasAccessToMenu('AJUSTES');
       if (tab.id === 'meteorologia') return hasAccessToMenu('METEOROLOGÍA');
+      if (tab.id === 'planta-proc') return hasAccessToMenu('PLANTA_PROC');
+      if (tab.id === 'reservorios') return hasAccessToMenu('RESERVORIO');
+      if (tab.id === 'tractores') return hasAccessToMenu('TRACTORES');
       return false;
     });
 

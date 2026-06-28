@@ -3,6 +3,22 @@ const geografiaService = require('../services/geografiaService');
 const logger = require('../utils/logger');
 
 /**
+ * Helper para loguear y responder errores de Supabase con detalles completos
+ */
+function handleError(res, error, context) {
+  const errorDetails = {
+    message: error.message,
+    code: error.code || 'N/A',
+    details: error.details || null,
+    hint: error.hint || null
+  };
+  logger.error(`❌ ${context}:`, errorDetails);
+  if (error.details) logger.error(`   Details: ${error.details}`);
+  if (error.hint) logger.error(`   Hint: ${error.hint}`);
+  res.status(500).json(errorDetails);
+}
+
+/**
  * Helper to get the correct supabase client
  * REQUIERE: req.supabase debe estar definido (usuario autenticado)
  */
@@ -22,8 +38,7 @@ exports.getPaises = async (req, res) => {
     const result = await geografiaService.getPaises(getSupabase(req), req.query);
     res.json(result);
   } catch (error) {
-    logger.error('Error en getPaises:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'getPaises');
   }
 };
 
@@ -32,8 +47,7 @@ exports.getPaisColumns = async (req, res) => {
     const columns = await geografiaService.getPaisColumns(getSupabase(req));
     res.json(columns);
   } catch (error) {
-    logger.error('Error en getPaisColumns:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'getPaisColumns');
   }
 };
 
@@ -42,8 +56,7 @@ exports.postPais = async (req, res) => {
     const data = await geografiaService.createPais(getSupabase(req), req.body);
     res.status(201).json(data);
   } catch (error) {
-    logger.error('Error en postPais:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'postPais');
   }
 };
 
@@ -52,8 +65,7 @@ exports.putPais = async (req, res) => {
     const data = await geografiaService.updatePais(getSupabase(req), req.params.id, req.body);
     res.json(data);
   } catch (error) {
-    logger.error('Error en putPais:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'putPais');
   }
 };
 
@@ -66,8 +78,7 @@ exports.getEmpresas = async (req, res) => {
     const data = await geografiaService.getEmpresas(getSupabase(req), paisId);
     res.json(data);
   } catch (error) {
-    logger.error('Error en getEmpresas:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'getEmpresas');
   }
 };
 
@@ -76,8 +87,7 @@ exports.getEmpresaColumns = async (req, res) => {
     const columns = await geografiaService.getEmpresaColumns(getSupabase(req));
     res.json(columns);
   } catch (error) {
-    logger.error('Error en getEmpresaColumns:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'getEmpresaColumns');
   }
 };
 
@@ -86,8 +96,7 @@ exports.postEmpresa = async (req, res) => {
     const data = await geografiaService.createEmpresa(getSupabase(req), req.body);
     res.status(201).json(data);
   } catch (error) {
-    logger.error('Error en postEmpresa:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'postEmpresa');
   }
 };
 
@@ -96,8 +105,7 @@ exports.putEmpresa = async (req, res) => {
     const data = await geografiaService.updateEmpresa(getSupabase(req), req.params.id, req.body);
     res.json(data);
   } catch (error) {
-    logger.error('Error en putEmpresa:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'putEmpresa');
   }
 };
 
@@ -110,8 +118,7 @@ exports.getFundos = async (req, res) => {
     const data = await geografiaService.getFundos(getSupabase(req), empresaId);
     res.json(data);
   } catch (error) {
-    logger.error('Error en getFundos:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'getFundos');
   }
 };
 
@@ -120,8 +127,7 @@ exports.getFundoColumns = async (req, res) => {
     const columns = await geografiaService.getFundoColumns(getSupabase(req));
     res.json(columns);
   } catch (error) {
-    logger.error('Error en getFundoColumns:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'getFundoColumns');
   }
 };
 
@@ -130,8 +136,7 @@ exports.postFundo = async (req, res) => {
     const data = await geografiaService.createFundo(getSupabase(req), req.body);
     res.status(201).json(data);
   } catch (error) {
-    logger.error('Error en postFundo:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'postFundo');
   }
 };
 
@@ -140,8 +145,7 @@ exports.putFundo = async (req, res) => {
     const data = await geografiaService.updateFundo(getSupabase(req), req.params.id, req.body);
     res.json(data);
   } catch (error) {
-    logger.error('Error en putFundo:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'putFundo');
   }
 };
 
@@ -154,8 +158,7 @@ exports.getUbicaciones = async (req, res) => {
     const data = await geografiaService.getUbicaciones(getSupabase(req), fundoId);
     res.json(data);
   } catch (error) {
-    logger.error('Error en getUbicaciones:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'getUbicaciones');
   }
 };
 
@@ -164,8 +167,7 @@ exports.getUbicacionColumns = async (req, res) => {
     const columns = await geografiaService.getUbicacionColumns(getSupabase(req));
     res.json(columns);
   } catch (error) {
-    logger.error('Error en getUbicacionColumns:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'getUbicacionColumns');
   }
 };
 
@@ -174,8 +176,7 @@ exports.postUbicacion = async (req, res) => {
     const data = await geografiaService.createUbicacion(getSupabase(req), req.body);
     res.status(201).json(data);
   } catch (error) {
-    logger.error('Error en postUbicacion:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'postUbicacion');
   }
 };
 
@@ -184,8 +185,7 @@ exports.putUbicacion = async (req, res) => {
     const data = await geografiaService.updateUbicacion(getSupabase(req), req.params.id, req.body);
     res.json(data);
   } catch (error) {
-    logger.error('Error en putUbicacion:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'putUbicacion');
   }
 };
 
@@ -197,8 +197,7 @@ exports.getEntidades = async (req, res) => {
     const result = await geografiaService.getEntidades(getSupabase(req), req.query);
     res.json(result);
   } catch (error) {
-    logger.error('Error en getEntidades:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'getEntidades');
   }
 };
 
@@ -207,8 +206,7 @@ exports.getEntidadColumns = async (req, res) => {
     const columns = await geografiaService.getEntidadColumns(getSupabase(req));
     res.json(columns);
   } catch (error) {
-    logger.error('Error en getEntidadColumns:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'getEntidadColumns');
   }
 };
 
@@ -217,8 +215,7 @@ exports.postEntidad = async (req, res) => {
     const data = await geografiaService.createEntidad(getSupabase(req), req.body);
     res.status(201).json(data);
   } catch (error) {
-    logger.error('Error en postEntidad:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'postEntidad');
   }
 };
 
@@ -227,8 +224,7 @@ exports.putEntidad = async (req, res) => {
     const data = await geografiaService.updateEntidad(getSupabase(req), req.params.id, req.body);
     res.json(data);
   } catch (error) {
-    logger.error('Error en putEntidad:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'putEntidad');
   }
 };
 
@@ -240,8 +236,7 @@ exports.getEntidadLocalizaciones = async (req, res) => {
     const data = await geografiaService.getEntidadLocalizaciones(getSupabase(req));
     res.json(data);
   } catch (error) {
-    logger.error('Error en getEntidadLocalizaciones:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'getEntidadLocalizaciones');
   }
 };
 
@@ -250,8 +245,7 @@ exports.postEntidadLocalizacion = async (req, res) => {
     const data = await geografiaService.createEntidadLocalizacion(getSupabase(req), req.body);
     res.status(201).json(data);
   } catch (error) {
-    logger.error('Error en postEntidadLocalizacion:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'postEntidadLocalizacion');
   }
 };
 
@@ -263,8 +257,7 @@ exports.getNodos = async (req, res) => {
     const result = await geografiaService.getNodos(getSupabase(req), req.query);
     res.json(result);
   } catch (error) {
-    logger.error('Error en getNodos:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'getNodos');
   }
 };
 
@@ -273,8 +266,7 @@ exports.getNodosSimple = async (req, res) => {
     const result = await geografiaService.getNodosSimple(getSupabase(req));
     res.json(result);
   } catch (error) {
-    logger.error('Error en getNodosSimple:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'getNodosSimple');
   }
 };
 
@@ -283,8 +275,7 @@ exports.getNodoColumns = async (req, res) => {
     const columns = await geografiaService.getColumns('nodo', getSupabase(req));
     res.json(columns);
   } catch (error) {
-    logger.error('Error en getNodoColumns:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'getNodoColumns');
   }
 };
 
@@ -293,8 +284,7 @@ exports.postNodo = async (req, res) => {
     const result = await geografiaService.createNodo(getSupabase(req), req.body);
     res.status(201).json(result);
   } catch (error) {
-    logger.error('Error en postNodo:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'postNodo');
   }
 };
 
@@ -303,8 +293,7 @@ exports.putNodo = async (req, res) => {
     const result = await geografiaService.updateNodo(getSupabase(req), req.params.id, req.body);
     res.json(result);
   } catch (error) {
-    logger.error('Error en putNodo:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'putNodo');
   }
 };
 
@@ -316,8 +305,7 @@ exports.getLocalizaciones = async (req, res) => {
     const result = await geografiaService.getLocalizaciones(getSupabase(req), req.query);
     res.json(result);
   } catch (error) {
-    logger.error('Error en getLocalizaciones:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'getLocalizaciones');
   }
 };
 
@@ -326,8 +314,7 @@ exports.getLocalizacionesSimple = async (req, res) => {
     const result = await geografiaService.getLocalizacionesSimple(getSupabase(req));
     res.json(result);
   } catch (error) {
-    logger.error('Error en getLocalizacionesSimple:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'getLocalizacionesSimple');
   }
 };
 
@@ -336,8 +323,7 @@ exports.getLocalizacionColumns = async (req, res) => {
     const columns = await geografiaService.getColumns('localizacion', getSupabase(req));
     res.json(columns);
   } catch (error) {
-    logger.error('Error en getLocalizacionColumns:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'getLocalizacionColumns');
   }
 };
 
@@ -346,8 +332,7 @@ exports.postLocalizacion = async (req, res) => {
     const result = await geografiaService.createLocalizacion(getSupabase(req), req.body);
     res.status(201).json(result);
   } catch (error) {
-    logger.error('Error en postLocalizacion:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'postLocalizacion');
   }
 };
 
@@ -356,8 +341,7 @@ exports.putLocalizacion = async (req, res) => {
     const result = await geografiaService.updateLocalizacion(getSupabase(req), req.params.id, req.body);
     res.json(result);
   } catch (error) {
-    logger.error('Error en putLocalizacion:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'putLocalizacion');
   }
 };
 
@@ -369,8 +353,7 @@ exports.getNodosConLocalizacionDashboard = async (req, res) => {
     const result = await geografiaService.getNodosConLocalizacionDashboard(getSupabase(req), req.query);
     res.json(result);
   } catch (error) {
-    logger.error('Error en getNodosConLocalizacionDashboard:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'getNodosConLocalizacionDashboard');
   }
 };
 
@@ -379,8 +362,7 @@ exports.searchLocations = async (req, res) => {
     const result = await geografiaService.searchLocations(getSupabase(req), req.query.query);
     res.json(result);
   } catch (error) {
-    logger.error('Error en searchLocations:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'searchLocations');
   }
 };
 
@@ -398,8 +380,7 @@ exports.getKPIsNodo = async (req, res) => {
     });
     res.json(result);
   } catch (error) {
-    logger.error('Error en getKPIsNodo:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'getKPIsNodo');
   }
 };
 
@@ -412,7 +393,6 @@ exports.getLocalizacionesByName = async (req, res) => {
     const result = await geografiaService.getLocalizacionesByName(getSupabase(req), nombre);
     res.json(result);
   } catch (error) {
-    logger.error('Error en getLocalizacionesByName:', error);
-    res.status(500).json({ error: error.message });
+    handleError(res, error, 'getLocalizacionesByName');
   }
 };
