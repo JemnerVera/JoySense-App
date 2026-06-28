@@ -271,6 +271,18 @@ export class JoySenseService {
     }
   }
 
+  static async getFiltersData(): Promise<any> {
+    try {
+      const token = await getAuthToken();
+      const data = await backendAPI.get('/geografia/filters-data', token || undefined);
+      return data || { paises: [], empresas: [], fundos: [], ubicaciones: [] };
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return { paises: [], empresas: [], fundos: [], ubicaciones: [] };
+      console.error('Error in getFiltersData:', error);
+      throw error;
+    }
+  }
+
   static async getZonas(): Promise<any[]> {
     try {
       const token = await getAuthToken();

@@ -190,6 +190,18 @@ exports.putUbicacion = async (req, res) => {
 };
 
 /**
+ * FILTROS GLOBALES (RPC unificada)
+ */
+exports.getFiltersData = async (req, res) => {
+  try {
+    const data = await geografiaService.getFiltersData(getSupabase(req));
+    res.json(data);
+  } catch (error) {
+    handleError(res, error, 'getFiltersData');
+  }
+};
+
+/**
  * ENTIDAD
  */
 exports.getEntidades = async (req, res) => {

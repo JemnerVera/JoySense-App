@@ -23,22 +23,13 @@ export const useFilterData = (authToken: string): FilterData => {
       try {
         setLoading(true);
         setError(null);
-        
-        
-        // Cargar datos en paralelo para mejor rendimiento
-        // Usar los métodos específicos que ya existen en el backend
-        const [paisesData, empresasData, fundosData, ubicacionesData] = await Promise.all([
-          JoySenseService.getPaises(), // Usar método específico
-          JoySenseService.getEmpresas(), // Usar método específico
-          JoySenseService.getFundos(), // Usar método específico
-          JoySenseService.getUbicaciones?.() || Promise.resolve([]) // Usar método específico si existe
-        ]);
 
+        const data = await JoySenseService.getFiltersData();
 
-        setPaises(paisesData || []);
-        setEmpresas(empresasData || []);
-        setFundos(fundosData || []);
-        setUbicaciones(ubicacionesData || []);
+        setPaises(data?.paises || []);
+        setEmpresas(data?.empresas || []);
+        setFundos(data?.fundos || []);
+        setUbicaciones(data?.ubicaciones || []);
 
       } catch (err: any) {
         console.error('❌ Error cargando datos de filtros:', err);
@@ -48,8 +39,6 @@ export const useFilterData = (authToken: string): FilterData => {
       }
     };
 
-    // Cargar datos independientemente del authToken
-    // ya que getTableData maneja la autenticación internamente
     cargarDatos();
   }, [authToken]);
 

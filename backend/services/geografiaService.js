@@ -1233,7 +1233,22 @@ const getKPIsNodo = async (supabase, { nodoid, startDate, endDate }) => {
   }
 };
 
+/**
+ * FILTROS GLOBALES (País, Empresa, Fundo, Ubicación) en 1 RPC
+ */
+const getFiltersData = async (supabase) => {
+  const { data, error } = await supabase
+    .schema(dbSchema)
+    .rpc('fn_get_filters_data');
+  if (error) {
+    logger.error(`❌ [geografiaService.getFiltersData] Error: ${error.message}`);
+    throw error;
+  }
+  return data;
+};
+
 module.exports = {
+  getFiltersData,
   getPaises,
   getPaisColumns,
   createPais,

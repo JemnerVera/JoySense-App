@@ -43,6 +43,11 @@ router.post('/ubicacion', geografiaController.postUbicacion);
 router.put('/ubicacion/:id', geografiaController.putUbicacion);
 
 // ============================================================================
+// FILTROS GLOBALES (RPC unificada)
+// ============================================================================
+router.get('/filters-data', geografiaController.getFiltersData);
+
+// ============================================================================
 // ENTIDAD
 // ============================================================================
 router.get('/entidad', geografiaController.getEntidades);
