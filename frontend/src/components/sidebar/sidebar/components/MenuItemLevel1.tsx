@@ -45,6 +45,34 @@ const getColorBySection = (color?: string) => {
         hover: '#6b7280', // gray-500
         hoverBg: 'rgba(107, 114, 128, 0.15)',
       };
+    case 'red': // PLANTA PROC
+      return {
+        active: '#ef4444', // red-500
+        activeBg: 'rgba(239, 68, 68, 0.25)',
+        hover: '#f87171', // red-400
+        hoverBg: 'rgba(248, 113, 113, 0.15)',
+      };
+    case 'cyan': // RESERVORIOS
+      return {
+        active: '#22d3ee', // cyan-400
+        activeBg: 'rgba(34, 211, 238, 0.25)',
+        hover: '#67e8f9', // cyan-300
+        hoverBg: 'rgba(103, 232, 249, 0.15)',
+      };
+    case 'yellow': // TRACTORES
+      return {
+        active: '#facc15', // yellow-400
+        activeBg: 'rgba(250, 204, 21, 0.25)',
+        hover: '#fde047', // yellow-300
+        hoverBg: 'rgba(253, 224, 71, 0.15)',
+      };
+    case 'silver': // METEOROLOGIA
+      return {
+        active: '#9ca3af', // gray-400
+        activeBg: 'rgba(156, 163, 175, 0.25)',
+        hover: '#d1d5db', // gray-300
+        hoverBg: 'rgba(209, 213, 219, 0.15)',
+      };
     default:
       return {
         active: '#ffffff',

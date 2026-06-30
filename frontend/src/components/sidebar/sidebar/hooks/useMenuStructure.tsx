@@ -112,7 +112,7 @@ export function useMenuStructure() {
         id: 'planta-proc',
         label: t('tabs.plantaProc'),
         icon: <IconPlantaProc />,
-        color: 'blue',
+        color: 'red',
         requiresPermission: true,
         requiredMenu: 'PLANTA_PROC',
         subMenus: [
@@ -132,7 +132,7 @@ export function useMenuStructure() {
         id: 'meteorologia',
         label: t('menu.meteorologia'),
         icon: <IconWeather />,
-        color: 'gray',
+        color: 'silver',
         requiresPermission: true,
         requiredMenu: 'METEOROLOGÍA',
         subMenus: [

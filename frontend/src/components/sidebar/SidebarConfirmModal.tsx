@@ -33,6 +33,34 @@ export function SidebarConfirmModal() {
         buttonClasses: 'bg-orange-500 hover:bg-orange-600'
       }
     }
+    // PLANTA PROC - usa rojo
+    else if (activeTab === 'planta-proc' || activeTab?.startsWith('planta-proc-')) {
+      return {
+        text: 'text-red-600 dark:text-red-400',
+        buttonClasses: 'bg-red-500 hover:bg-red-600'
+      }
+    }
+    // RESERVORIOS - usa celeste
+    else if (activeTab === 'reservorios' || activeTab?.startsWith('reservorios-')) {
+      return {
+        text: 'text-cyan-600 dark:text-cyan-400',
+        buttonClasses: 'bg-cyan-500 hover:bg-cyan-600'
+      }
+    }
+    // TRACTORES - usa amarillo
+    else if (activeTab === 'tractores' || activeTab?.startsWith('tractores-')) {
+      return {
+        text: 'text-yellow-600 dark:text-yellow-400',
+        buttonClasses: 'bg-yellow-500 hover:bg-yellow-600'
+      }
+    }
+    // METEOROLOGIA - usa gris claro
+    else if (activeTab === 'meteorologia' || activeTab?.startsWith('meteorologia-')) {
+      return {
+        text: 'text-gray-400 dark:text-gray-300',
+        buttonClasses: 'bg-gray-400 hover:bg-gray-500'
+      }
+    }
     // Por defecto (gray) - para otras secciones que no deberían mostrar el modal
     else {
       return {

@@ -45,6 +45,34 @@ const getColorBySection = (color?: string, level: 'level3' | 'level4' = 'level3'
           hover: `rgba(156, 163, 175, 0.7)`, // gray-400 más tenue
           hoverBg: `rgba(107, 114, 128, 0.05)`,
         };
+      case 'red': // PLANTA PROC
+        return {
+          active: `rgba(239, 68, 68, 0.7)`, // red-500 más tenue
+          activeBg: `rgba(239, 68, 68, 0.1)`,
+          hover: `rgba(248, 113, 113, 0.7)`, // red-400 más tenue
+          hoverBg: `rgba(239, 68, 68, 0.05)`,
+        };
+      case 'cyan': // RESERVORIOS
+        return {
+          active: `rgba(34, 211, 238, 0.7)`, // cyan-400 más tenue
+          activeBg: `rgba(34, 211, 238, 0.1)`,
+          hover: `rgba(103, 232, 249, 0.7)`, // cyan-300 más tenue
+          hoverBg: `rgba(34, 211, 238, 0.05)`,
+        };
+      case 'yellow': // TRACTORES
+        return {
+          active: `rgba(250, 204, 21, 0.7)`, // yellow-400 más tenue
+          activeBg: `rgba(250, 204, 21, 0.1)`,
+          hover: `rgba(253, 224, 71, 0.7)`, // yellow-300 más tenue
+          hoverBg: `rgba(250, 204, 21, 0.05)`,
+        };
+      case 'silver': // METEOROLOGIA
+        return {
+          active: `rgba(156, 163, 175, 0.7)`, // gray-400 más tenue
+          activeBg: `rgba(156, 163, 175, 0.1)`,
+          hover: `rgba(209, 213, 219, 0.7)`, // gray-300 más tenue
+          hoverBg: `rgba(156, 163, 175, 0.05)`,
+        };
       default:
         return {
           active: '#ffffff',
@@ -83,6 +111,34 @@ const getColorBySection = (color?: string, level: 'level3' | 'level4' = 'level3'
           activeBg: `rgba(107, 114, 128, 0.05)`,
           hover: `rgba(156, 163, 175, 0.5)`, // gray-400 más tenue
           hoverBg: `rgba(107, 114, 128, 0.02)`,
+        };
+      case 'red': // PLANTA PROC
+        return {
+          active: `rgba(239, 68, 68, 0.5)`, // red-500 más tenue
+          activeBg: `rgba(239, 68, 68, 0.05)`,
+          hover: `rgba(248, 113, 113, 0.5)`, // red-400 más tenue
+          hoverBg: `rgba(239, 68, 68, 0.02)`,
+        };
+      case 'cyan': // RESERVORIOS
+        return {
+          active: `rgba(34, 211, 238, 0.5)`, // cyan-400 más tenue
+          activeBg: `rgba(34, 211, 238, 0.05)`,
+          hover: `rgba(103, 232, 249, 0.5)`, // cyan-300 más tenue
+          hoverBg: `rgba(34, 211, 238, 0.02)`,
+        };
+      case 'yellow': // TRACTORES
+        return {
+          active: `rgba(250, 204, 21, 0.5)`, // yellow-400 más tenue
+          activeBg: `rgba(250, 204, 21, 0.05)`,
+          hover: `rgba(253, 224, 71, 0.5)`, // yellow-300 más tenue
+          hoverBg: `rgba(250, 204, 21, 0.02)`,
+        };
+      case 'silver': // METEOROLOGIA
+        return {
+          active: `rgba(156, 163, 175, 0.5)`, // gray-400 más tenue
+          activeBg: `rgba(156, 163, 175, 0.05)`,
+          hover: `rgba(209, 213, 219, 0.5)`, // gray-300 más tenue
+          hoverBg: `rgba(156, 163, 175, 0.02)`,
         };
       default:
         return {
