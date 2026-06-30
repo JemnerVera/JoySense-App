@@ -123,13 +123,10 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = memo(() => {
   const [metricas, setMetricas] = useState<any[]>([]);
   const [nodos, setNodos] = useState<any[]>([]);
   const [tipos, setTipos] = useState<any[]>([]);
-  const [entidades, setEntidades] = useState<any[]>([]);
-  
   const [selectedPais, setSelectedPais] = useState<Pais | null>(null);
   const [selectedEmpresa, setSelectedEmpresa] = useState<Empresa | null>(null);
   const [selectedFundo, setSelectedFundo] = useState<Fundo | null>(null);
   const [selectedUbicacion, setSelectedUbicacion] = useState<Ubicacion | null>(null);
-  const [selectedEntidad, setSelectedEntidad] = useState<any>(null);
   
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
@@ -193,15 +190,6 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = memo(() => {
       setTipos(data);
     } catch (error) {
       console.error('Error loading tipos:', error);
-    }
-  };
-
-  const loadEntidades = async (ubicacionId?: number) => {
-    try {
-      const data = await JoySenseService.getEntidades(ubicacionId);
-      setEntidades(data);
-    } catch (error) {
-      console.error('Error loading entidades:', error);
     }
   };
 
@@ -272,8 +260,6 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = memo(() => {
   const handleUbicacionSelect = async (ubicacion: Ubicacion) => {
     setSelectedUbicacion(ubicacion);
     setCurrentStep('results');
-    // Cargar entidades específicas de esta ubicación
-    await loadEntidades(ubicacion.ubicacionid);
     await loadMediciones(ubicacion.ubicacionid);
   };
 
@@ -377,21 +363,13 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = memo(() => {
     } finally {
       setLoading(false);
     }
-  }, [selectedUbicacion, startDate, endDate, selectedEntidad]);
-
-  // Efecto para actualizar mediciones cuando cambia la entidad seleccionada
-  useEffect(() => {
-    if (selectedUbicacion && (selectedEntidad || startDate || endDate)) {
-      handleDateFilter();
-    }
-  }, [selectedEntidad, selectedUbicacion, startDate, endDate, handleDateFilter]);
+  }, [selectedUbicacion, startDate, endDate]);
 
   const resetSelection = () => {
     setSelectedPais(null);
     setSelectedEmpresa(null);
     setSelectedFundo(null);
     setSelectedUbicacion(null);
-    setSelectedEntidad(null);
     setEmpresas([]);
     setFundos([]);
     setUbicaciones([]);
@@ -546,25 +524,6 @@ const DynamicHierarchy: React.FC<DynamicHierarchyProps> = memo(() => {
             <div className="bg-white rounded-xl shadow-sm p-4">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Filtros</h3>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Entidad</label>
-                  <select
-                    value={selectedEntidad?.entidadid || ''}
-                    onChange={(e) => {
-                      const entidadId = e.target.value ? parseInt(e.target.value) : null;
-                      const entidad = entidades.find(ent => ent.entidadid === entidadId);
-                      setSelectedEntidad(entidad || null);
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  >
-                    <option value="">Todas las entidades</option>
-                    {entidades.map((entidad) => (
-                      <option key={entidad.entidadid} value={entidad.entidadid}>
-                        {entidad.entidad}
-                      </option>
-                    ))}
-                  </select>
-                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Fecha Inicio</label>
                   <input

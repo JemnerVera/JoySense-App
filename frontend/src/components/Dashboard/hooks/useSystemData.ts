@@ -1,6 +1,5 @@
 /**
  * Hook personalizado para cargar datos del sistema
- * Encapsula: metricas, tipos, sensores, entidades, ubicaciones
  */
 
 import { useCallback, useEffect, useState } from 'react';
@@ -10,14 +9,12 @@ interface UseSystemDataReturn {
   metricas: any[];
   tipos: any[];
   sensores: any[];
-  entidades: any[];
   ubicaciones: any[];
   loading: boolean;
   error: string | null;
   loadMetricas: () => Promise<void>;
   loadTipos: () => Promise<void>;
   loadSensores: () => Promise<void>;
-  loadEntidades: (ubicacionId?: number) => Promise<void>;
   loadUbicaciones: () => Promise<void>;
 }
 
@@ -25,7 +22,6 @@ export function useSystemData(): UseSystemDataReturn {
   const [metricas, setMetricas] = useState<any[]>([]);
   const [tipos, setTipos] = useState<any[]>([]);
   const [sensores, setSensores] = useState<any[]>([]);
-  const [entidades, setEntidades] = useState<any[]>([]);
   const [ubicaciones, setUbicaciones] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,16 +56,6 @@ export function useSystemData(): UseSystemDataReturn {
     }
   }, []);
 
-  const loadEntidades = useCallback(async (ubicacionId?: number) => {
-    try {
-      const data = await JoySenseService.getEntidades(ubicacionId);
-      setEntidades(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error('[useSystemData] Error loading entidades:', err);
-      setError('Error cargando entidades');
-    }
-  }, []);
-
   const loadUbicaciones = useCallback(async () => {
     try {
       const data = await JoySenseService.getUbicaciones();
@@ -80,26 +66,22 @@ export function useSystemData(): UseSystemDataReturn {
     }
   }, []);
 
-  // Cargar datos iniciales
   useEffect(() => {
     loadMetricas();
     loadTipos();
     loadSensores();
-    loadEntidades();
-  }, [loadMetricas, loadTipos, loadSensores, loadEntidades]);
+  }, [loadMetricas, loadTipos, loadSensores]);
 
   return {
     metricas,
     tipos,
     sensores,
-    entidades,
     ubicaciones,
     loading,
     error,
     loadMetricas,
     loadTipos,
     loadSensores,
-    loadEntidades,
     loadUbicaciones
   };
 }

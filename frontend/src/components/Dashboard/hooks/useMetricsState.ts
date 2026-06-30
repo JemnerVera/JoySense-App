@@ -2,11 +2,9 @@ import { useState, useCallback } from 'react'
 import type { MetricConfig, MedicionData } from '../types'
 
 interface UseMetricsStateReturn {
-  // Estados
   metricas: any[]
   tipos: any[]
   sensores: any[]
-  entidades: any[]
   ubicaciones: any[]
   mediciones: MedicionData[]
   detailedMediciones: MedicionData[]
@@ -14,11 +12,9 @@ interface UseMetricsStateReturn {
   error: string | null
   selectedNode: any
   
-  // Setters
   setMetricas: (m: any[]) => void
   setTipos: (t: any[]) => void
   setSensores: (s: any[]) => void
-  setEntidades: (e: any[]) => void
   setUbicaciones: (u: any[]) => void
   setMediciones: (m: MedicionData[]) => void
   setDetailedMediciones: (m: MedicionData[]) => void
@@ -31,7 +27,6 @@ export function useMetricsState(): UseMetricsStateReturn {
   const [metricas, setMetricas] = useState<any[]>([])
   const [tipos, setTipos] = useState<any[]>([])
   const [sensores, setSensores] = useState<any[]>([])
-  const [entidades, setEntidades] = useState<any[]>([])
   const [ubicaciones, setUbicaciones] = useState<any[]>([])
   const [mediciones, setMediciones] = useState<MedicionData[]>([])
   const [detailedMediciones, setDetailedMediciones] = useState<MedicionData[]>([])
@@ -43,7 +38,6 @@ export function useMetricsState(): UseMetricsStateReturn {
     metricas,
     tipos,
     sensores,
-    entidades,
     ubicaciones,
     mediciones,
     detailedMediciones,
@@ -53,7 +47,6 @@ export function useMetricsState(): UseMetricsStateReturn {
     setMetricas,
     setTipos,
     setSensores,
-    setEntidades,
     setUbicaciones,
     setMediciones,
     setDetailedMediciones,

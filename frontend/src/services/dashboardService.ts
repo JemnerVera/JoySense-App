@@ -17,7 +17,6 @@ export interface DashboardData {
   metricas: any[];
   nodos: any[];
   tipos: any[];
-  entidades: any[];
 }
 
 export interface FilteredData {
@@ -173,11 +172,10 @@ export class DashboardService {
     const mediciones = await this.getMediciones(filters);
     
     // Obtener datos relacionados basándose en las mediciones
-    const [metricas, nodos, tipos, entidades] = await Promise.all([
+    const [metricas, nodos, tipos] = await Promise.all([
       this.getMetricasDisponibles(mediciones),
       this.getNodosDisponibles(mediciones, filters.ubicacionId),
       this.getTiposDisponibles(mediciones),
-      JoySenseService.getEntidades(filters.ubicacionId)
     ]);
 
     return {
@@ -185,7 +183,6 @@ export class DashboardService {
       metricas,
       nodos,
       tipos,
-      entidades
     };
   }
 

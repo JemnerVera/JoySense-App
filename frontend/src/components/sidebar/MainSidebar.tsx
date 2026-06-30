@@ -118,7 +118,7 @@ const MainSidebar: React.FC<MainSidebarProps> = ({
                   borderBottom: `1px solid ${TEMPLATE_COLORS.borderColor}`,
                 }}
               >
-                <SidebarFilters authToken={authToken} />
+                <SidebarFilters />
               </div>
             </>
           )}

@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import { JoySenseService } from '../services/backend-api';
 
 export interface FiltersBatch {
   paisId?: string;
@@ -23,6 +24,12 @@ interface FilterContextType {
   setShowDetailedAnalysis: (show: boolean) => void;
   setFiltersBatch: (batch: FiltersBatch) => void;
   resetFilters: () => void;
+  paises: any[];
+  empresas: any[];
+  fundos: any[];
+  ubicaciones: any[];
+  filterDataLoading: boolean;
+  filterDataError: string | null;
 }
 
 const FilterContext = createContext<FilterContextType | undefined>(undefined);
@@ -46,6 +53,37 @@ export const FilterProvider: React.FC<FilterProviderProps> = ({ children }) => {
   const [ubicacionSeleccionada, setUbicacionSeleccionada] = useState<any | null>(null);
   const [localizacionSeleccionada, setLocalizacionSeleccionada] = useState<any | null>(null);
   const [showDetailedAnalysis, setShowDetailedAnalysis] = useState<boolean>(false);
+
+  const [paises, setPaises] = useState<any[]>([]);
+  const [empresas, setEmpresas] = useState<any[]>([]);
+  const [fundos, setFundos] = useState<any[]>([]);
+  const [ubicaciones, setUbicaciones] = useState<any[]>([]);
+  const [filterDataLoading, setFilterDataLoading] = useState(true);
+  const [filterDataError, setFilterDataError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const fetchFilterData = async () => {
+      try {
+        setFilterDataLoading(true);
+        setFilterDataError(null);
+        const data = await JoySenseService.getFiltersData();
+        if (cancelled) return;
+        setPaises(data?.paises || []);
+        setEmpresas(data?.empresas || []);
+        setFundos(data?.fundos || []);
+        setUbicaciones(data?.ubicaciones || []);
+      } catch (err: any) {
+        if (cancelled) return;
+        console.error('❌ Error cargando datos de filtros:', err);
+        setFilterDataError(err.message || 'Error al cargar datos de filtros');
+      } finally {
+        if (!cancelled) setFilterDataLoading(false);
+      }
+    };
+    fetchFilterData();
+    return () => { cancelled = true; };
+  }, []);
 
   const setPaisSeleccionadoCb = useCallback((pais: string) => {
     setPaisSeleccionado(pais);
@@ -102,6 +140,12 @@ export const FilterProvider: React.FC<FilterProviderProps> = ({ children }) => {
     setShowDetailedAnalysis: setShowDetailedAnalysisCb,
     setFiltersBatch,
     resetFilters,
+    paises,
+    empresas,
+    fundos,
+    ubicaciones,
+    filterDataLoading,
+    filterDataError,
   };
 
   return (

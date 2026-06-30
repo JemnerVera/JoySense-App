@@ -1,15 +1,10 @@
 import React from 'react';
-import { useFilterData } from '../hooks/useFilterData';
 import { useCascadingFilters } from '../hooks/useCascadingFilters';
 import { useFilters } from '../contexts/FilterContext';
 import CollapsibleGlobalFilters from './shared/filters/CollapsibleGlobalFilters';
 
-interface SidebarFiltersProps {
-  authToken: string;
-}
-
-const SidebarFilters: React.FC<SidebarFiltersProps> = ({ authToken }) => {
-  const { paises, empresas, fundos, ubicaciones, loading, error } = useFilterData(authToken);
+const SidebarFilters: React.FC = () => {
+  const { paises, empresas, fundos, ubicaciones, filterDataLoading: loading, filterDataError: error } = useFilters();
   const { showDetailedAnalysis } = useFilters();
   const {
     paisSeleccionado,
@@ -24,7 +19,6 @@ const SidebarFilters: React.FC<SidebarFiltersProps> = ({ authToken }) => {
     resetAllFilters,
   } = useCascadingFilters();
 
-  // Preparar datos para los selectores
   const paisesOptions = paises.map(pais => ({
     id: pais.paisid,
     name: pais.pais

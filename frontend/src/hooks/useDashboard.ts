@@ -7,7 +7,6 @@ export interface UseDashboardState {
   metricas: any[];
   nodos: any[];
   tipos: any[];
-  entidades: any[];
   
   // Estados de filtros
   selectedMetrica: number | null;
@@ -47,7 +46,6 @@ export function useDashboard(initialFilters: DashboardFilters) {
   const [metricas, setMetricas] = useState<any[]>([]);
   const [nodos, setNodos] = useState<any[]>([]);
   const [tipos, setTipos] = useState<any[]>([]);
-  const [entidades, setEntidades] = useState<any[]>([]);
   
   // Estados de filtros
   const [selectedMetrica, setSelectedMetrica] = useState<number | null>(null);
@@ -74,7 +72,6 @@ export function useDashboard(initialFilters: DashboardFilters) {
       setMetricas(data.metricas);
       setNodos(data.nodos);
       setTipos(data.tipos);
-      setEntidades(data.entidades);
       
       // Inicializar filtros si no están seleccionados
       if (selectedMetrica === null && data.metricas.length > 0) {
@@ -198,7 +195,6 @@ export function useDashboard(initialFilters: DashboardFilters) {
     metricas,
     nodos,
     tipos,
-    entidades,
     selectedMetrica,
     selectedNodos,
     selectedTipos,
