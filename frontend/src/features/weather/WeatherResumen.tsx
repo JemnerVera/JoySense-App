@@ -93,6 +93,7 @@ export const WeatherResumen: React.FC = () => {
             <WeatherMetricWeekChart
               series={selectedSeries}
               weekRange={dateRange.formatted}
+              stationName={selectedStation?.name}
             />
           )}
         </div>

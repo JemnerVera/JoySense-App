@@ -13,6 +13,11 @@ interface WeatherTrend24hProps {
   unit: string;
   color?: string;
   height?: number | string;
+  yAxisLabelFormatter?: (value: number) => string;
+  tooltipValueFormatter?: (value: number) => string;
+  yAxisMin?: number;
+  yAxisMax?: number;
+  yAxisInterval?: number;
 }
 
 export const WeatherTrend24h: React.FC<WeatherTrend24hProps> = ({
@@ -21,6 +26,11 @@ export const WeatherTrend24h: React.FC<WeatherTrend24hProps> = ({
   unit,
   color = '#3b82f6',
   height,
+  yAxisLabelFormatter,
+  tooltipValueFormatter,
+  yAxisMin,
+  yAxisMax,
+  yAxisInterval,
 }) => {
   // Si no se especifica altura, usar altura flexible
   const containerHeight = height ?? '100%';
@@ -54,8 +64,12 @@ export const WeatherTrend24h: React.FC<WeatherTrend24hProps> = ({
         const lines: string[] = [];
         params.forEach((p: { value?: number; seriesName?: string; marker?: string }) => {
           const val = p.value;
-          const display =
-            typeof val === 'number' && !isNaN(val) ? `${val.toFixed(2)} ${unit}` : '-';
+          let display = '-';
+          if (typeof val === 'number' && !isNaN(val)) {
+            display = tooltipValueFormatter
+              ? tooltipValueFormatter(val)
+              : `${val.toFixed(2)} ${unit}`;
+          }
           lines.push(`${p.marker} ${p.seriesName}: ${display}`);
         });
         const date = (params[0] as { axisValue?: string })?.axisValue || '';
@@ -75,6 +89,9 @@ export const WeatherTrend24h: React.FC<WeatherTrend24hProps> = ({
     },
     yAxis: {
       type: 'value',
+      min: yAxisMin,
+      max: yAxisMax,
+      interval: yAxisInterval,
       axisLine: { show: false },
       axisTick: { show: false },
       splitLine: { lineStyle: { color: '#f3f4f6' } },
@@ -82,6 +99,7 @@ export const WeatherTrend24h: React.FC<WeatherTrend24hProps> = ({
         fontSize: 12,
         fontFamily: 'monospace',
         color: '#9ca3af',
+        formatter: yAxisLabelFormatter,
       },
     },
     series: [

@@ -1,17 +1,37 @@
 import React, { useMemo } from 'react';
 import { WeatherTrend24h } from './WeatherTrend24h';
 import { MetricWeekSeries } from '../../hooks/useWeatherResumenData';
+import { isProprietaryStation, WIND_DIRECTION_MAP, WIND_LEVEL_MAP } from '../../../hooks/useWeatherData';
 
 interface WeatherMetricWeekChartProps {
   series: MetricWeekSeries;
   weekRange: string;
+  stationName?: string;
 }
 
 export const WeatherMetricWeekChart: React.FC<WeatherMetricWeekChartProps> = ({
   series,
   weekRange,
+  stationName,
 }) => {
   const hasWeekData = series.weekPoints.some((p) => p.value !== null);
+
+  const isWindDir = series.metricName === 'wind_dir';
+  const isPropSpeed = isProprietaryStation(stationName ?? '') && series.metricName === 'wind_speed_10_min_avg';
+
+  const yAxisLabelFormatter = isWindDir
+    ? (v: number) => WIND_DIRECTION_MAP[v]?.short ?? String(Math.round(v))
+    : undefined;
+
+  const tooltipValueFormatter = isWindDir
+    ? (v: number) => `${WIND_DIRECTION_MAP[v]?.description ?? v} (${v}°)`
+    : isPropSpeed
+      ? (v: number) => `${v.toFixed(2)} - ${WIND_LEVEL_MAP[Math.round(v)] || 'Desconocido'}`
+      : undefined;
+
+  const yAxisMin = isWindDir ? 0 : undefined;
+  const yAxisMax = isWindDir ? 7 : undefined;
+  const yAxisInterval = isWindDir ? 1 : undefined;
   const hasAccumData =
     series.cumulativePoints &&
     series.cumulativePoints.some((p) => p.value !== null);
@@ -70,6 +90,11 @@ export const WeatherMetricWeekChart: React.FC<WeatherMetricWeekChartProps> = ({
               metric={series.label}
               unit={series.unit}
               color={series.color}
+              yAxisLabelFormatter={yAxisLabelFormatter}
+              tooltipValueFormatter={tooltipValueFormatter}
+              yAxisMin={yAxisMin}
+              yAxisMax={yAxisMax}
+              yAxisInterval={yAxisInterval}
             />
           </div>
         </div>
@@ -97,6 +122,11 @@ export const WeatherMetricWeekChart: React.FC<WeatherMetricWeekChartProps> = ({
                 }`}
                 unit={series.unit}
                 color={series.color}
+                yAxisLabelFormatter={yAxisLabelFormatter}
+                tooltipValueFormatter={tooltipValueFormatter}
+                yAxisMin={yAxisMin}
+                yAxisMax={yAxisMax}
+                yAxisInterval={yAxisInterval}
               />
             </div>
           </div>
