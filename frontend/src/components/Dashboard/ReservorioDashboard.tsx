@@ -542,10 +542,7 @@ export function ReservorioDashboard() {
                         onClick={() => handleEntrySelect(entry)}
                         className={`w-full text-left px-3 py-2 text-base transition-colors font-mono tracking-wider ${selectedEntry?.localizacion === entry.localizacion ? 'bg-cyan-500 text-white' : 'text-gray-700 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-800'}`}
                       >
-                        <div>{entry.localizacion}</div>
-                        <div className="text-xs text-gray-500 dark:text-neutral-400">
-                          {entry.nodos.map((n) => `${n.nodo} (${n.sensor})`).join(' · ')}
-                        </div>
+                        {entry.localizacion}
                       </button>
                     )) : (
                       <div className="px-3 py-2 text-base text-gray-500 dark:text-neutral-400 font-mono">Sin resultados</div>

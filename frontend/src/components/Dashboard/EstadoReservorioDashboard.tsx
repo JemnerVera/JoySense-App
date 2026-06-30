@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import ReactECharts from 'echarts-for-react'
 import * as echarts from 'echarts'
 import type { EChartsOption } from 'echarts'
 import SupabaseRPCService from '../../services/supabase-rpc'
+import { JoySenseService } from '../../services/backend-api'
 import { hexToRgba } from '../../utils/chartUtils'
 import { nivelToAreaVolumen } from '../../utils/reservorioEquivalencias'
 
-const NODO_ID = 393
+const RESERVORIO_TIPO_IDS = [13, 14, 19]
 const HOURS_BACK = 8
 const CHART_COLORS = ['#06b6d4', '#3b82f6']
 
@@ -24,37 +25,201 @@ function formatNum(v: number, decimals = 2): string {
   return v.toFixed(decimals)
 }
 
-export function EstadoReservorioDashboard() {
-  const [mediciones, setMediciones] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+interface NodoSensorInfo {
+  nodoid: number
+  nodo: string
+  sensorid: number
+  sensor: string
+  tipoid: number
+  tipo: string
+}
 
-  const loadData = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const now = new Date()
-      const start = new Date(now.getTime() - HOURS_BACK * 60 * 60 * 1000)
-      const fmt = (d: Date) =>
-        d.toISOString().replace('T', ' ').slice(0, 19)
-      const data = await SupabaseRPCService.getMedicionesNodoDetallado({
-        nodoid: NODO_ID,
-        startDate: fmt(start),
-        endDate: fmt(now),
-      })
-      setMediciones(data || [])
-    } catch (err: any) {
-      setError(err.message || 'Error al cargar datos')
-    } finally {
-      setLoading(false)
+interface ReservoirEntry {
+  localizacionid: number
+  localizacion: string
+  nodos: NodoSensorInfo[]
+}
+
+export function EstadoReservorioDashboard() {
+  const [entries, setEntries] = useState<ReservoirEntry[]>([])
+  const [selectedEntry, setSelectedEntry] = useState<ReservoirEntry | null>(null)
+  const [mediciones, setMediciones] = useState<any[]>([])
+  const [loadingEntries, setLoadingEntries] = useState(true)
+  const [loadingData, setLoadingData] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  const getLocalDateString = (date: Date): string => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
+  const now = new Date()
+  const defaultStart = new Date(now.getTime() - HOURS_BACK * 60 * 60 * 1000)
+
+  const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
+    start: getLocalDateString(defaultStart),
+    end: getLocalDateString(now),
+  })
+  const [pendingDateRange, setPendingDateRange] = useState<{ start: string; end: string }>({
+    start: getLocalDateString(defaultStart),
+    end: getLocalDateString(now),
+  })
+
+  useEffect(() => {
+    const load = async () => {
+      setLoadingEntries(true)
+      try {
+        const [localizacionData, sensorData] = await Promise.all([
+          JoySenseService.getLocalizacionesParaMediciones(1000),
+          JoySenseService.getTableData('sensor', 100),
+        ])
+
+        const sensorMap = new Map<number, any>()
+        ;(sensorData || []).forEach((s: any) => sensorMap.set(s.sensorid, s))
+
+        const grouped = new Map<string, ReservoirEntry>()
+
+        ;(localizacionData || []).forEach((loc: any) => {
+          if (!loc.tipoid || !RESERVORIO_TIPO_IDS.includes(Number(loc.tipoid))) return
+
+          const nodo = loc.nodo
+          const sensor = sensorMap.get(loc.sensorid)
+          const locName = loc.localizacion || `Localización ${loc.localizacionid}`
+
+          if (!grouped.has(locName)) {
+            grouped.set(locName, {
+              localizacionid: loc.localizacionid,
+              localizacion: locName,
+              nodos: [],
+            })
+          }
+
+          const entry = grouped.get(locName)!
+          const exists = entry.nodos.some((n) => n.nodoid === loc.nodoid && n.sensorid === loc.sensorid)
+          if (!exists) {
+            entry.nodos.push({
+              nodoid: nodo?.nodoid || loc.nodoid,
+              nodo: nodo?.nodo || `Nodo ${loc.nodoid}`,
+              sensorid: loc.sensorid,
+              sensor: sensor?.sensor || `Sensor ${loc.sensorid}`,
+              tipoid: loc.tipoid,
+              tipo: sensor?.tipo || '',
+            })
+          }
+        })
+
+        setEntries(Array.from(grouped.values()))
+      } catch (err: any) {
+        console.error('[EstadoReservorioDashboard] Error loading entries:', err)
+        setError('Error al cargar lista de reservorios')
+      } finally {
+        setLoadingEntries(false)
+      }
     }
+    load()
   }, [])
 
-  useEffect(() => { loadData() }, [loadData])
+  const loadMediciones = useCallback(async () => {
+    if (!selectedEntry || !selectedEntry.nodos.length) {
+      setMediciones([])
+      return
+    }
+    const startDateTime = `${dateRange.start} 00:00:00`
+    const endDateTime = `${dateRange.end} 23:59:59`
+    try {
+      setLoadingData(true)
+      setError(null)
+      const results = await Promise.all(
+        selectedEntry.nodos.map((n) =>
+          SupabaseRPCService.getMedicionesNodoDetallado({
+            nodoid: n.nodoid,
+            startDate: startDateTime,
+            endDate: endDateTime,
+          }).then(data =>
+            (data || []).map(m => ({
+              ...m,
+              _nodoid: n.nodoid,
+              _nodo: n.nodo,
+            }))
+          )
+        )
+      )
+      const merged = results.flat().filter(Boolean)
+      const valid = merged.filter((m: any) => m.metrica_nombre)
+      const normalized = valid.map((m: any) => {
+        if ((m.metrica_nombre || '').toLowerCase() === 'nivel' && Number(m.medicion) > 50) {
+          return { ...m, medicion: Number(m.medicion) / 100 }
+        }
+        return m
+      })
+      setMediciones(normalized)
+    } catch (err: any) {
+      setError(err.message || 'Error al cargar datos')
+      setMediciones([])
+    } finally {
+      setLoadingData(false)
+    }
+  }, [selectedEntry, dateRange])
+
+  useEffect(() => { if (selectedEntry) loadMediciones() }, [selectedEntry, dateRange, loadMediciones])
+
+  const filteredEntries = useMemo(() => {
+    if (!searchTerm) return entries
+    const term = searchTerm.toLowerCase()
+    return entries.filter((e) =>
+      e.localizacion.toLowerCase().includes(term) ||
+      e.nodos.some((n) =>
+        n.nodo.toLowerCase().includes(term) ||
+        n.sensor.toLowerCase().includes(term) ||
+        n.tipo.toLowerCase().includes(term)
+      )
+    )
+  }, [entries, searchTerm])
+
+  const handleEntrySelect = useCallback((entry: ReservoirEntry) => {
+    setSelectedEntry(entry)
+    setIsDropdownOpen(false)
+    setSearchTerm('')
+  }, [])
+
+  const handleApplyDateRange = () => setDateRange(pendingDateRange)
+
+  useEffect(() => {
+    if (isDropdownOpen && dropdownRef.current) {
+      let afId: number
+      let mounted = true
+      const update = () => {
+        if (!mounted || !dropdownRef.current) return
+        const rect = dropdownRef.current.getBoundingClientRect()
+        setDropdownPosition({ top: rect.bottom + window.scrollY + 4, left: rect.left + window.scrollX, width: rect.width })
+        if (mounted) afId = requestAnimationFrame(update)
+      }
+      afId = requestAnimationFrame(update)
+      return () => { mounted = false; cancelAnimationFrame(afId) }
+    } else {
+      setDropdownPosition(null)
+    }
+  }, [isDropdownOpen])
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setIsDropdownOpen(false)
+    }
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isDropdownOpen])
 
   const nivelMediciones = useMemo(() => {
     return mediciones
-      .filter((m: any) => (m.metrica_nombre || '').toLowerCase().trim() === 'nivel')
+      .filter((m: any) => (m.metrica_nombre || '').toLowerCase().trim() === 'nivel' && (m._nodo || '').toLowerCase().includes('res'))
       .map((m: any) => {
         let nivel = Number(m.medicion)
         if (nivel > 50) nivel = nivel / 100
@@ -150,7 +315,7 @@ export function EstadoReservorioDashboard() {
     return buildChartOption(data, 'Volumen', 'm³', CHART_COLORS[1])
   }, [derivedData, buildChartOption])
 
-  if (loading) {
+  if (loadingEntries) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500" />
@@ -158,7 +323,7 @@ export function EstadoReservorioDashboard() {
     )
   }
 
-  if (error) {
+  if (error && entries.length === 0) {
     return (
       <div className="flex items-center justify-center h-96 text-red-400 font-mono">
         Error: {error}
@@ -166,16 +331,244 @@ export function EstadoReservorioDashboard() {
     )
   }
 
+  if (!selectedEntry) {
+    return (
+      <div className="bg-neutral-900 min-h-full p-6">
+        {/* Toolbar */}
+        <div className="flex items-center gap-4 mb-6">
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="h-10 min-w-[200px] max-w-[320px] px-3 bg-neutral-800 border border-neutral-600 rounded text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 font-mono text-sm flex items-center justify-between truncate"
+            >
+              <span className="text-neutral-400 truncate">Seleccionar localización...</span>
+              <svg className={`w-4 h-4 transition-transform flex-shrink-0 ml-2 ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {isDropdownOpen && dropdownPosition && (
+              <div
+                className="fixed z-[9999] bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-96 overflow-hidden"
+                style={{ top: `${dropdownPosition.top}px`, left: `${dropdownPosition.left}px`, width: `${Math.max(dropdownPosition.width * 2, 400)}px` }}
+              >
+                <div className="p-2 border-b border-neutral-700">
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Buscar localización..."
+                    className="w-full px-2 py-1 bg-neutral-800 border border-neutral-600 rounded text-white text-base focus:outline-none focus:ring-1 focus:ring-cyan-500 font-mono"
+                    autoFocus
+                  />
+                </div>
+                <div className="max-h-48 overflow-y-auto">
+                  {filteredEntries.length > 0 ? filteredEntries.map((entry) => (
+                    <button
+                      key={entry.localizacion}
+                      onClick={() => handleEntrySelect(entry)}
+                      className="w-full text-left px-3 py-2 text-base transition-colors font-mono tracking-wider text-neutral-300 hover:bg-neutral-800"
+                    >
+                      {entry.localizacion}
+                    </button>
+                  )) : (
+                    <div className="px-3 py-2 text-base text-neutral-500 font-mono">Sin resultados</div>
+                  )}
+                </div>
+                <div className="px-3 py-2 text-xs text-neutral-500 font-mono border-t border-neutral-700 bg-neutral-800">
+                  {filteredEntries.length} localización(es)
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Placeholder */}
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="text-6xl mb-4">💧</div>
+            <p className="text-neutral-400 font-mono text-base">Selecciona una localización para ver su estado</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (loadingData && mediciones.length === 0) {
+    return (
+      <div className="bg-neutral-900 min-h-full p-6 space-y-6">
+        <div className="flex items-center gap-4">
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="h-10 min-w-[200px] max-w-[320px] px-3 bg-neutral-800 border border-neutral-600 rounded text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 font-mono text-sm flex items-center justify-between truncate"
+            >
+              <span className="text-white truncate">{selectedEntry.localizacion}</span>
+              <svg className={`w-4 h-4 transition-transform flex-shrink-0 ml-2 ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {isDropdownOpen && dropdownPosition && (
+              <div
+                className="fixed z-[9999] bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-96 overflow-hidden"
+                style={{ top: `${dropdownPosition.top}px`, left: `${dropdownPosition.left}px`, width: `${Math.max(dropdownPosition.width * 2, 400)}px` }}
+              >
+                <div className="p-2 border-b border-neutral-700">
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Buscar localización..."
+                    className="w-full px-2 py-1 bg-neutral-800 border border-neutral-600 rounded text-white text-base focus:outline-none focus:ring-1 focus:ring-cyan-500 font-mono"
+                    autoFocus
+                  />
+                </div>
+                <div className="max-h-48 overflow-y-auto">
+                  {filteredEntries.length > 0 ? filteredEntries.map((entry) => (
+                    <button
+                      key={entry.localizacion}
+                      onClick={() => handleEntrySelect(entry)}
+                      className={`w-full text-left px-3 py-2 text-base transition-colors font-mono tracking-wider ${selectedEntry?.localizacion === entry.localizacion ? 'bg-cyan-500 text-white' : 'text-neutral-300 hover:bg-neutral-800'}`}
+                    >
+                      {entry.localizacion}
+                    </button>
+                  )) : (
+                    <div className="px-3 py-2 text-base text-neutral-500 font-mono">Sin resultados</div>
+                  )}
+                </div>
+                <div className="px-3 py-2 text-xs text-neutral-500 font-mono border-t border-neutral-700 bg-neutral-800">
+                  {filteredEntries.length} localización(es)
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500" />
+        </div>
+      </div>
+    )
+  }
+
+  if (error && mediciones.length === 0) {
+    return (
+      <div className="bg-neutral-900 min-h-full p-6 space-y-6">
+        <div className="flex items-center gap-4">
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              className="h-10 min-w-[200px] max-w-[320px] px-3 bg-neutral-800 border border-neutral-600 rounded text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 font-mono text-sm flex items-center justify-between truncate"
+            >
+              <span className="text-white truncate">{selectedEntry.localizacion}</span>
+              <svg className={`w-4 h-4 transition-transform flex-shrink-0 ml-2 ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {isDropdownOpen && dropdownPosition && (
+              <div
+                className="fixed z-[9999] bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-96 overflow-hidden"
+                style={{ top: `${dropdownPosition.top}px`, left: `${dropdownPosition.left}px`, width: `${Math.max(dropdownPosition.width * 2, 400)}px` }}
+              >
+                <div className="p-2 border-b border-neutral-700">
+                  <input
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Buscar localización..."
+                    className="w-full px-2 py-1 bg-neutral-800 border border-neutral-600 rounded text-white text-base focus:outline-none focus:ring-1 focus:ring-cyan-500 font-mono"
+                    autoFocus
+                  />
+                </div>
+                <div className="max-h-48 overflow-y-auto">
+                  {filteredEntries.length > 0 ? filteredEntries.map((entry) => (
+                    <button
+                      key={entry.localizacion}
+                      onClick={() => handleEntrySelect(entry)}
+                      className={`w-full text-left px-3 py-2 text-base transition-colors font-mono tracking-wider ${selectedEntry?.localizacion === entry.localizacion ? 'bg-cyan-500 text-white' : 'text-neutral-300 hover:bg-neutral-800'}`}
+                    >
+                      {entry.localizacion}
+                    </button>
+                  )) : (
+                    <div className="px-3 py-2 text-base text-neutral-500 font-mono">Sin resultados</div>
+                  )}
+                </div>
+                <div className="px-3 py-2 text-xs text-neutral-500 font-mono border-t border-neutral-700 bg-neutral-800">
+                  {filteredEntries.length} localización(es)
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center justify-center h-64 text-red-400 font-mono">
+          Error: {error}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="bg-neutral-900 min-h-full p-6 space-y-6">
-      {/* Header */}
-      <div className="flex justify-end">
-        <button
-          onClick={loadData}
-          className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg font-mono text-sm transition-colors"
-        >
-          Actualizar
-        </button>
+      {/* Toolbar */}
+      <div className="flex flex-wrap gap-4 items-end">
+        <div className="relative" ref={dropdownRef}>
+          <label className="text-neutral-400 text-xs font-medium mb-1 font-mono uppercase block">LOCALIZACIÓN</label>
+          <button
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            className="h-10 min-w-[200px] max-w-[320px] px-3 bg-neutral-800 border border-neutral-600 rounded text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 font-mono text-sm flex items-center justify-between truncate"
+          >
+            <span className="text-white truncate">{selectedEntry.localizacion}</span>
+            <svg className={`w-4 h-4 transition-transform flex-shrink-0 ml-2 ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {isDropdownOpen && dropdownPosition && (
+            <div
+              className="fixed z-[9999] bg-neutral-900 border border-neutral-700 rounded-lg shadow-lg max-h-96 overflow-hidden"
+              style={{ top: `${dropdownPosition.top}px`, left: `${dropdownPosition.left}px`, width: `${Math.max(dropdownPosition.width * 2, 400)}px` }}
+            >
+              <div className="p-2 border-b border-neutral-700">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Buscar localización..."
+                  className="w-full px-2 py-1 bg-neutral-800 border border-neutral-600 rounded text-white text-base focus:outline-none focus:ring-1 focus:ring-cyan-500 font-mono"
+                  autoFocus
+                />
+              </div>
+              <div className="max-h-48 overflow-y-auto">
+                {filteredEntries.length > 0 ? filteredEntries.map((entry) => (
+                  <button
+                    key={entry.localizacion}
+                    onClick={() => handleEntrySelect(entry)}
+                    className={`w-full text-left px-3 py-2 text-base transition-colors font-mono tracking-wider ${selectedEntry?.localizacion === entry.localizacion ? 'bg-cyan-500 text-white' : 'text-neutral-300 hover:bg-neutral-800'}`}
+                  >
+                    {entry.localizacion}
+                  </button>
+                )) : (
+                  <div className="px-3 py-2 text-base text-neutral-500 font-mono">Sin resultados</div>
+                )}
+              </div>
+              <div className="px-3 py-2 text-xs text-neutral-500 font-mono border-t border-neutral-700 bg-neutral-800">
+                {filteredEntries.length} localización(es)
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col">
+          <label className="text-neutral-400 text-xs font-medium mb-1 font-mono uppercase">DESDE</label>
+          <input type="date" value={pendingDateRange.start} onChange={(e) => setPendingDateRange((prev) => ({ ...prev, start: e.target.value }))} className="h-10 w-36 px-2 bg-neutral-800 border border-neutral-600 rounded text-white font-mono text-sm" />
+        </div>
+        <div className="flex flex-col">
+          <label className="text-neutral-400 text-xs font-medium mb-1 font-mono uppercase">HASTA</label>
+          <input type="date" value={pendingDateRange.end} onChange={(e) => setPendingDateRange((prev) => ({ ...prev, end: e.target.value }))} className="h-10 w-36 px-2 bg-neutral-800 border border-neutral-600 rounded text-white font-mono text-sm" />
+        </div>
+        <button onClick={handleApplyDateRange} className="h-10 px-4 bg-cyan-600 hover:bg-cyan-500 text-white rounded font-mono text-sm transition-colors">APLICAR</button>
+        <button onClick={loadMediciones} className="h-10 px-4 bg-cyan-600 hover:bg-cyan-500 text-white rounded font-mono text-sm transition-colors">ACTUALIZAR</button>
       </div>
 
       {/* Cards */}
