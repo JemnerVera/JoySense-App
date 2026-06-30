@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { useWeatherData } from '../../hooks/useWeatherData';
+import { useWeatherData, isProprietaryStation } from '../../hooks/useWeatherData';
 import { WeatherStationSelector } from './WeatherStationSelector';
 import { WeatherDetailsTab } from './WeatherDetailsTab';
 import { useExportPDF } from '../../hooks/useExportPDF';
@@ -97,6 +97,7 @@ export const WeatherDetailsPage: React.FC = () => {
         <WeatherDetailsTab 
           historicalData={historical24h}
           loading={loading}
+          isProprietary={isProprietaryStation(selectedStation?.name ?? '')}
         />
       </div>
     </div>

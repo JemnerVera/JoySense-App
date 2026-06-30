@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react';
-import { WeatherMedicionData, WeatherStation } from '../../hooks/useWeatherData';
+import { WeatherMedicionData, WeatherStation, WIND_LEVEL_MAP } from '../../hooks/useWeatherData';
 
 interface WeatherDetailsTabProps {
   historicalData: WeatherMedicionData[];
   loading: boolean;
+  isProprietary?: boolean;
 }
 
 interface DayStat {
@@ -43,6 +44,7 @@ const formatValue = (value: number | null, decimals: number = 2): string => {
 export const WeatherDetailsTab: React.FC<WeatherDetailsTabProps> = ({
   historicalData,
   loading,
+  isProprietary,
 }) => {
   const today = useMemo(() => {
     const now = new Date();
@@ -167,21 +169,30 @@ export const WeatherDetailsTab: React.FC<WeatherDetailsTabProps> = ({
                   const stats = getDayStats(metric.key);
                   const isTemperature = metric.unit === '°C';
                   const decimals = isTemperature ? 1 : metric.key === 'wind_dir' ? 0 : 1;
+                  const isPropWind = isProprietary && metric.key === 'wind_speed_10_min_avg';
+                  
+                  const formatActual = (val: number | null) => {
+                    if (val === null) return '--';
+                    if (isPropWind && val >= 0 && val <= 7) {
+                      return `${val.toFixed(1)} - ${WIND_LEVEL_MAP[Math.round(val)] || 'Desconocido'}`;
+                    }
+                    return formatValue(val, decimals);
+                  };
                   
                   return (
                     <tr key={metric.key} className="hover:bg-gray-50 dark:hover:bg-neutral-700">
                       <td className="px-3 py-2 text-gray-700 dark:text-gray-300">{metric.label}</td>
                       <td className="px-3 py-2 text-right font-semibold text-gray-800 dark:text-gray-200">
-                        {formatValue(stats.actual, decimals)}{metric.unit}
+                        {formatActual(stats.actual)}{isPropWind ? '' : metric.unit}
                       </td>
                       <td className="px-3 py-2 text-right text-red-600 dark:text-red-400">
-                        {formatValue(stats.max, decimals)}{metric.unit}
+                        {formatActual(stats.max)}{isPropWind ? '' : metric.unit}
                       </td>
                       <td className="px-3 py-2 text-center text-gray-500">
                         {formatTime(stats.maxTime)}
                       </td>
                       <td className="px-3 py-2 text-right text-blue-600 dark:text-blue-400">
-                        {formatValue(stats.min, decimals)}{metric.unit}
+                        {formatActual(stats.min)}{isPropWind ? '' : metric.unit}
                       </td>
                       <td className="px-3 py-2 text-center text-gray-500">
                         {formatTime(stats.minTime)}

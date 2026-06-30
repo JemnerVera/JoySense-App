@@ -20,6 +20,8 @@ import {
   buildAvailableMetrics,
   fetchOpenMeteo,
   getMoonPhase,
+  isProprietaryStation,
+  transformProprietaryData,
 } from '../hooks/useWeatherData';
 
 const WeatherContext = createContext<UseWeatherDataResult | undefined>(undefined);
@@ -107,11 +109,12 @@ export const WeatherProvider: React.FC<{ children: ReactNode }> = ({ children })
     try {
       const { startDate, endDate } = getDateRangeParams('today');
 
-      const data = await SupabaseRPCService.getMedicionesNodoDetallado({
+      let data = await SupabaseRPCService.getMedicionesNodoDetallado({
         nodoid: selectedStation.nodoid,
         startDate,
         endDate,
       });
+      data = transformProprietaryData(data, selectedStation.name);
 
       const currentMap: WeatherCurrentData = {};
 
@@ -144,11 +147,12 @@ export const WeatherProvider: React.FC<{ children: ReactNode }> = ({ children })
     try {
       const { startDate, endDate } = getDateRangeParams('7days');
 
-      const data = await SupabaseRPCService.getMedicionesNodoDetallado({
+      let data = await SupabaseRPCService.getMedicionesNodoDetallado({
         nodoid: selectedStation.nodoid,
         startDate,
         endDate,
       });
+      data = transformProprietaryData(data, selectedStation.name);
 
       setSummaryData({
         temp_out: calculateSummary(data, 'temp_out'),
@@ -190,11 +194,12 @@ export const WeatherProvider: React.FC<{ children: ReactNode }> = ({ children })
     setError(null);
 
     try {
-      const data = await SupabaseRPCService.getMedicionesNodoDetallado({
+      let data = await SupabaseRPCService.getMedicionesNodoDetallado({
         nodoid: selectedStation.nodoid,
         startDate,
         endDate,
       });
+      data = transformProprietaryData(data, selectedStation.name);
 
       setHistorical24h((data as WeatherMedicionData[]) || []);
     } catch (err: any) {

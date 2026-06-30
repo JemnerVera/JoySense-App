@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useWeatherData } from './useWeatherData';
+import { useWeatherData, isProprietaryStation, transformProprietaryData } from './useWeatherData';
 import SupabaseRPCService from '../services/supabase-rpc';
 import { getIsoWeekDateRange, getCurrentIsoWeek, getAvailableYears } from '../features/weather/utils/weekYearUtils';
 import {
@@ -177,11 +177,12 @@ export function useWeatherResumenData(): UseWeatherResumenDataResult {
       setLoading(true);
       setError(null);
       try {
-        const data = await SupabaseRPCService.getMedicionesNodoDetallado({
+        let data = await SupabaseRPCService.getMedicionesNodoDetallado({
           nodoid: selectedStation.nodoid,
           startDate: dateRange.startDate,
           endDate: dateRange.endDate,
         });
+        data = transformProprietaryData(data, selectedStation.name);
 
         setRawData(data || []);
       } catch (err) {
@@ -253,10 +254,11 @@ export function useWeatherResumenData(): UseWeatherResumenDataResult {
           });
         }
 
+        const propStation = isProprietaryStation(selectedStation?.name ?? '');
         return {
           metricName,
-          label: config.label,
-          unit: config.unit,
+          label: propStation && metricName === 'wind_speed_10_min_avg' ? 'Nivel Viento' : config.label,
+          unit: propStation && metricName === 'wind_speed_10_min_avg' ? 'nivel' : config.unit,
           color: config.color,
           decimals: config.decimals,
           accumType: config.accumType,

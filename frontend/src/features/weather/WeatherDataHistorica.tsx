@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { useWeatherData } from '../../hooks/useWeatherData';
+import { useWeatherData, isProprietaryStation, WIND_LEVEL_MAP, transformProprietaryData } from '../../hooks/useWeatherData';
 import { WeatherStationSelector } from './WeatherStationSelector';
 import SupabaseRPCService from '../../services/supabase-rpc';
 import { useExportPDF } from '../../hooks/useExportPDF';
@@ -97,11 +97,12 @@ export const WeatherDataHistorica: React.FC = () => {
     try {
       const { startDate, endDate } = getDateRange();
       
-      const data = await SupabaseRPCService.getMedicionesNodoDetallado({
+      let data = await SupabaseRPCService.getMedicionesNodoDetallado({
         nodoid: selectedStation.nodoid,
         startDate,
         endDate,
       });
+      data = transformProprietaryData(data, selectedStation.name);
       
       setRawData(data || []);
     } catch (err) {
@@ -339,9 +340,11 @@ export const WeatherDataHistorica: React.FC = () => {
                       <th className="px-2 py-2 text-left text-gray-600 dark:text-gray-300 sticky left-0 bg-gray-200 dark:bg-neutral-700">Fecha</th>
                       {availableMetrics.map(metric => {
                         const info = getMetricInfo(metric);
+                        const isPropWind = isProprietaryStation(selectedStation?.name ?? '') && metric === 'wind_speed_10_min_avg';
+                        const headerUnit = isPropWind ? 'nivel' : info.unit;
                         return (
                           <th key={metric} className="px-2 py-2 text-right text-gray-600 dark:text-gray-300 whitespace-nowrap">
-                            {info.label} {info.unit && `(${info.unit})`}
+                            {info.label} {headerUnit && `(${headerUnit})`}
                           </th>
                         );
                       })}
@@ -355,9 +358,14 @@ export const WeatherDataHistorica: React.FC = () => {
                         </td>
                         {availableMetrics.map(metric => {
                           const info = getMetricInfo(metric);
+                          const isPropWind = isProprietaryStation(selectedStation?.name ?? '') && metric === 'wind_speed_10_min_avg';
+                          const cellValue = record[metric];
+                          const displayVal = isPropWind && cellValue !== null && cellValue !== undefined
+                            ? `${cellValue} - ${WIND_LEVEL_MAP[Math.round(cellValue as number)] || 'Desconocido'}`
+                            : formatValue(cellValue as number | null, info.decimals);
                           return (
-                            <td key={metric} className={`px-2 py-2 text-right ${info.color} dark:${info.color.replace('text-', 'text-')}`}>
-                              {formatValue(record[metric], info.decimals)}
+                            <td key={metric} className={`px-2 py-2 text-right ${info.color}`}>
+                              {displayVal}
                             </td>
                           );
                         })}

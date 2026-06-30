@@ -1,5 +1,5 @@
 import React from 'react';
-import { useWeatherData } from '../../hooks/useWeatherData';
+import { useWeatherData, isProprietaryStation } from '../../hooks/useWeatherData';
 import { WeatherStationSelector } from './WeatherStationSelector';
 import { isTileVisible } from './weatherTileVisibility';
 import { 
@@ -110,6 +110,7 @@ export const WeatherMain: React.FC = () => {
             speed={summaryData?.wind_speed_10_min_avg ?? null}
             direction={summaryData?.wind_dir ?? null}
             gust={summaryData?.wind_gust_10_min ?? null}
+            isProprietary={isProprietaryStation(selectedStation?.name ?? '')}
           />
         )}
         {isTileVisible('pressure', availableMetricNames) && (

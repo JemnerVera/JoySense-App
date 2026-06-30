@@ -1,18 +1,23 @@
 import React from 'react';
 import { WeatherCompass, WeatherSparkArea, WeatherGauge } from '../components';
-import { WeatherSummary } from '../../../hooks/useWeatherData';
+import { WeatherSummary, WIND_LEVEL_MAP } from '../../../hooks/useWeatherData';
 
 interface WindTileProps {
   speed: WeatherSummary | null;
   direction: { current: number | null; direction: string } | null;
   gust: WeatherSummary | null;
+  isProprietary?: boolean;
 }
 
-export const WindTile: React.FC<WindTileProps> = ({ speed, direction, gust }) => {
+export const WindTile: React.FC<WindTileProps> = ({ speed, direction, gust, isProprietary }) => {
   const currentSpeed = speed?.current ?? null;
   const maxGust = gust?.max ?? gust?.current ?? null;
   const trend = speed?.trend ?? [];
   const avgSpeed = speed?.avg ?? null;
+
+  const speedLabel = isProprietary && currentSpeed !== null && currentSpeed >= 0 && currentSpeed <= 7
+    ? `${currentSpeed} - ${WIND_LEVEL_MAP[Math.round(currentSpeed)] || 'Desconocido'}`
+    : undefined;
 
   return (
     <div className="weather-tile">
@@ -23,6 +28,7 @@ export const WindTile: React.FC<WindTileProps> = ({ speed, direction, gust }) =>
           direction={direction?.current ?? null}
           speed={currentSpeed}
           size={90}
+          speedLabel={speedLabel}
         />
       </div>
 
@@ -30,13 +36,15 @@ export const WindTile: React.FC<WindTileProps> = ({ speed, direction, gust }) =>
         <div className="text-center">
           <span className="text-gray-500">Ráfaga</span>
           <div className="font-semibold text-red-600">
-            {maxGust !== null ? maxGust.toFixed(2) + ' m/s' : '--'}
+            {isProprietary ? '--' : (maxGust !== null ? maxGust.toFixed(2) + ' m/s' : '--')}
           </div>
         </div>
         <div className="text-center">
           <span className="text-gray-500">Avg</span>
           <div className="font-semibold text-gray-700 dark:text-gray-300">
-            {avgSpeed !== null ? avgSpeed.toFixed(2) + ' m/s' : '--'}
+            {isProprietary && avgSpeed !== null && avgSpeed >= 0 && avgSpeed <= 7
+              ? `${avgSpeed.toFixed(1)} - ${WIND_LEVEL_MAP[Math.round(avgSpeed)] || 'Desconocido'}`
+              : (avgSpeed !== null ? avgSpeed.toFixed(2) + ' m/s' : '--')}
           </div>
         </div>
       </div>

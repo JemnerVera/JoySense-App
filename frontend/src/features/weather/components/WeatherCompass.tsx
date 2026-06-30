@@ -4,6 +4,7 @@ interface WeatherCompassProps {
   direction: number | null;
   speed: number | null;
   size?: number;
+  speedLabel?: string;
 }
 
 const getDirectionLabel = (degrees: number | null): string => {
@@ -22,6 +23,7 @@ export const WeatherCompass: React.FC<WeatherCompassProps> = ({
   direction,
   speed,
   size = 100,
+  speedLabel,
 }) => {
   const rotation = getArrowRotation(direction);
   const label = getDirectionLabel(direction);
@@ -68,7 +70,7 @@ export const WeatherCompass: React.FC<WeatherCompassProps> = ({
       </div>
       <div className="text-center mt-1">
         <div className="text-lg font-bold font-mono text-gray-800 dark:text-gray-200">
-          {displaySpeed} <span className="text-xs">m/s</span>
+          {speedLabel || `${displaySpeed} m/s`}
         </div>
         <div className="text-sm font-mono text-gray-600 dark:text-gray-400">
           {label} ({displayDir}°)

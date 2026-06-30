@@ -7,6 +7,53 @@ export interface WeatherStation {
   longitude: number;
 }
 
+export const WIND_DIRECTION_MAP: Record<number, { short: string; description: string }> = {
+  0: { short: 'N', description: 'Norte' },
+  1: { short: 'NE', description: 'Noreste' },
+  2: { short: 'E', description: 'Este' },
+  3: { short: 'SE', description: 'Sureste' },
+  4: { short: 'S', description: 'Sur' },
+  5: { short: 'SW', description: 'Suroeste' },
+  6: { short: 'W', description: 'Oeste' },
+  7: { short: 'NW', description: 'Noroeste' },
+}
+
+export const WIND_LEVEL_MAP: Record<number, string> = {
+  0: 'Calma',
+  1: 'Muy débil',
+  2: 'Débil',
+  3: 'Moderado',
+  4: 'Fresco',
+  5: 'Fuerte',
+  6: 'Muy fuerte',
+  7: 'Temporal',
+}
+
+export const PROPRIETARY_NODE_NAMES = ['wsc-l-1', 'wsc-l-2']
+
+export function isProprietaryStation(name: string): boolean {
+  return PROPRIETARY_NODE_NAMES.includes(name?.toLowerCase())
+}
+
+export function proprietaryWindDirToDegrees(code: number): number {
+  return code * 45
+}
+
+export function transformProprietaryData(data: any[], stationName: string): any[] {
+  if (!isProprietaryStation(stationName)) return data;
+  return data.map(d => {
+    const item = { ...d };
+    if (d.metrica_nombre === 'direccion_viento') {
+      item.metrica_nombre = 'wind_dir';
+      item.medicion = proprietaryWindDirToDegrees(d.medicion);
+    } else if (d.metrica_nombre === 'nivel_viento') {
+      item.metrica_nombre = 'wind_speed_10_min_avg';
+      item.medicion = Math.round(d.medicion);
+    }
+    return item;
+  });
+}
+
 export const METRIC_DISPLAY_NAMES: Record<string, string> = {
   temp_out: 'Temperatura',
   hum_out: 'Humedad',
