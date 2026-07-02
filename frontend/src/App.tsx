@@ -622,6 +622,7 @@ const AppContentInternal: React.FC<{
 
   // Cargar todos los datos iniciales en un solo useEffect
   useEffect(() => {
+    if (!user) return;
     let cancelled = false;
     const loadAllData = async () => {
       try {
@@ -647,7 +648,7 @@ const AppContentInternal: React.FC<{
 
     loadAllData();
     return () => { cancelled = true; };
-  }, []);
+  }, [user?.id]);
 
   // Función para verificar si hay cambios significativos en el formulario actual
   const hasSignificantChanges = () => {
@@ -3086,6 +3087,7 @@ const AppContent: React.FC<{
 // Wrapper para conectar SidebarProvider con AppContentInternal
 // Necesitamos pasar handleTabChange al SidebarProvider
 const AppWithSidebar: React.FC = () => {
+  const { user } = useAuth();
   // Ref para almacenar la función executeTabChange desde AppContentInternal
   const executeTabChangeRef = useRef<((tab: string) => void) | null>(null);
   // Ref para compartir activeTab con SidebarProvider
@@ -3113,7 +3115,7 @@ const AppWithSidebar: React.FC = () => {
   
   return (
     <SidebarProvider onNavigate={handleNavigate} activeTab={currentActiveTab}>
-      <AppContent executeTabChangeRef={executeTabChangeRef} activeTabRef={activeTabRef} />
+      <AppContent key={user?.id ?? 'no-user'} executeTabChangeRef={executeTabChangeRef} activeTabRef={activeTabRef} />
       <SimpleAlertModal />
       <SidebarConfirmModal />
     </SidebarProvider>

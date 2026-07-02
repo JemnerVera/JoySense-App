@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import { JoySenseService } from '../services/backend-api';
+import { useAuth } from './AuthContext';
 
 export interface FiltersBatch {
   paisId?: string;
@@ -61,9 +62,12 @@ export const FilterProvider: React.FC<FilterProviderProps> = ({ children }) => {
   const [filterDataLoading, setFilterDataLoading] = useState(true);
   const [filterDataError, setFilterDataError] = useState<string | null>(null);
 
+  const { user } = useAuth();
+
   useEffect(() => {
+    if (!user) return;
     let cancelled = false;
-    const fetchFilterData = async () => {
+    const fetchFilterData = async (retries = 3) => {
       try {
         setFilterDataLoading(true);
         setFilterDataError(null);
@@ -75,6 +79,12 @@ export const FilterProvider: React.FC<FilterProviderProps> = ({ children }) => {
         setUbicaciones(data?.ubicaciones || []);
       } catch (err: any) {
         if (cancelled) return;
+        const status = err?.response?.status || err?.status;
+        if (status === 401 && retries > 0) {
+          console.warn(`⚠️ [FilterContext] Error 401 al cargar filtros, reintentando... (${retries} restantes)`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          if (!cancelled) return fetchFilterData(retries - 1);
+        }
         console.error('❌ Error cargando datos de filtros:', err);
         setFilterDataError(err.message || 'Error al cargar datos de filtros');
       } finally {
@@ -83,7 +93,7 @@ export const FilterProvider: React.FC<FilterProviderProps> = ({ children }) => {
     };
     fetchFilterData();
     return () => { cancelled = true; };
-  }, []);
+  }, [user?.id]);
 
   const setPaisSeleccionadoCb = useCallback((pais: string) => {
     setPaisSeleccionado(pais);

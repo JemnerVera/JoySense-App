@@ -182,6 +182,14 @@ export function setSessionToken(token: string | null): void {
 let _sessionPromise: Promise<string | null> | null = null;
 let _sessionTimer: ReturnType<typeof setTimeout> | null = null;
 
+export function clearAuthCache(): void {
+  _sessionPromise = null;
+  if (_sessionTimer) {
+    clearTimeout(_sessionTimer);
+    _sessionTimer = null;
+  }
+}
+
 async function getAuthToken(): Promise<string | null> {
   if (_currentToken) return _currentToken;
 

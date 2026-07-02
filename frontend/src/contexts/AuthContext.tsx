@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authService, supabaseAuth } from '../services/supabase-auth';
-import { setSessionToken } from '../services/backend-api';
+import { setSessionToken, clearAuthCache } from '../services/backend-api';
 import { AuthUser } from '../types';
 import { logger } from '../utils/logger';
 
@@ -30,13 +30,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           if (!error.message.includes('session missing') && !error.message.includes('Auth session missing')) {
             logger.error('Error checking user:', error.message);
           }
-        } else {
-          setUser(currentUser);
         }
 
-        // Sincronizar token al registry para evitar locks de navegador
+        // Sincronizar token PRIMERO para evitar race condition con API calls
         const { data: { session } } = await supabaseAuth.auth.getSession();
         setSessionToken(session?.access_token ?? null);
+
+        if (!error && currentUser) {
+          setUser(currentUser);
+        }
       } catch (error: any) {
         if (!error?.message?.includes('session missing') && !error?.message?.includes('Auth session missing')) {
           logger.error('Error checking user:', error);
@@ -49,8 +51,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     checkUser();
 
     const { data: { subscription } } = authService.onAuthStateChange((user, session) => {
-      setUser(user);
+      // Sincronizar token PRIMERO para evitar race condition con API calls
       setSessionToken(session?.access_token ?? null);
+      if (!user) {
+        clearAuthCache();
+      }
+      setUser(user);
       setLoading(false);
     });
 
@@ -87,6 +93,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const signOut = async () => {
+    clearAuthCache();
     try {
       const { error } = await authService.signOut();
       if (error) {
