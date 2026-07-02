@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useWeatherData } from '../../hooks/useWeatherData';
 import { WeatherWeekYearSlicer } from './components/WeatherWeekYearSlicer';
 import { WeatherMensualTable, ResumenSemanalRow } from './components/WeatherMensualTable';
 import { getIsoWeekDateRange, getCurrentIsoWeek } from './utils/weekYearUtils';
+import { useExportPDF } from '../../hooks/useExportPDF';
 import SupabaseRPCService from '../../services/supabase-rpc';
 
 export const WeatherDetalleMensual: React.FC = () => {
@@ -19,6 +20,54 @@ export const WeatherDetalleMensual: React.FC = () => {
   const [tableData, setTableData] = useState<ResumenSemanalRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const contentRef = useRef<HTMLDivElement>(null);
+  const stationName = selectedStation?.name || 'Estacion';
+  const { exportToPDF, exportToImage, exporting } = useExportPDF({ stationName });
+
+  const fetchWeekData = useCallback(async () => {
+    if (!selectedStation) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const { startDate, endDate } = getIsoWeekDateRange(selectedYear, selectedWeek);
+      const [data, gdd7, gdd10] = await Promise.all([
+        SupabaseRPCService.getResumenSemanalNodo({
+          nodoid: selectedStation.nodoid,
+          lunes: startDate,
+          domingo: endDate,
+        }),
+        SupabaseRPCService.getGdd({
+          nodoid: selectedStation.nodoid,
+          fechaDesde: `${startDate} 00:00:00`,
+          fechaHasta: `${endDate} 23:59:59`,
+          tempBase: 7,
+        }),
+        SupabaseRPCService.getGdd({
+          nodoid: selectedStation.nodoid,
+          fechaDesde: `${startDate} 00:00:00`,
+          fechaHasta: `${endDate} 23:59:59`,
+          tempBase: 10,
+        }),
+      ]);
+
+      const gdd7Map = new Map((gdd7 || []).map((g: any) => [g.fecha, g.gdd_diario]));
+      const gdd10Map = new Map((gdd10 || []).map((g: any) => [g.fecha, g.gdd_diario]));
+
+      const merged = (data || []).map((row: any) => ({
+        ...row,
+        gdd_7: gdd7Map.get(row.dia) ?? null,
+        gdd_10: gdd10Map.get(row.dia) ?? null,
+      }));
+
+      setTableData(merged);
+    } catch (err) {
+      console.error('Error fetching detalle mensual:', err);
+      setError('Error al cargar datos de la semana');
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedStation?.nodoid, selectedYear, selectedWeek]);
 
   const dateRange = useMemo(() => {
     const { startDate, endDate } = getIsoWeekDateRange(selectedYear, selectedWeek);
@@ -49,57 +98,8 @@ export const WeatherDetalleMensual: React.FC = () => {
       setTableData([]);
       return;
     }
-
-    let cancelled = false;
-
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const [data, gdd7, gdd10] = await Promise.all([
-          SupabaseRPCService.getResumenSemanalNodo({
-            nodoid: selectedStation.nodoid,
-            lunes: dateRange.startDate,
-            domingo: dateRange.endDate,
-          }),
-          SupabaseRPCService.getGdd({
-            nodoid: selectedStation.nodoid,
-            fechaDesde: `${dateRange.startDate} 00:00:00`,
-            fechaHasta: `${dateRange.endDate} 23:59:59`,
-            tempBase: 7,
-          }),
-          SupabaseRPCService.getGdd({
-            nodoid: selectedStation.nodoid,
-            fechaDesde: `${dateRange.startDate} 00:00:00`,
-            fechaHasta: `${dateRange.endDate} 23:59:59`,
-            tempBase: 10,
-          }),
-        ]);
-
-        if (cancelled) return;
-
-        const gdd7Map = new Map((gdd7 || []).map((g: any) => [g.fecha, g.gdd_diario]));
-        const gdd10Map = new Map((gdd10 || []).map((g: any) => [g.fecha, g.gdd_diario]));
-
-        const merged = (data || []).map((row: any) => ({
-          ...row,
-          gdd_7: gdd7Map.get(row.dia) ?? null,
-          gdd_10: gdd10Map.get(row.dia) ?? null,
-        }));
-
-        setTableData(merged);
-      } catch (err) {
-        console.error('Error fetching detalle mensual:', err);
-        setError('Error al cargar datos de la semana');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    fetchData();
-
-    return () => { cancelled = true; };
-  }, [selectedStation?.nodoid, selectedYear, selectedWeek]);
+    fetchWeekData();
+  }, [fetchWeekData]);
 
   return (
     <div className="w-full flex flex-col bg-gray-50 dark:bg-black" style={{ height: 'calc(100vh - 56px)' }}>
@@ -134,19 +134,53 @@ export const WeatherDetalleMensual: React.FC = () => {
           )}
 
           {selectedStation && (
-            <div className="mb-4">
+            <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 font-mono">
                 Detalle Mensual — {dateRange.formatted}
               </h2>
+              <div className="flex gap-2">
+                <button
+                  onClick={fetchWeekData}
+                  disabled={loading}
+                  className="p-2 bg-gray-500 hover:bg-gray-600 text-white rounded transition-colors disabled:opacity-50"
+                  title="Actualizar"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => contentRef.current && exportToPDF(contentRef, { title: `Meteorologia_${stationName}` })}
+                  disabled={exporting}
+                  className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors disabled:opacity-50"
+                  title="Exportar PDF"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => contentRef.current && exportToImage(contentRef)}
+                  disabled={exporting}
+                  className="p-2 bg-green-600 hover:bg-green-700 text-white rounded transition-colors disabled:opacity-50"
+                  title="Exportar Imagen"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </button>
+              </div>
             </div>
           )}
 
           {selectedStation && (
-            <WeatherMensualTable
-              data={tableData}
-              loading={loading}
-              stationName={selectedStation?.name}
-            />
+            <div ref={contentRef} className="flex-1 min-h-0">
+              <WeatherMensualTable
+                data={tableData}
+                loading={loading}
+                stationName={selectedStation?.name}
+              />
+            </div>
           )}
         </div>
       </div>
