@@ -318,6 +318,8 @@
   "menu.detalles": "Detalles",
   "menu.dataHistorica": "Data Histórica",
   "menu.resumen": "Resumen",
+  "menu.detalleMensual": "Detalle Mensual",
+  "menu.detalleAnual": "Detalle Anual",
   "buttons.save": "GUARDAR",
   "buttons.cancel": "CANCELAR",
   "buttons.delete": "ELIMINAR",

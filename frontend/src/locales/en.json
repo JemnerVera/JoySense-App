@@ -325,6 +325,8 @@
   "menu.detalles": "Details",
   "menu.dataHistorica": "Historical Data",
   "menu.resumen": "Summary",
+  "menu.detalleMensual": "Monthly Detail",
+  "menu.detalleAnual": "Annual Detail",
   "buttons.save": "SAVE",
   "buttons.cancel": "CANCEL",
   "buttons.delete": "DELETE",

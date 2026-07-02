@@ -639,6 +639,137 @@ export class SupabaseRPCService {
   }
 
   /**
+   * Obtiene resumen semanal (tabla días × métricas) para un nodo
+   * @param params Parámetros: nodoid, lunes, domingo
+   * @returns Array con 7 filas (una por día) con todas las métricas
+   */
+  static async getResumenSemanalNodo(params: {
+    nodoid: number;
+    lunes: string;
+    domingo: string;
+  }): Promise<any[]> {
+    try {
+      if (!params.nodoid || params.nodoid <= 0) {
+        throw new Error('nodoid inválido');
+      }
+
+      const { data, error } = await supabaseAuth
+        .schema(DB_SCHEMA)
+        .rpc('fn_get_resumen_semanal_nodo', {
+          p_nodoid: params.nodoid,
+          p_lunes: params.lunes,
+          p_domingo: params.domingo,
+        });
+
+      if (error) {
+        if (error.message.includes('does not exist')) {
+          console.warn('[SupabaseRPCService] fn_get_resumen_semanal_nodo no existe aún');
+          return [];
+        }
+        throw new Error(`RPC error: ${error.message}`);
+      }
+
+      if (!Array.isArray(data)) {
+        return [];
+      }
+
+      return data;
+    } catch (err: any) {
+      console.error('[SupabaseRPCService] Error en getResumenSemanalNodo:', err);
+      throw err;
+    }
+  }
+
+  /**
+   * Obtiene agregación semanal de una métrica para un nodo en rango de fechas
+   * @param params Parámetros: nodoid, metricaid, fechaDesde, fechaHasta
+   * @returns Array con filas de (iso_anual, semana_iso, valor_min, valor_max, valor_avg, cantidad_mediciones)
+   */
+  static async getResumenSemanalMetricaNodo(params: {
+    nodoid: number;
+    metricaid: number;
+    fechaDesde: string;
+    fechaHasta: string;
+  }): Promise<any[]> {
+    try {
+      if (!params.nodoid || params.nodoid <= 0) {
+        throw new Error('nodoid inválido');
+      }
+      if (!params.metricaid || params.metricaid <= 0) {
+        throw new Error('metricaid inválido');
+      }
+
+      const { data, error } = await supabaseAuth
+        .schema(DB_SCHEMA)
+        .rpc('fn_get_resumen_semanal_metrica_nodo', {
+          p_nodoid: params.nodoid,
+          p_metricaid: params.metricaid,
+          p_fecha_desde: params.fechaDesde,
+          p_fecha_hasta: params.fechaHasta,
+        });
+
+      if (error) {
+        if (error.message.includes('does not exist')) {
+          console.warn('[SupabaseRPCService] fn_get_resumen_semanal_metrica_nodo no existe aún');
+          return [];
+        }
+        throw new Error(`RPC error: ${error.message}`);
+      }
+
+      if (!Array.isArray(data)) {
+        return [];
+      }
+
+      return data;
+    } catch (err: any) {
+      console.error('[SupabaseRPCService] Error en getResumenSemanalMetricaNodo:', err);
+      throw err;
+    }
+  }
+
+  /**
+   * Obtiene métricas de un nodo consultando solo localizacion + metrica (sin medicion)
+   * Versión ligera para evitar timeout, a diferencia de getMetricasDisponiblesPorNodo
+   * @param params Parámetros: nodoid
+   * @returns Array de { metricaid, nombre }
+   */
+  static async getMetricasNodo(params: {
+    nodoid: number;
+  }): Promise<{ metricaid: number; nombre: string }[]> {
+    try {
+      if (!params.nodoid || params.nodoid <= 0) {
+        throw new Error('nodoid inválido');
+      }
+
+      const { data, error } = await supabaseAuth
+        .schema(DB_SCHEMA)
+        .rpc('fn_get_metricas_nodo', {
+          p_nodoid: params.nodoid,
+        });
+
+      if (error) {
+        if (error.message.includes('does not exist')) {
+          console.warn('[SupabaseRPCService] fn_get_metricas_nodo no existe aún');
+          return [];
+        }
+        throw new Error(`RPC error: ${error.message}`);
+      }
+
+      if (!Array.isArray(data)) {
+        return [];
+      }
+
+      return data.map((item: any) => ({
+        metricaid: item.metricaid,
+        nombre: item.nombre,
+      }));
+    } catch (err: any) {
+      console.error('[SupabaseRPCService] Error en getMetricasNodo:', err);
+      throw err;
+    }
+  }
+
+  /**
    * Obtiene semanas con datos disponibles para un nodo y métrica
    * Retorna un mapa de año → Set<semanas> para usar en validación de UI
    * @param params Parámetros de la consulta

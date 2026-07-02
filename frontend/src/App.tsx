@@ -59,6 +59,8 @@ import {
   WeatherDetailsPageLazyWithBoundary,
   WeatherDataHistoricaLazyWithBoundary,
   WeatherResumenLazyWithBoundary,
+  WeatherDetalleMensualLazyWithBoundary,
+  WeatherDetalleAnualLazyWithBoundary,
   // Dashboards
   DashboardLazy,
   NodeStatusDashboardLazy, 
@@ -2096,6 +2098,18 @@ const AppContentInternal: React.FC<{
     if (activeTab === 'meteorologia-resumen') {
       return (
         <WeatherResumenLazyWithBoundary />
+      );
+    }
+
+    if (activeTab === 'meteorologia-detalle-mensual') {
+      return (
+        <WeatherDetalleMensualLazyWithBoundary />
+      );
+    }
+
+    if (activeTab === 'meteorologia-detalle-anual') {
+      return (
+        <WeatherDetalleAnualLazyWithBoundary />
       );
     }
 
