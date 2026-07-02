@@ -48,12 +48,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     checkUser();
 
-    const { data: { subscription } } = authService.onAuthStateChange((user) => {
+    const { data: { subscription } } = authService.onAuthStateChange((user, session) => {
       setUser(user);
-      // Sincronizar token también en cambios de sesión (refresh, sign out de otra pestaña)
-      supabaseAuth.auth.getSession().then(({ data: { session } }) => {
-        setSessionToken(session?.access_token ?? null);
-      });
+      setSessionToken(session?.access_token ?? null);
       setLoading(false);
     });
 
@@ -73,10 +70,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (signedInUser) {
         logger.debug('[AuthContext] Usuario autenticado, actualizando estado');
         logger.debug('Usuario:', signedInUser);
-        setUser(signedInUser);
-        // Sincronizar token inmediatamente para evitar race condition con onAuthStateChange
+        // Sincronizar token ANTES de setUser para evitar race condition con el render del dashboard
         const { data: { session } } = await supabaseAuth.auth.getSession();
         setSessionToken(session?.access_token ?? null);
+        setUser(signedInUser);
         return { success: true };
       } else {
         logger.error('[AuthContext] No se recibió usuario después de signIn');

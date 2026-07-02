@@ -284,14 +284,14 @@ export const authService = {
   },
 
   // Escuchar cambios en la autenticación
-  onAuthStateChange(callback: (user: AuthUser | null) => void) {
+  onAuthStateChange(callback: (user: AuthUser | null, session?: any) => void) {
     return supabaseAuth.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
         callback({
           id: session.user.id,
           email: session.user.email || '',
           user_metadata: session.user.user_metadata || {}
-        });
+        }, session);
       } else if (event === 'SIGNED_OUT') {
         callback(null);
       }
