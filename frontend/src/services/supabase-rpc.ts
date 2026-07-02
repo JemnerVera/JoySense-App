@@ -770,6 +770,101 @@ export class SupabaseRPCService {
   }
 
   /**
+   * Calcula GDD (Growing Degree Days) diarios para un nodo en un rango de fechas
+   * Usa temp_out_hi (20) y temp_out_lo (21), filtra días con ambos datos
+   * @param params Parámetros: nodoid, fechaDesde, fechaHasta, tempBase
+   * @returns Array de { fecha, gdd_diario, tmax, tmin }
+   */
+  static async getGdd(params: {
+    nodoid: number;
+    fechaDesde: string;
+    fechaHasta: string;
+    tempBase: number;
+  }): Promise<{ fecha: string; gdd_diario: number; tmax: number; tmin: number }[]> {
+    try {
+      if (!params.nodoid || params.nodoid <= 0) {
+        throw new Error('nodoid inválido');
+      }
+
+      const { data, error } = await supabaseAuth
+        .schema(DB_SCHEMA)
+        .rpc('fn_get_gdd', {
+          p_nodoid: params.nodoid,
+          p_fecha_desde: params.fechaDesde,
+          p_fecha_hasta: params.fechaHasta,
+          p_temp_base: params.tempBase,
+        });
+
+      if (error) {
+        if (error.message.includes('does not exist')) {
+          console.warn('[SupabaseRPCService] fn_get_gdd no existe aún');
+          return [];
+        }
+        throw new Error(`RPC error: ${error.message}`);
+      }
+
+      if (!Array.isArray(data)) {
+        return [];
+      }
+
+      return data;
+    } catch (err: any) {
+      console.error('[SupabaseRPCService] Error en getGdd:', err);
+      throw err;
+    }
+  }
+
+  /**
+   * Obtiene GDD semanal agregado para varios años (orquestador)
+   * Internamente llama a fn_get_gdd y agrupa por ISO semana
+   * @param params Parámetros: nodoid, tempBase, semanaInicio, semanaFin, anuales
+   * @returns Array de { iso_anual, semana_iso, gdd_total, dias_con_datos }
+   */
+  static async getGddSemanalesPorAnual(params: {
+    nodoid: number;
+    tempBase: number;
+    semanaInicio?: number;
+    semanaFin?: number;
+    anuales: number[];
+  }): Promise<{ iso_anual: number; semana_iso: number; gdd_total: number; dias_con_datos: number }[]> {
+    try {
+      if (!params.nodoid || params.nodoid <= 0) {
+        throw new Error('nodoid inválido');
+      }
+      if (!params.anuales || params.anuales.length === 0) {
+        return [];
+      }
+
+      const { data, error } = await supabaseAuth
+        .schema(DB_SCHEMA)
+        .rpc('fn_get_gdd_semanales_por_anual', {
+          p_nodoid: params.nodoid,
+          p_temp_base: params.tempBase,
+          p_semana_inicio: params.semanaInicio ?? 1,
+          p_semana_fin: params.semanaFin ?? 53,
+          p_anuales: params.anuales,
+        });
+
+      if (error) {
+        if (error.message.includes('does not exist')) {
+          console.warn('[SupabaseRPCService] fn_get_gdd_semanales_por_anual no existe aún');
+          return [];
+        }
+        throw new Error(`RPC error: ${error.message}`);
+      }
+
+      if (!Array.isArray(data)) {
+        return [];
+      }
+
+      return data;
+    } catch (err: any) {
+      console.error('[SupabaseRPCService] Error en getGddSemanalesPorAnual:', err);
+      throw err;
+    }
+  }
+
+  /**
    * Obtiene semanas con datos disponibles para un nodo y métrica
    * Retorna un mapa de año → Set<semanas> para usar en validación de UI
    * @param params Parámetros de la consulta

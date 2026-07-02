@@ -14,6 +14,8 @@ export interface ResumenSemanalRow {
   lluvia: number | null;
   etc: number | null;
   fluctuacion: number | null;
+  gdd_7: number | null;
+  gdd_10: number | null;
 }
 
 interface WeatherMensualTableProps {
@@ -34,6 +36,8 @@ const METRIC_COLUMNS: Array<{ key: keyof ResumenSemanalRow; label: string; confi
   { key: 'lluvia', label: 'Lluvia', configMetricName: 'rain_day_mm' },
   { key: 'etc', label: 'ETC', configMetricName: 'et_day' },
   { key: 'fluctuacion', label: 'Fluctuación', configMetricName: 'temp_out' },
+  { key: 'gdd_7', label: 'GDD 7°C', configMetricName: 'gdd' },
+  { key: 'gdd_10', label: 'GDD 10°C', configMetricName: 'gdd' },
 ];
 
 const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -71,7 +75,7 @@ export const WeatherMensualTable: React.FC<WeatherMensualTableProps> = ({ data, 
   const sorted = [...data].sort((a, b) => a.dia.localeCompare(b.dia));
 
   return (
-    <div className="flex-1 overflow-auto">
+    <div className="flex-1 overflow-auto font-mono">
       <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-sm border border-gray-200 dark:border-neutral-700 overflow-hidden">
         <table className="w-full text-sm">
           <thead>

@@ -52,6 +52,13 @@ export const METRIC_CHART_CONFIG: Record<string, MetricChartConfig> = {
     decimals: 1,
     accumType: 'cumsum',
   },
+  gdd: {
+    label: 'GDD',
+    unit: '°C·día',
+    color: '#e67e22',
+    decimals: 1,
+    accumType: 'cumsum',
+  },
 
   // Media móvil: temperatura, índices de confort, presión
   temp_out: {

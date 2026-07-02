@@ -36,9 +36,9 @@ interface WeatherAnualChartProps {
 }
 
 const METRIC_LINES = [
-  { dataKey: 'valor_avg', label: 'Promedio', strokeDasharray: '' },
-  { dataKey: 'valor_min', label: 'Mínimo', strokeDasharray: '3 3' },
-  { dataKey: 'valor_max', label: 'Máximo', strokeDasharray: '5 5' },
+  { dataKey: 'valor_avg', label: 'Promedio', strokeWidth: 3, strokeOpacity: 1, strokeDasharray: '' },
+  { dataKey: 'valor_min', label: 'Mínimo', strokeWidth: 2, strokeOpacity: 0.55, strokeDasharray: '4 4' },
+  { dataKey: 'valor_max', label: 'Máximo', strokeWidth: 2, strokeOpacity: 0.55, strokeDasharray: '8 4' },
 ];
 
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -75,32 +75,33 @@ const MetricChart: React.FC<{ series: MetricSeries }> = ({ series }) => {
       <ResponsiveContainer width="100%" height={300}>
         <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-          <XAxis
-            dataKey="semana"
-            tick={{ fontSize: 12 }}
-            stroke="#9ca3af"
-            label={{ value: 'Semana', position: 'insideBottomRight', offset: -5, style: { fontSize: 12, fill: '#9ca3af' } }}
-          />
-          <YAxis
-            tick={{ fontSize: 12 }}
-            stroke="#9ca3af"
-            label={{ value: series.unit, angle: -90, position: 'insideLeft', style: { fontSize: 12, fill: '#9ca3af' } }}
-          />
-          <Tooltip content={<CustomTooltip />} />
-          <Legend />
-          {METRIC_LINES.map((line) => (
-            <Line
-              key={line.dataKey}
-              type="monotone"
-              dataKey={line.dataKey}
-              name={line.label}
-              stroke={series.color}
-              strokeDasharray={line.strokeDasharray}
-              strokeWidth={line.dataKey === 'valor_avg' ? 2 : 1}
-              dot={false}
-              connectNulls
+            <XAxis
+              dataKey="semana"
+              tick={{ fontSize: 12, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace' }}
+              stroke="#9ca3af"
+              label={{ value: 'Semana', position: 'insideBottomRight', offset: -5, style: { fontSize: 12, fill: '#9ca3af', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace' } }}
             />
-          ))}
+            <YAxis
+              tick={{ fontSize: 12, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace' }}
+              stroke="#9ca3af"
+              label={{ value: series.unit, angle: -90, position: 'insideLeft', style: { fontSize: 12, fill: '#9ca3af', fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace' } }}
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <Legend />
+            {METRIC_LINES.map((line) => (
+              <Line
+                key={line.dataKey}
+                type="monotone"
+                dataKey={line.dataKey}
+                name={line.label}
+                stroke={series.color}
+                strokeOpacity={line.strokeOpacity}
+                strokeDasharray={line.strokeDasharray}
+                strokeWidth={line.strokeWidth}
+                dot={false}
+                connectNulls
+              />
+            ))}
         </LineChart>
       </ResponsiveContainer>
     </div>
@@ -152,8 +153,8 @@ export const WeatherAnualChart: React.FC<WeatherAnualChartProps> = ({ series, ye
         <ResponsiveContainer width="100%" height={400}>
           <LineChart data={combinedData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis dataKey="semana" tick={{ fontSize: 12 }} stroke="#9ca3af" />
-            <YAxis tick={{ fontSize: 12 }} stroke="#9ca3af" />
+            <XAxis dataKey="semana" tick={{ fontSize: 12, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace' }} stroke="#9ca3af" />
+            <YAxis tick={{ fontSize: 12, fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace' }} stroke="#9ca3af" />
             <Tooltip content={<CustomTooltip />} />
             <Legend />
             {series.flatMap((s) =>
@@ -164,8 +165,9 @@ export const WeatherAnualChart: React.FC<WeatherAnualChartProps> = ({ series, ye
                   dataKey={`${s.metricName}_${line.dataKey}`}
                   name={`${s.label} ${line.label}`}
                   stroke={s.color}
+                  strokeOpacity={line.strokeOpacity}
                   strokeDasharray={line.strokeDasharray}
-                  strokeWidth={line.dataKey === 'valor_avg' ? 2 : 1}
+                  strokeWidth={line.strokeWidth}
                   dot={false}
                   connectNulls
                 />

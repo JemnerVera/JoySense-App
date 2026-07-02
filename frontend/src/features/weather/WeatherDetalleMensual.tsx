@@ -56,14 +56,38 @@ export const WeatherDetalleMensual: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        const data = await SupabaseRPCService.getResumenSemanalNodo({
-          nodoid: selectedStation.nodoid,
-          lunes: dateRange.startDate,
-          domingo: dateRange.endDate,
-        });
+        const [data, gdd7, gdd10] = await Promise.all([
+          SupabaseRPCService.getResumenSemanalNodo({
+            nodoid: selectedStation.nodoid,
+            lunes: dateRange.startDate,
+            domingo: dateRange.endDate,
+          }),
+          SupabaseRPCService.getGdd({
+            nodoid: selectedStation.nodoid,
+            fechaDesde: `${dateRange.startDate} 00:00:00`,
+            fechaHasta: `${dateRange.endDate} 23:59:59`,
+            tempBase: 7,
+          }),
+          SupabaseRPCService.getGdd({
+            nodoid: selectedStation.nodoid,
+            fechaDesde: `${dateRange.startDate} 00:00:00`,
+            fechaHasta: `${dateRange.endDate} 23:59:59`,
+            tempBase: 10,
+          }),
+        ]);
 
         if (cancelled) return;
-        setTableData(data || []);
+
+        const gdd7Map = new Map((gdd7 || []).map((g: any) => [g.fecha, g.gdd_diario]));
+        const gdd10Map = new Map((gdd10 || []).map((g: any) => [g.fecha, g.gdd_diario]));
+
+        const merged = (data || []).map((row: any) => ({
+          ...row,
+          gdd_7: gdd7Map.get(row.dia) ?? null,
+          gdd_10: gdd10Map.get(row.dia) ?? null,
+        }));
+
+        setTableData(merged);
       } catch (err) {
         console.error('Error fetching detalle mensual:', err);
         setError('Error al cargar datos de la semana');
@@ -111,7 +135,7 @@ export const WeatherDetalleMensual: React.FC = () => {
 
           {selectedStation && (
             <div className="mb-4">
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 font-mono">
                 Detalle Mensual — {dateRange.formatted}
               </h2>
             </div>

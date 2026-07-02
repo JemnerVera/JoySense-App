@@ -71,13 +71,17 @@ export const WeatherDetalleAnual: React.FC = () => {
           })
           .sort((a: MetricOption, b: MetricOption) => a.label.localeCompare(b.label));
 
-        setMetricOptions(mapped);
-        if (mapped.length > 0) {
-          setSelectedMetricaId1(mapped[0].metricaid);
-          if (mapped.length > 1) {
-            setSelectedMetricaId2(mapped[1].metricaid);
-          }
-        }
+        const gddOptions: MetricOption[] = [
+          { metricaid: -7, name: 'gdd_7', label: 'GDD 7°C', unit: '°C·día', color: '#e67e22' },
+          { metricaid: -10, name: 'gdd_10', label: 'GDD 10°C', unit: '°C·día', color: '#d35400' },
+        ];
+        const allOptions = [...mapped, ...gddOptions];
+        setMetricOptions(allOptions);
+        const tempOut = allOptions.find(m => m.name === 'temp_out');
+        const humOut = allOptions.find(m => m.name === 'hum_out');
+        setSelectedMetricaId1(tempOut?.metricaid ?? allOptions[0]?.metricaid);
+        const default2 = humOut?.metricaid ?? allOptions.find(m => m.metricaid !== (tempOut?.metricaid ?? -1))?.metricaid;
+        if (default2) setSelectedMetricaId2(default2);
       } catch (err) {
         console.error('Error fetching metrics:', err);
       }
@@ -111,12 +115,31 @@ export const WeatherDetalleAnual: React.FC = () => {
         const results = await Promise.all(
           activeMetricaIds.map(async (metricaid) => {
             const metricInfo = metricOptions.find((m) => m.metricaid === metricaid);
-            const data = await SupabaseRPCService.getResumenSemanalMetricaNodo({
-              nodoid: selectedStation.nodoid,
-              metricaid,
-              fechaDesde,
-              fechaHasta,
-            });
+            const isGdd = metricaid < 0;
+
+            const rawData = isGdd
+              ? await SupabaseRPCService.getGddSemanalesPorAnual({
+                  nodoid: selectedStation.nodoid,
+                  tempBase: Math.abs(metricaid),
+                  anuales: [selectedYear],
+                })
+              : await SupabaseRPCService.getResumenSemanalMetricaNodo({
+                  nodoid: selectedStation.nodoid,
+                  metricaid,
+                  fechaDesde,
+                  fechaHasta,
+                });
+
+            const data: SemanaMetricaRow[] = isGdd
+              ? (rawData || []).map((d: any) => ({
+                  iso_anual: d.iso_anual,
+                  semana_iso: d.semana_iso,
+                  valor_avg: d.gdd_total,
+                  valor_min: null,
+                  valor_max: null,
+                  cantidad_mediciones: d.dias_con_datos,
+                }))
+              : (rawData || []);
 
             const config = getMetricConfig(metricInfo?.name || '');
             return {
@@ -126,7 +149,7 @@ export const WeatherDetalleAnual: React.FC = () => {
               unit: metricInfo?.unit || config.unit,
               color: metricInfo?.color || config.color,
               decimals: config.decimals,
-              data: (data || []) as SemanaMetricaRow[],
+              data,
             };
           })
         );
@@ -161,7 +184,7 @@ export const WeatherDetalleAnual: React.FC = () => {
   return (
     <div className="w-full flex flex-col bg-gray-50 dark:bg-black" style={{ height: 'calc(100vh - 56px)' }}>
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        <div className="w-60 min-w-[15rem] bg-white dark:bg-neutral-800 border-r border-gray-200 dark:border-neutral-700 flex flex-col overflow-y-auto" style={{ height: 'calc(100vh - 56px)' }}>
+        <div className="w-60 min-w-[15rem] bg-white dark:bg-neutral-800 border-r border-gray-200 dark:border-neutral-700 flex flex-col overflow-y-auto font-mono" style={{ height: 'calc(100vh - 56px)' }}>
           <div className="p-4 space-y-4">
             {/* Station Selector */}
             <div>
@@ -342,7 +365,7 @@ export const WeatherDetalleAnual: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex-1 min-h-0 min-w-0 flex flex-col mx-6 mb-6 mt-6">
+        <div className="flex-1 min-h-0 min-w-0 flex flex-col mx-6 mb-6 mt-6 font-mono">
           {!selectedStation && (
             <div className="bg-gray-100 dark:bg-neutral-900 rounded-lg border border-gray-200 dark:border-neutral-700 p-8 text-center flex-1 flex items-center justify-center">
               <p className="text-gray-600 dark:text-gray-400">
@@ -359,7 +382,7 @@ export const WeatherDetalleAnual: React.FC = () => {
 
           {selectedStation && (
             <div className="mb-4">
-              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 font-mono">
                 Detalle Anual {selectedYear} — {selectedStation.name}
               </h2>
             </div>
