@@ -1100,8 +1100,10 @@ export class JoySenseService {
   static async getCurrentPerfilid(): Promise<number | null> {
     try {
       const { supabaseAuth } = await import('./supabase-auth');
-      
-      // Llamar a la función RPC directamente desde Supabase
+
+      const { data: { session } } = await supabaseAuth.auth.getSession();
+      if (!session) return null;
+
       const { data, error } = await supabaseAuth
         .schema(DB_SCHEMA)
         .rpc('fn_get_perfilid_current_user');
