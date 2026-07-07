@@ -5,6 +5,45 @@ const { dbSchema } = require('../config/database');
 const logger = require('../utils/logger');
 
 /**
+ * Carga localizaciones + nodo para mediciones (evita nested join en Supabase).
+ */
+const _loadLocalizacionesNodo = async (supabase, data) => {
+  if (!data || data.length === 0) return data;
+
+  const locIds = [...new Set(data.map(m => m.localizacionid).filter(id => id != null))];
+  if (locIds.length === 0) return data;
+
+  const { data: localizaciones, error } = await supabase
+    .schema(dbSchema)
+    .from('localizacion')
+    .select(`
+      localizacionid,
+      localizacion,
+      nodoid,
+      metricaid,
+      sensorid,
+      nodo:nodoid(
+        nodoid,
+        nodo,
+        ubicacionid,
+        latitud,
+        longitud,
+        referencia
+      )
+    `)
+    .in('localizacionid', locIds);
+
+  if (error) throw error;
+
+  const locMap = new Map((localizaciones || []).map(l => [l.localizacionid, l]));
+
+  return data.map(m => ({
+    ...m,
+    localizacion: locMap.get(m.localizacionid) || null
+  }));
+};
+
+/**
  * Obtiene el conteo de mediciones con filtros
  */
 exports.getMedicionesCount = async (supabase, { localizacionId, startDate, endDate }) => {
@@ -104,24 +143,7 @@ exports.getMediciones = async (supabase, { localizacionId, startDate, endDate, l
   let query = supabase
     .schema(dbSchema)
     .from('medicion')
-    .select(`
-      *,
-      localizacion:localizacionid(
-        localizacionid,
-        localizacion,
-        nodoid,
-        metricaid,
-        sensorid,
-        nodo:nodoid(
-          nodoid,
-          nodo,
-          ubicacionid,
-          latitud,
-          longitud,
-          referencia
-        )
-      )
-    `);
+    .select('medicionid, localizacionid, fecha, medicion');
 
   if (localizacionId) {
     const ids = String(localizacionId).split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
@@ -135,6 +157,7 @@ exports.getMediciones = async (supabase, { localizacionId, startDate, endDate, l
   if (startDate) query = query.gte('fecha', startDate);
   if (endDate) query = query.lte('fecha', endDate);
 
+  query = query.order('localizacionid', { ascending: true });
   query = query.order('fecha', { ascending: false });
 
   const finalLimit = getAll ? 50000 : parseInt(limit);
@@ -159,6 +182,7 @@ exports.getMediciones = async (supabase, { localizacionId, startDate, endDate, l
     if (currentOffset >= 50000) break;
   }
 
+  allData = await _loadLocalizacionesNodo(supabase, allData);
   return await _loadMedicionesDetailsFallback(supabase, allData);
 };
 
@@ -197,23 +221,7 @@ exports.getMedicionesWithDetails = async (supabase, { localizacionId, nodoid, st
   let query = supabase
     .schema(dbSchema)
     .from('medicion')
-    .select(`
-      *,
-      localizacion:localizacionid(
-        localizacionid,
-        localizacion,
-        nodoid,
-        metricaid,
-        sensorid,
-        nodo:nodoid(
-          nodoid, 
-          nodo,
-          latitud,
-          longitud,
-          referencia
-        )
-      )
-    `);
+    .select('medicionid, localizacionid, fecha, medicion');
 
   if (finalLocalizacionIds) {
     const ids = String(finalLocalizacionIds).split(',').map(id => parseInt(id.trim())).filter(id => !isNaN(id));
@@ -227,6 +235,7 @@ exports.getMedicionesWithDetails = async (supabase, { localizacionId, nodoid, st
   if (startDate) query = query.gte('fecha', startDate);
   if (endDate) query = query.lte('fecha', endDate);
 
+  query = query.order('localizacionid', { ascending: true });
   query = query.order('fecha', { ascending: false });
 
   const finalLimit = getAll ? 50000 : parseInt(limit);
@@ -251,6 +260,7 @@ exports.getMedicionesWithDetails = async (supabase, { localizacionId, nodoid, st
     if (currentOffset >= 50000) break;
   }
 
+  allData = await _loadLocalizacionesNodo(supabase, allData);
   return await _loadMedicionesDetailsFallback(supabase, allData);
 };
 
@@ -273,28 +283,13 @@ exports.getMedicionesConEntidad = async (supabase, { entidadId, startDate, endDa
   let query = supabase
     .schema(dbSchema)
     .from('medicion')
-    .select(`
-      *,
-      localizacion:localizacionid(
-        localizacionid,
-        localizacion,
-        nodoid,
-        metricaid,
-        sensorid,
-        nodo:nodoid(
-          nodoid, 
-          nodo,
-          latitud,
-          longitud,
-          referencia
-        )
-      )
-    `)
+    .select('medicionid, localizacionid, fecha, medicion')
     .in('localizacionid', locIds);
   
   if (startDate) query = query.gte('fecha', startDate);
   if (endDate) query = query.lte('fecha', endDate);
   
+  query = query.order('localizacionid', { ascending: true });
   query = query.order('fecha', { ascending: false });
 
   const finalLimit = parseInt(limit);
@@ -319,6 +314,7 @@ exports.getMedicionesConEntidad = async (supabase, { entidadId, startDate, endDa
     if (currentOffset > 50000) break; 
   }
 
+  allData = await _loadLocalizacionesNodo(supabase, allData);
   return await _loadMedicionesDetailsFallback(supabase, allData);
 };
 
