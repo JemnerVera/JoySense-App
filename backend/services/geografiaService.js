@@ -1113,7 +1113,7 @@ const getKPIsNodo = async (supabase, { nodoid, startDate, endDate }) => {
     if (metError) throw metError;
     const metricasMap = new Map((metricas || []).map(m => [m.metricaid, m]));
 
-    // 3. Consultar mediciones por chunks (evita timeout de Supabase)
+    // 3. Consultar stats de mediciones via RPC optimizada (agregación en BD)
     const locMetricaMap = new Map();
     locsValidas.forEach(l => locMetricaMap.set(l.localizacionid, l.metricaid));
 
@@ -1123,61 +1123,31 @@ const getKPIsNodo = async (supabase, { nodoid, startDate, endDate }) => {
     for (const metricaid of metricaIds) {
       const idsParaMetrica = locsValidas.filter(l => l.metricaid === metricaid).map(l => l.localizacionid);
 
-      let query = supabase
+      const { data: statsData, error: statsError } = await supabase
         .schema(dbSchema)
-        .from('medicion')
-        .select('medicion, fecha')
-        .in('localizacionid', idsParaMetrica)
-        .order('fecha', { ascending: false });
+        .rpc('fn_get_mediciones_stats_por_localizaciones', {
+          p_localizacionids: idsParaMetrica,
+          p_start_date: startDate || '1900-01-01',
+          p_end_date: endDate || '2100-01-01'
+        });
 
-      if (startDate) query = query.gte('fecha', startDate);
-      if (endDate) query = query.lte('fecha', endDate);
+      if (statsError) throw statsError;
 
-      const CHUNK_SIZE = 5000;
-      let count = 0;
-      let sum = 0;
-      let sumSq = 0;
-      let min = Infinity;
-      let max = -Infinity;
-      let lastVal = null;
-      let lastFecha = null;
-      let offset = 0;
-      let firstRow = true;
-
-      while (true) {
-        const { data: chunk, error: chunkError } = await query.range(offset, offset + CHUNK_SIZE - 1);
-        if (chunkError) throw chunkError;
-        if (!chunk || chunk.length === 0) break;
-
-        for (const row of chunk) {
-          const valor = Number(row.medicion);
-          if (isNaN(valor)) continue;
-
-          if (firstRow) {
-            lastVal = valor;
-            lastFecha = row.fecha;
-            firstRow = false;
-          }
-
-          count++;
-          sum += valor;
-          sumSq += valor * valor;
-          if (valor < min) min = valor;
-          if (valor > max) max = valor;
-        }
-
-        offset += CHUNK_SIZE;
-        if (chunk.length < CHUNK_SIZE) break;
-      }
-
-      if (count > 0) {
-        const avg = sum / count;
-        const variance = (sumSq - (sum * sum / count)) / count;
-        const stddev = variance > 0 ? Math.sqrt(variance) : 0;
-
-        statsMap.set(metricaid, { count, sum, sumSq, min, max, avg, stddev });
-        if (lastVal != null) {
-          lastValueMap.set(metricaid, { valor: lastVal, fecha: lastFecha });
+      if (statsData && statsData.length > 0 && statsData[0].total_mediciones > 0) {
+        const s = statsData[0];
+        statsMap.set(metricaid, {
+          count: Number(s.total_mediciones),
+          sum: Number(s.suma),
+          min: Number(s.minimo),
+          max: Number(s.maximo),
+          avg: Number(s.promedio),
+          stddev: Number(s.stddev)
+        });
+        if (s.ultimo_valor != null) {
+          lastValueMap.set(metricaid, {
+            valor: Number(s.ultimo_valor),
+            fecha: s.ultima_fecha
+          });
         }
       }
     }
