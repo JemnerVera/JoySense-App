@@ -26,7 +26,7 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
 
   // Estados principales
   const [localizaciones, setLocalizaciones] = useState<Localizacion[]>([]);
-  const [allLocalizaciones, setAllLocalizaciones] = useState<Localizacion[]>([]); // Todas las localizaciones sin filtro global (para contador del dropdown)
+  const [allLocalizaciones, setAllLocalizaciones] = useState<Localizacion[]>([]); // Todas las localizaciones (para contador del dropdown)
   const [uniqueLocalizaciones, setUniqueLocalizaciones] = useState<any[]>([]);
   const [selectedLocalizacion, setSelectedLocalizacion] = useState<any | null>(null);
   const [mediciones, setMediciones] = useState<any[]>([]);
@@ -150,16 +150,8 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
     const loadInitialData = async () => {
       setIsLoadingInitialData(true);
       try {
-        const filters =
-          fundoSeleccionado != null && fundoSeleccionado !== ''
-            ? { fundoId: fundoSeleccionado }
-            : empresaSeleccionada != null && empresaSeleccionada !== ''
-              ? { empresaId: empresaSeleccionada }
-              : paisSeleccionado != null && paisSeleccionado !== ''
-                ? { paisId: paisSeleccionado }
-                : undefined;
-        const localizacionesData = await JoySenseService.getLocalizacionesParaMediciones(1000, filters);
-        const allLocalizacionesData = await JoySenseService.getLocalizacionesParaMediciones(2000, undefined); // Sin filtro global para contador
+        // Una sola llamada sin filtros (el filtrado por fundo/empresa/pais se hace client-side en filteredNodos)
+        const allData = await JoySenseService.getLocalizacionesParaMediciones(2000, undefined);
 
         const [sensoresData, tiposData, fundosData, empresasData] = await Promise.all([
           JoySenseService.getSensores(),
@@ -168,8 +160,8 @@ export function MedicionesDashboard(_props: MedicionesDashboardProps) {
           JoySenseService.getEmpresas()
         ]);
 
-        setLocalizaciones(localizacionesData || []);
-        setAllLocalizaciones(allLocalizacionesData || []);
+        setLocalizaciones(allData || []);
+        setAllLocalizaciones(allData || []);
         setSensores(sensoresData || []);
         setTipos(tiposData || []);
         

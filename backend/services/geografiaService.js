@@ -716,18 +716,8 @@ const getNodosConLocalizacionDashboard = async (supabase, query = {}) => {
     paisId: paisId != null ? String(paisId) : null
   };
 
-  try {
-    logger.info(`[getNodosConLocalizacionDashboard] Ejecutando método principal`);
-    return await _getNodosConLocalizacionDashboardPrincipal(supabase, params);
-  } catch (error) {
-    logger.warn(`[getNodosConLocalizacionDashboard] Método principal falló: ${error.message}. Usando fallback...`);
-    try {
-      return await _getNodosConLocalizacionDashboardFallback(supabase, params);
-    } catch (fallbackError) {
-      logger.error(`[getNodosConLocalizacionDashboard] Fallback también falló: ${fallbackError.message}`);
-      throw fallbackError;
-    }
-  }
+  logger.info(`[getNodosConLocalizacionDashboard] Ejecutando consulta principal`);
+  return await _getNodosConLocalizacionDashboardPrincipal(supabase, params);
 };
 
 /**
