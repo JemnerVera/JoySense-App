@@ -2,7 +2,7 @@ import { STATUS } from '../../../constants/status';
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { JoySenseService } from '../../../services/backend-api';
-import { SelectWithPlaceholder } from '../../../components/selectors';
+import { SelectWithPlaceholder } from '../../../components/shared/selectors';
 
 interface ReglasStatusTabProps {
   reglasData?: any[];

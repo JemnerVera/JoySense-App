@@ -6,7 +6,7 @@ import { STATUS } from '../../../../constants/status';
 
 import React from 'react';
 import { useLanguage } from '../../../../contexts/LanguageContext';
-import { SelectWithPlaceholder } from '../../../selectors';
+import { SelectWithPlaceholder } from '../../selectors';
 import { getColumnDisplayNameTranslated } from '../../../../utils/systemParametersUtils';
 
 interface PerfilFormFieldsProps {

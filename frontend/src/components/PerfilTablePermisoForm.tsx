@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { SelectWithPlaceholder } from './selectors';
+import { SelectWithPlaceholder } from './shared/selectors';
 import { useLanguage } from '../contexts/LanguageContext';
 import { STATUS } from '../constants/status';
 

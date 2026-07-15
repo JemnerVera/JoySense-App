@@ -17,7 +17,7 @@ import { useUnsavedChanges } from '../../hooks/useUnsavedChanges';
 
 // Components
 import { MessageDisplay } from '../system-parameters/MessageDisplay';
-import { SelectWithPlaceholder } from '../../components/selectors';
+import { SelectWithPlaceholder } from '../../components/shared/selectors';
 
 // Local hooks and components
 import { useReglasData } from './hooks/useReglasData';

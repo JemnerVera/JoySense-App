@@ -4,7 +4,7 @@
 // Formulario unificado para crear/actualizar carpeta con ubicaciones y usuarios
 
 import React from 'react';
-import { DualListbox } from '../../../selectors';
+import { DualListbox } from '../../selectors';
 import { useLanguage } from '../../../../contexts/LanguageContext';
 
 export interface CarpetaFormData {

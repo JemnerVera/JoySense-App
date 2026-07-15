@@ -4,7 +4,7 @@
 // Componente específico para renderizar campos de alertas (umbral, perfilumbral, criticidad)
 
 import React from 'react';
-import { SelectWithPlaceholder } from '../../../selectors';
+import { SelectWithPlaceholder } from '../../selectors';
 import { useLanguage } from '../../../../contexts/LanguageContext';
 import { getColumnDisplayNameTranslated } from '../../../../utils/systemParametersUtils';
 import { THRESHOLD_OPERATORS } from '../../../../constants/thresholdOperators';

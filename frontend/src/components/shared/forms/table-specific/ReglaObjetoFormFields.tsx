@@ -4,7 +4,7 @@
 // Componente específico para renderizar formulario de asignación de objetos a reglas
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { DualListbox, SelectWithPlaceholder } from '../../../selectors';
+import { DualListbox, SelectWithPlaceholder } from '../../selectors';
 import { useLanguage } from '../../../../contexts/LanguageContext';
 import { JoySenseService } from '../../../../services/backend-api';
 import { getColumnDisplayNameTranslated } from '../../../../utils/systemParametersUtils';

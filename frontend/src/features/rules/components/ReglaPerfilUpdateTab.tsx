@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import { JoySenseService } from '../../../services/backend-api';
-import { SelectWithPlaceholder } from '../../../components/selectors';
+import { SelectWithPlaceholder } from '../../../components/shared/selectors';
 import { ReglaPerfilFormFields } from '../../../components/shared/forms/table-specific/ReglaPerfilFormFields';
 import { STATUS } from '../../../constants/status';
 

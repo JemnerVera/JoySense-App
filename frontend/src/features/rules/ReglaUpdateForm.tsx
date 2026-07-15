@@ -8,7 +8,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { JoySenseService } from '../../services/backend-api';
 import { ReglaFormFields } from '../../components/shared/forms';
-import { SelectWithPlaceholder } from '../../components/selectors';
+import { SelectWithPlaceholder } from '../../components/shared/selectors';
 import { MessageDisplay } from '../system-parameters/MessageDisplay';
 import { LoadingSpinner } from '../system-parameters/LoadingSpinner';
 import { getColumnDisplayNameTranslated } from '../../utils/systemParametersUtils';
