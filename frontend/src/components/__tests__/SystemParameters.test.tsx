@@ -11,9 +11,6 @@ jest.mock('../../services/backend-api');
 jest.mock('../../contexts/AuthContext');
 jest.mock('../../contexts/FilterContext');
 jest.mock('../../utils/formValidation');
-jest.mock('../../hooks/useSimpleModal');
-jest.mock('../../hooks/useInsertionMessages');
-jest.mock('../../hooks/useReplicate');
 jest.mock('../../hooks/useGlobalFilterEffect');
 
 const mockJoySenseService = JoySenseService as jest.Mocked<typeof JoySenseService>;

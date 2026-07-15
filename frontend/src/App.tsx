@@ -81,7 +81,6 @@ import { EstadoReservorioDashboard } from './components/Dashboard/EstadoReservor
 
 // 9. Hooks
 import { useAppSidebar } from './hooks/useAppSidebar';
-import { useDataLossProtection } from './hooks/useDataLossProtection';
 
 // 10. Services & Types
 import { JoySenseService } from './services/backend-api';
@@ -194,23 +193,6 @@ const AppContentInternal: React.FC<{
   // Usar un timestamp para rastrear cuándo se hizo el cambio
   const tableChangeFromHandlerRef = useRef<{ table: string; timestamp: number } | null>(null);
 
-  // Hook para protección de datos (debe estar antes de cualquier return condicional)
-  // Hook para protección de datos - DESACTIVADO TEMPORALMENTE
-  // const {
-  //   modalState,
-  //   checkTabChange,
-  //   confirmAction,
-  //   cancelAction: cancelDataLossAction
-  // } = useDataLossProtection();
-
-  // Hook para interceptación de cambios - DESACTIVADO TEMPORALMENTE
-  // const {
-  //   registerChangeDetector,
-  //   interceptSubTabChange,
-  //   interceptParameterChange,
-  //   interceptTabChange,
-  //   getPendingChangeInfo
-  // } = useChangeInterceptor();
 
   // ============================================================================
   // EVENT HANDLERS
