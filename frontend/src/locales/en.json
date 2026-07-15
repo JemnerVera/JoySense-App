@@ -294,7 +294,6 @@
   "menu.mapeo": "NODE MAP",
   "menu.statusNodos": "NODE STATUS",
   "menu.statusAlertas": "ALERT STATUS",
-  "menu.metricaLocalizacion": "METRIC BY LOCATION",
   "menu.umbralesLocalizacion": "THRESHOLDS BY LOCATION",
   "menu.sensoresPlanta": "PLANT SENSORS",
   "menu.reservorios": "RESERVOIRS",

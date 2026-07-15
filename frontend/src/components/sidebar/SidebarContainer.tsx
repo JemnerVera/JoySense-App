@@ -9,7 +9,7 @@ interface SidebarContainerProps {
   authToken: string;
   selectedTable?: string;
   activeSubTab?: string;
-  dashboardSubTab?: 'mediciones' | 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales';
+  dashboardSubTab?: 'mediciones' | 'mapeo' | 'status-nodos' | 'status-alertas' | 'umbrales';
 }
 
 const SidebarContainer: React.FC<SidebarContainerProps> = ({

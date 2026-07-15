@@ -111,12 +111,6 @@ const DashboardHierarchyLazy = lazy(() =>
   })
 );
 
-const MetricaPorLoteLazy = lazy(() => 
-  import('../../features/reporting').then(module => {
-    return { default: module.MetricaPorLote };
-  })
-);
-
 const UmbralesPorLoteLazy = lazy(() => 
   import('../../features/reporting').then(module => {
     return { default: module.UmbralesPorLote };
@@ -340,7 +334,6 @@ export {
   MassivePerfilUmbralFormLazy,
   MultipleMetricaSensorFormLazy,
   DashboardHierarchyLazy,
-  MetricaPorLoteLazy,
   UmbralesPorLoteLazy,
   NodeStatusDashboardLazy,
   AlertStatusDashboardLazy,

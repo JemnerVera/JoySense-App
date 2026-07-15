@@ -33,7 +33,6 @@ import {
   IconTable,
   IconAjustes,
   IconSensor,
-  IconMetricaSensor,
   IconFundo,
   IconCriticidad as IconUmbralAlt,
   IconWeather,
@@ -94,7 +93,6 @@ export function useMenuStructure() {
               { id: 'mapeo', label: t('menu.mapeo'), icon: <IconMapeo /> },
               { id: 'status-nodos', label: t('menu.statusNodos'), icon: <IconStatusNodos /> },
               { id: 'status-alertas', label: t('menu.statusAlertas'), icon: <IconAlertas /> },
-              { id: 'metrica', label: t('menu.metricaLocalizacion'), icon: <IconMetricaSensor /> },
               { id: 'umbrales', label: t('menu.umbralesLocalizacion'), icon: <IconUmbralAlt /> },
               // REMOVIDO: sensores-planta (PLC) se moverá a pestaña independiente
             ],

@@ -18,6 +18,4 @@ export { default as DashboardUmbrales } from './umbrales/DashboardUmbrales';
 export { default as NotificacionesMain, type NotificacionesMainRef } from './notifications/NotificacionesMain';
 
 // Utilidades
-export { default as MetricaPorLote } from './MetricaPorLote';
-export { default as MetricaPorLoteModal } from './MetricaPorLoteModal';
 export { default as UmbralesPorLote } from './UmbralesPorLote';

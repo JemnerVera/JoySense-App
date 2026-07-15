@@ -82,19 +82,6 @@ export interface UmbralPorNodo {
 }
 
 /**
- * Métricas agregadas por localización
- */
-export interface MetricaPorLocalizacion {
-  localizacionid: number;
-  localizacion_nombre: string;
-  tipoid: number;
-  sensorid: number;
-  ultimo_valor: number;
-  ultima_fecha: string;
-  total_mediciones: number;
-}
-
-/**
  * Umbrales con estadísticas históricas
  */
 export interface UmbralConEstadisticas {
@@ -302,55 +289,6 @@ export class SupabaseRPCService {
       return data;
     } catch (err: any) {
       console.error('[SupabaseRPCService] Error en getUmbralesPorNodo:', err);
-      throw err;
-    }
-  }
-
-  /**
-   * Obtiene métricas agregadas por localización (para MÉTRICA POR LOCALIZACIÓN)
-   * Agrupa datos al nivel de lote/localización
-   * @param params Parámetros de la consulta
-   * @returns Array de métricas por localización
-   */
-  static async getMetricasPorLocalizacion(params: {
-    fundoIds: number[];
-    metricaId: number;
-    startDate?: string;
-    endDate?: string;
-  }): Promise<MetricaPorLocalizacion[]> {
-    try {
-      if (
-        !params.fundoIds ||
-        params.fundoIds.length === 0 ||
-        !params.metricaId
-      ) {
-        throw new Error('fundoIds y metricaId son requeridos');
-      }
-
-
-      const { data, error } = await supabaseAuth
-        .schema(DB_SCHEMA)
-        .rpc('fn_get_metricas_por_localizacion', {
-          p_fundoid: params.fundoIds,
-          p_metricaid: params.metricaId,
-          p_start_date: params.startDate ? `${params.startDate} 00:00:00` : null,
-          p_end_date: params.endDate ? `${params.endDate} 23:59:59` : null
-        });
-
-      if (error) {
-        throw new Error(`RPC error: ${error.message}`);
-      }
-
-      if (!Array.isArray(data)) {
-        return [];
-      }
-
-      return data;
-    } catch (err: any) {
-      console.error(
-        '[SupabaseRPCService] Error en getMetricasPorLocalizacion:',
-        err
-      );
       throw err;
     }
   }

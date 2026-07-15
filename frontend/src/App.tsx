@@ -67,7 +67,6 @@ import {
   AlertStatusDashboardLazy, 
   MedicionesDashboardLazy,
   // Lazy reporting utilities
-  MetricaPorLoteLazy,
   UmbralesPorLoteLazy,
   // Utility hook for preloading
   usePreloadCriticalComponents 
@@ -246,7 +245,7 @@ const AppContentInternal: React.FC<{
   }, [selectedTable]);
   
   // Estados para Dashboard (Reportes)
-  const [dashboardSubTab, setDashboardSubTab] = useState<'mediciones' | 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales'>('mediciones');
+  const [dashboardSubTab, setDashboardSubTab] = useState<'mediciones' | 'mapeo' | 'status-nodos' | 'status-alertas' | 'umbrales'>('mediciones');
 
   // Función para convertir nombre de tabla a español (usa configuración centralizada)
   const getTableNameInSpanish = (tableName: string): string => {
@@ -274,8 +273,8 @@ const AppContentInternal: React.FC<{
   // Sincronizar dashboardSubTab con activeTab
   useEffect(() => {
     if (activeTab.startsWith('reportes-dashboard-')) {
-      const subTab = activeTab.replace('reportes-dashboard-', '') as 'mediciones' | 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales';
-      if (subTab === 'mediciones' || subTab === 'mapeo' || subTab === 'status-nodos' || subTab === 'status-alertas' || subTab === 'metrica' || subTab === 'umbrales') {
+      const subTab = activeTab.replace('reportes-dashboard-', '') as 'mediciones' | 'mapeo' | 'status-nodos' | 'status-alertas' | 'umbrales';
+      if (subTab === 'mediciones' || subTab === 'mapeo' || subTab === 'status-nodos' || subTab === 'status-alertas' || subTab === 'umbrales') {
         setDashboardSubTab(subTab);
       }
     }
@@ -1114,7 +1113,7 @@ const AppContentInternal: React.FC<{
   };
 
   // Handler para cambiar el subTab del Dashboard
-  const handleDashboardSubTabChange = (subTab: 'mediciones' | 'mapeo' | 'status-nodos' | 'status-alertas' | 'metrica' | 'umbrales') => {
+  const handleDashboardSubTabChange = (subTab: 'mediciones' | 'mapeo' | 'status-nodos' | 'status-alertas' | 'umbrales') => {
     setDashboardSubTab(subTab);
     startTransition(() => {
       setActiveTab(`reportes-dashboard-${subTab}`);
@@ -1919,19 +1918,6 @@ const AppContentInternal: React.FC<{
                 <AlertStatusDashboardLazy />
               </Suspense>
             );
-          case 'metrica':
-            return (
-              <Suspense fallback={
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
-                    <p className="text-gray-400">Cargando Métrica por Localización...</p>
-                  </div>
-                </div>
-              }>
-                <MetricaPorLoteLazy />
-              </Suspense>
-            );
           case 'umbrales':
             return (
               <Suspense fallback={
@@ -2460,7 +2446,6 @@ const AppContentInternal: React.FC<{
                             const subTab = activeTab.replace('reportes-dashboard-', '');
                             const subTabNames: { [key: string]: string } = {
                               'status-nodos': 'STATUS DE NODOS',
-                              'metrica': 'MÉTRICA POR LOCALIZACIÓN',
                               'umbrales': 'UMBRALES POR LOCALIZACIÓN'
                             };
                             return `${t('tabs.reports')} / ${t('subtabs.dashboard')} / ${subTabNames[subTab] || subTab.toUpperCase()}`;
