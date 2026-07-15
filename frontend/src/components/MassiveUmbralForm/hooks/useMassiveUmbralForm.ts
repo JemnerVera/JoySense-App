@@ -2,7 +2,7 @@
 // HOOK: useMassiveUmbralForm - Estado principal del formulario
 // ============================================================================
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { FormData, MetricaData } from '../types';
 
 interface UseMassiveUmbralFormProps {
@@ -134,27 +134,33 @@ export const useMassiveUmbralForm = ({
     }
   }, [entidadesOptions, formData.entidadid]);
 
+  // Mantener ref actualizado con el callback más reciente
+  const onFormDataChangeRef = useRef(onFormDataChange);
+  useEffect(() => {
+    onFormDataChangeRef.current = onFormDataChange;
+  }, [onFormDataChange]);
+
   // Reportar cambios al sistema de detección (solo cambios significativos)
   useEffect(() => {
-    if (onFormDataChange) {
+    if (onFormDataChangeRef.current) {
       const massiveFormData = {
         fundoid: formData.fundoid,
         entidadid: formData.entidadid,
         selectedMetricas: formData.metricasData.filter(m => m.selected),
         selectedNodes: selectedNodes.filter(node => node.selected),
-        hasData: formData.fundoid !== null || 
-                 formData.entidadid !== null || 
-                 formData.metricasData.some(m => m.selected) || 
+        hasData: formData.fundoid !== null ||
+                 formData.entidadid !== null ||
+                 formData.metricasData.some(m => m.selected) ||
                  selectedNodes.some(node => node.selected) ||
-                 formData.metricasData.some(m => 
-                   m.selected && Object.values(m.umbralesPorTipo).some(umbral => 
+                 formData.metricasData.some(m =>
+                   m.selected && Object.values(m.umbralesPorTipo).some(umbral =>
                      umbral && umbral.minimo && umbral.maximo && umbral.criticidadid && umbral.umbral
                    )
                  )
       };
-      onFormDataChange(massiveFormData);
+      onFormDataChangeRef.current(massiveFormData);
     }
-  }, [formData.fundoid, formData.entidadid, formData.metricasData.map(m => m.selected).join(','), selectedNodes.map(n => n.selected).join(','), onFormDataChange]);
+  }, [formData.fundoid, formData.entidadid, formData.metricasData.map(m => m.selected).join(','), selectedNodes.map(n => n.selected).join(',')]);
 
   return {
     formData,
