@@ -73,6 +73,13 @@ const getColorBySection = (color?: string) => {
         hover: '#d1d5db', // gray-300
         hoverBg: 'rgba(209, 213, 219, 0.15)',
       };
+    case 'brown': // OSMOSIS
+      return {
+        active: '#92400e', // amber-800 - marrón
+        activeBg: 'rgba(146, 64, 14, 0.25)',
+        hover: '#b45309', // amber-700 - marrón más claro
+        hoverBg: 'rgba(180, 83, 9, 0.15)',
+      };
     default:
       return {
         active: '#ffffff',

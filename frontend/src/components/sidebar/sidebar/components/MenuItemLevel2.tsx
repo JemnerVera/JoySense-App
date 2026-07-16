@@ -73,6 +73,13 @@ const getColorBySection = (color?: string, level: 'level2' | 'level3' = 'level2'
           hover: '#d1d5db', // gray-300
           hoverBg: 'rgba(209, 213, 219, 0.08)',
         };
+      case 'brown': // OSMOSIS
+        return {
+          active: '#b45309', // amber-700 - marrón claro
+          activeBg: 'rgba(180, 83, 9, 0.15)',
+          hover: '#d97706', // amber-600 - marrón más claro aún
+          hoverBg: 'rgba(217, 119, 6, 0.08)',
+        };
       default:
         return {
           active: '#ffffff',
@@ -139,6 +146,13 @@ const getColorBySection = (color?: string, level: 'level2' | 'level3' = 'level2'
           activeBg: `rgba(156, 163, 175, 0.1)`,
           hover: `rgba(209, 213, 219, 0.8)`, // gray-300 más tenue
           hoverBg: `rgba(156, 163, 175, 0.05)`,
+        };
+      case 'brown': // OSMOSIS
+        return {
+          active: `rgba(180, 83, 9, 0.8)`, // amber-700 más tenue
+          activeBg: `rgba(180, 83, 9, 0.1)`,
+          hover: `rgba(217, 119, 6, 0.8)`, // amber-600 más tenue
+          hoverBg: `rgba(180, 83, 9, 0.05)`,
         };
       default:
         return {

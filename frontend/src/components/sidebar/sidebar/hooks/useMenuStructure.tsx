@@ -45,6 +45,7 @@ import {
   IconPlantaProc,
   IconReservorios,
   IconTractor,
+  IconOsmosis,
 } from '../utils/menuIcons';
 
 export function useMenuStructure() {
@@ -199,6 +200,21 @@ export function useMenuStructure() {
           {
             id: 'dashboard',
             label: 'DASHBOARD TRACTOR',
+            icon: <IconDashboard />,
+          },
+        ],
+      },
+      {
+        id: 'osmosis',
+        label: t('menu.osmosis'),
+        icon: <IconOsmosis />,
+        color: 'brown',
+        requiresPermission: true,
+        requiredMenu: 'OSMOSIS',
+        subMenus: [
+          {
+            id: 'dashboard',
+            label: 'DASHBOARD OSMOSIS',
             icon: <IconDashboard />,
           },
         ],
@@ -378,6 +394,7 @@ export function useMenuStructure() {
       if (tab.id === 'planta-proc') return hasAccessToMenu('PLANTA_PROC');
       if (tab.id === 'reservorios') return hasAccessToMenu('RESERVORIO');
       if (tab.id === 'tractores') return hasAccessToMenu('TRACTORES');
+      if (tab.id === 'osmosis') return hasAccessToMenu('OSMOSIS');
       return false;
     });
 
