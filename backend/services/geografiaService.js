@@ -2,6 +2,54 @@ const { dbSchema } = require('../config/database');
 const { paginateAndFilter, getTableMetadata } = require('../utils/pagination');
 const logger = require('../utils/logger');
 
+const BATCH_SIZE = 50;
+
+const queryLocalizacionesByNodoids = async (supabase, nodoidList) => {
+  const results = [];
+  for (let i = 0; i < nodoidList.length; i += BATCH_SIZE) {
+    const batch = nodoidList.slice(i, i + BATCH_SIZE);
+    const { data, error } = await supabase
+      .schema(dbSchema)
+      .from('localizacion')
+      .select('localizacionid, localizacion, sensorid, metricaid, nodoid')
+      .in('nodoid', batch)
+      .eq('statusid', 1);
+    if (error) throw error;
+    if (data) results.push(...data);
+  }
+  return results;
+};
+
+const NODO_SELECT = `nodoid, nodo, latitud, longitud, referencia, ubicacionid, statusid,
+  ubicacion:ubicacionid(
+    ubicacionid, ubicacion, zonaid,
+    zona:zonaid(zonaid, zona, fundoid,
+      fundo:fundoid(fundoid, fundo, fundoabrev, empresaid,
+        empresa:empresaid(empresaid, empresa, empresabrev, paisid,
+          pais:paisid(paisid, pais, paisabrev)
+        )
+      )
+    )
+  )`;
+
+const queryNodosBatched = async (supabase, nodoidList, limit) => {
+  const results = [];
+  const max = limit || Infinity;
+  for (let i = 0; i < nodoidList.length && results.length < max; i += BATCH_SIZE) {
+    const batch = nodoidList.slice(i, i + BATCH_SIZE);
+    const { data, error } = await supabase
+      .schema(dbSchema)
+      .from('nodo')
+      .select(NODO_SELECT)
+      .eq('statusid', 1)
+      .in('nodoid', batch)
+      .order('nodoid', { ascending: true });
+    if (error) throw error;
+    if (data) results.push(...data);
+  }
+  return results.slice(0, max);
+};
+
 /**
  * PAIS
  */
@@ -528,56 +576,25 @@ const _getNodosConLocalizacionDashboardPrincipal = async (supabase, { limit, fun
 
   logger.info(`[getNodosConLocalizacionDashboardPrincipal] Consultando nodos (limit: ${limit}, filtro: ${hasFilter ? 'sí (' + nodoids?.length + ' nodos)' : 'no'})`);
 
-  // Consultar nodos activos (aplica limit a nodos, no a localizaciones)
-  let query = supabase
-    .schema(dbSchema)
-    .from('nodo')
-    .select(`
-      nodoid,
-      nodo,
-      latitud,
-      longitud,
-      referencia,
-      ubicacionid,
-      statusid,
-      ubicacion:ubicacionid(
-        ubicacionid,
-        ubicacion,
-        zonaid,
-        zona:zonaid(
-          zonaid,
-          zona,
-          fundoid,
-          fundo:fundoid(
-            fundoid,
-            fundo,
-            fundoabrev,
-            empresaid,
-            empresa:empresaid(
-              empresaid,
-              empresa,
-              empresabrev,
-              paisid,
-              pais:paisid(paisid, pais, paisabrev)
-            )
-          )
-        )
-      )
-    `)
-    .eq('statusid', 1)
-    .order('nodoid', { ascending: true })
-    .limit(parseInt(limit, 10) || 1000);
-
+  let nodos;
   if (hasFilter) {
-    query = query.in('nodoid', nodoids);
+    nodos = await queryNodosBatched(supabase, nodoids, limit);
+  } else {
+    const { data: nodoidRows, error: nodIdErr } = await supabase
+      .schema(dbSchema)
+      .from('nodo')
+      .select('nodoid')
+      .eq('statusid', 1)
+      .order('nodoid', { ascending: true })
+      .limit(parseInt(limit, 10) || 1000);
+    if (nodIdErr) {
+      logger.error(`[getNodosConLocalizacionDashboardPrincipal] Error obteniendo nodoid list:`, nodIdErr);
+      throw nodIdErr;
+    }
+    const nodoidList = (nodoidRows || []).map(n => n.nodoid);
+    nodos = await queryNodosBatched(supabase, nodoidList, limit);
   }
 
-  const { data: nodos, error: nodError } = await query;
-
-  if (nodError) {
-    logger.error(`[getNodosConLocalizacionDashboardPrincipal] Error en query de nodos:`, nodError);
-    throw nodError;
-  }
   logger.info(`[getNodosConLocalizacionDashboardPrincipal] Query devolvió ${(nodos || []).length} nodos (statusid=1)`);
    
   if (!nodos || nodos.length === 0) {
@@ -589,17 +606,7 @@ const _getNodosConLocalizacionDashboardPrincipal = async (supabase, { limit, fun
   const nodoidList = nodos.map(n => n.nodoid);
   logger.info(`[getNodosConLocalizacionDashboardPrincipal] Obteniendo localizaciones para ${nodoidList.length} nodos`);
   
-  const { data: localizacionesData, error: locError } = await supabase
-    .schema(dbSchema)
-    .from('localizacion')
-    .select('localizacionid, localizacion, sensorid, metricaid, nodoid')
-    .in('nodoid', nodoidList)
-    .eq('statusid', 1);
-
-  if (locError) {
-    logger.error(`[getNodosConLocalizacionDashboardPrincipal] Error obteniendo localizaciones:`, locError);
-    throw locError;
-  }
+  const localizacionesData = await queryLocalizacionesByNodoids(supabase, nodoidList);
 
   if (!localizacionesData || localizacionesData.length === 0) {
     logger.info(`[getNodosConLocalizacionDashboardPrincipal] Sin localizaciones, retornando []`);
@@ -728,44 +735,25 @@ const _getNodosConLocalizacionDashboardFallback = async (supabase, { limit, fund
   const nodoids = await _resolveNodoidsByGeografia(supabase, { fundoId, empresaId, paisId });
   const hasFilter = Array.isArray(nodoids);
 
-  let query = supabase
-    .schema(dbSchema)
-    .from('nodo')
-    .select(`
-      nodoid,
-      nodo,
-      latitud,
-      longitud,
-      referencia,
-      ubicacionid,
-      ubicacion:ubicacionid(
-        ubicacionid,
-        ubicacion,
-        zonaid,
-        zona:zonaid(zonaid, zona, fundoid, fundo:fundoid(fundoid, fundo, empresaid, empresa:empresaid(empresaid, empresa, paisid, pais:paisid(paisid, pais))))
-      )
-    `)
-    .eq('statusid', 1)
-    .order('nodoid', { ascending: true })
-    .limit(parseInt(limit, 10) || 1000);
-
+  let nodos;
   if (hasFilter && nodoids.length > 0) {
-    query = query.in('nodoid', nodoids);
+    nodos = await queryNodosBatched(supabase, nodoids, limit);
+  } else {
+    const { data: nodoidRows, error: nodIdErr } = await supabase
+      .schema(dbSchema)
+      .from('nodo')
+      .select('nodoid')
+      .eq('statusid', 1)
+      .order('nodoid', { ascending: true })
+      .limit(parseInt(limit, 10) || 1000);
+    if (nodIdErr) throw nodIdErr;
+    const nodoidList = (nodoidRows || []).map(n => n.nodoid);
+    nodos = await queryNodosBatched(supabase, nodoidList, limit);
   }
-
-  const { data: nodos, error: nodError } = await query;
-  if (nodError) throw nodError;
   if (!nodos || nodos.length === 0) return [];
 
   const nodoidList = nodos.map(n => n.nodoid);
-  const { data: localizaciones, error: locError } = await supabase
-    .schema(dbSchema)
-    .from('localizacion')
-    .select('localizacionid, localizacion, sensorid, nodoid, metricaid')
-    .in('nodoid', nodoidList)
-    .eq('statusid', 1);
-
-  if (locError) throw locError;
+  const localizaciones = await queryLocalizacionesByNodoids(supabase, nodoidList);
 
   // Obtener sensores para tipoid
   const sensorIds = [...new Set(localizaciones.map(l => l.sensorid).filter(id => id != null))];

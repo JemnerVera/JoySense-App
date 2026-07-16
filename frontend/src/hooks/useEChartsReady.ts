@@ -18,9 +18,10 @@ export const useEChartsReady = () => {
             readyRef.current = true;
             setIsReady(true);
           }
-          if (chartRef.current) {
+          const chart = chartRef.current;
+          if (chart) {
             requestAnimationFrame(() => {
-              chartRef.current.getEchsartsInstance?.()?.resize();
+              chart.getEchartsInstance?.()?.resize();
             });
           }
         }
