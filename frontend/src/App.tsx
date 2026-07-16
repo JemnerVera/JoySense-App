@@ -78,6 +78,7 @@ import { PLCMapeoDashboard } from './components/Dashboard/PLCMapeoDashboard';
 import { ReservorioDashboard } from './components/Dashboard/ReservorioDashboard';
 import { TractorDashboard } from './components/Dashboard/TractorDashboard';
 import { EstadoReservorioDashboard } from './components/Dashboard/EstadoReservorioDashboard';
+import { OsmosisDashboard } from './components/Dashboard/OsmosisDashboard';
 
 // 9. Hooks
 import { useAppSidebar } from './hooks/useAppSidebar';
@@ -1827,6 +1828,19 @@ const AppContentInternal: React.FC<{
         );
       }
       return <div className="p-4 h-full"><TractorDashboard /></div>;
+    }
+
+    // Manejar sub-rutas de Osmosis
+    if (activeTab.startsWith('osmosis-')) {
+      const osmosisTab = activeTab.replace('osmosis-', '');
+      if (osmosisTab === 'dashboard') {
+        return (
+          <div className="p-4 h-full">
+            <OsmosisDashboard />
+          </div>
+        );
+      }
+      return <div className="p-4 h-full"><OsmosisDashboard /></div>;
     }
 
     // Manejar sub-rutas de reportes

@@ -281,3 +281,10 @@ export const IconTractor = () => (
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 17h14M7 17a2 2 0 100-4 2 2 0 000 4zm10 0a2 2 0 100-4 2 2 0 000 4zM3 13l2-6h4l1 3h5l3-3h2l1 3 1 1-2 2h-1" />
   </svg>
 );
+
+export const IconOsmosis = () => (
+  <svg className="w-4 h-4" {...svgProps}>
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a2 2 0 11-4 0 2 2 0 014 0zM21 16a2 2 0 11-4 0 2 2 0 014 0z" />
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 15l6-6m0 0H9m6 0v6M5.5 9h13A2.5 2.5 0 0121 11.5v5a2.5 2.5 0 01-2.5 2.5h-13A2.5 2.5 0 013 16.5v-5A2.5 2.5 0 015.5 9z" />
+  </svg>
+);
