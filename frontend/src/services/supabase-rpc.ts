@@ -803,6 +803,184 @@ export class SupabaseRPCService {
   }
 
   /**
+   * Obtiene fluctuación térmica diaria para un nodo
+   * @param params Parámetros: nodoid, fechaDesde, fechaHasta
+   * @returns Array de { fecha, fluctuacion, tmax, tmin }
+   */
+  static async getFluctuacion(params: {
+    nodoid: number;
+    fechaDesde: string;
+    fechaHasta: string;
+  }): Promise<{ fecha: string; fluctuacion: number; tmax: number; tmin: number }[]> {
+    try {
+      if (!params.nodoid || params.nodoid <= 0) {
+        throw new Error('nodoid inválido');
+      }
+
+      const { data, error } = await supabaseAuth
+        .schema(DB_SCHEMA)
+        .rpc('fn_get_fluctuacion', {
+          p_nodoid: params.nodoid,
+          p_fecha_desde: params.fechaDesde,
+          p_fecha_hasta: params.fechaHasta,
+        });
+
+      if (error) {
+        if (error.message.includes('does not exist')) {
+          console.warn('[SupabaseRPCService] fn_get_fluctuacion no existe aún');
+          return [];
+        }
+        throw new Error(`RPC error: ${error.message}`);
+      }
+
+      if (!Array.isArray(data)) {
+        return [];
+      }
+
+      return data;
+    } catch (err: any) {
+      console.error('[SupabaseRPCService] Error en getFluctuacion:', err);
+      throw err;
+    }
+  }
+
+  /**
+   * Obtiene fluctuación térmica semanal agregada por año
+   * @param params Parámetros: nodoid, semanaInicio, semanaFin, anuales
+   * @returns Array de { iso_anual, semana_iso, fluctuacion_avg, fluctuacion_max, dias_con_datos }
+   */
+  static async getFluctuacionSemanalesPorAnual(params: {
+    nodoid: number;
+    semanaInicio?: number;
+    semanaFin?: number;
+    anuales: number[];
+  }): Promise<{ iso_anual: number; semana_iso: number; fluctuacion_avg: number; fluctuacion_max: number; dias_con_datos: number }[]> {
+    try {
+      if (!params.nodoid || params.nodoid <= 0) {
+        throw new Error('nodoid inválido');
+      }
+      if (!params.anuales || params.anuales.length === 0) {
+        return [];
+      }
+
+      const { data, error } = await supabaseAuth
+        .schema(DB_SCHEMA)
+        .rpc('fn_get_fluctuacion_semanales_por_anual', {
+          p_nodoid: params.nodoid,
+          p_semana_inicio: params.semanaInicio ?? 1,
+          p_semana_fin: params.semanaFin ?? 53,
+          p_anuales: params.anuales,
+        });
+
+      if (error) {
+        if (error.message.includes('does not exist')) {
+          console.warn('[SupabaseRPCService] fn_get_fluctuacion_semanales_por_anual no existe aún');
+          return [];
+        }
+        throw new Error(`RPC error: ${error.message}`);
+      }
+
+      if (!Array.isArray(data)) {
+        return [];
+      }
+
+      return data;
+    } catch (err: any) {
+      console.error('[SupabaseRPCService] Error en getFluctuacionSemanalesPorAnual:', err);
+      throw err;
+    }
+  }
+
+  /**
+   * Obtiene Déficit de Presión de Vapor (DPV) diario para un nodo
+   * @param params Parámetros: nodoid, fechaDesde, fechaHasta
+   * @returns Array de { fecha, dpv, temp_avg, hr_avg }
+   */
+  static async getDpv(params: {
+    nodoid: number;
+    fechaDesde: string;
+    fechaHasta: string;
+  }): Promise<{ fecha: string; dpv: number; temp_avg: number; hr_avg: number }[]> {
+    try {
+      if (!params.nodoid || params.nodoid <= 0) {
+        throw new Error('nodoid inválido');
+      }
+
+      const { data, error } = await supabaseAuth
+        .schema(DB_SCHEMA)
+        .rpc('fn_get_dpv', {
+          p_nodoid: params.nodoid,
+          p_fecha_desde: params.fechaDesde,
+          p_fecha_hasta: params.fechaHasta,
+        });
+
+      if (error) {
+        if (error.message.includes('does not exist')) {
+          console.warn('[SupabaseRPCService] fn_get_dpv no existe aún');
+          return [];
+        }
+        throw new Error(`RPC error: ${error.message}`);
+      }
+
+      if (!Array.isArray(data)) {
+        return [];
+      }
+
+      return data;
+    } catch (err: any) {
+      console.error('[SupabaseRPCService] Error en getDpv:', err);
+      throw err;
+    }
+  }
+
+  /**
+   * Obtiene DPV semanal agregado por año
+   * @param params Parámetros: nodoid, semanaInicio, semanaFin, anuales
+   * @returns Array de { iso_anual, semana_iso, dpv_avg, dpv_max, dias_con_datos }
+   */
+  static async getDpvSemanalesPorAnual(params: {
+    nodoid: number;
+    semanaInicio?: number;
+    semanaFin?: number;
+    anuales: number[];
+  }): Promise<{ iso_anual: number; semana_iso: number; dpv_avg: number; dpv_max: number; dias_con_datos: number }[]> {
+    try {
+      if (!params.nodoid || params.nodoid <= 0) {
+        throw new Error('nodoid inválido');
+      }
+      if (!params.anuales || params.anuales.length === 0) {
+        return [];
+      }
+
+      const { data, error } = await supabaseAuth
+        .schema(DB_SCHEMA)
+        .rpc('fn_get_dpv_semanales_por_anual', {
+          p_nodoid: params.nodoid,
+          p_semana_inicio: params.semanaInicio ?? 1,
+          p_semana_fin: params.semanaFin ?? 53,
+          p_anuales: params.anuales,
+        });
+
+      if (error) {
+        if (error.message.includes('does not exist')) {
+          console.warn('[SupabaseRPCService] fn_get_dpv_semanales_por_anual no existe aún');
+          return [];
+        }
+        throw new Error(`RPC error: ${error.message}`);
+      }
+
+      if (!Array.isArray(data)) {
+        return [];
+      }
+
+      return data;
+    } catch (err: any) {
+      console.error('[SupabaseRPCService] Error en getDpvSemanalesPorAnual:', err);
+      throw err;
+    }
+  }
+
+  /**
    * Obtiene semanas con datos disponibles para un nodo y métrica
    * Retorna un mapa de año → Set<semanas> para usar en validación de UI
    * @param params Parámetros de la consulta

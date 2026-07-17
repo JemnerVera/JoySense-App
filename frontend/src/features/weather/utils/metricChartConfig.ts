@@ -59,6 +59,20 @@ export const METRIC_CHART_CONFIG: Record<string, MetricChartConfig> = {
     decimals: 1,
     accumType: 'cumsum',
   },
+  dpv: {
+    label: 'DPV',
+    unit: 'hPa',
+    color: '#8b5cf6',
+    decimals: 2,
+    accumType: 'moving_avg',
+  },
+  fluctuacion: {
+    label: 'Fluctuación',
+    unit: '°C',
+    color: '#14b8a6',
+    decimals: 2,
+    accumType: 'moving_avg',
+  },
 
   // Media móvil: temperatura, índices de confort, presión
   temp_out: {

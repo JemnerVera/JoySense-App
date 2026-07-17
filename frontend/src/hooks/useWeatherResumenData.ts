@@ -177,12 +177,40 @@ export function useWeatherResumenData(): UseWeatherResumenDataResult {
       setLoading(true);
       setError(null);
       try {
-        let data = await SupabaseRPCService.getMedicionesNodoDetallado({
-          nodoid: selectedStation.nodoid,
-          startDate: dateRange.startDate,
-          endDate: dateRange.endDate,
-        });
-        data = transformProprietaryData(data, selectedStation.name);
+        const [mediciones, fluctData, dpvData] = await Promise.all([
+          SupabaseRPCService.getMedicionesNodoDetallado({
+            nodoid: selectedStation.nodoid,
+            startDate: dateRange.startDate,
+            endDate: dateRange.endDate,
+          }),
+          SupabaseRPCService.getFluctuacion({
+            nodoid: selectedStation.nodoid,
+            fechaDesde: `${dateRange.startDate} 00:00:00`,
+            fechaHasta: `${dateRange.endDate} 23:59:59`,
+          }),
+          SupabaseRPCService.getDpv({
+            nodoid: selectedStation.nodoid,
+            fechaDesde: `${dateRange.startDate} 00:00:00`,
+            fechaHasta: `${dateRange.endDate} 23:59:59`,
+          }),
+        ]);
+
+        let data = transformProprietaryData(mediciones || [], selectedStation.name);
+
+        const syntheticRecords = [
+          ...(fluctData || []).map((f: any) => ({
+            fecha: `${f.fecha}T12:00:00`,
+            medicion: f.fluctuacion,
+            metrica_nombre: 'fluctuacion',
+          })),
+          ...(dpvData || []).map((d: any) => ({
+            fecha: `${d.fecha}T12:00:00`,
+            medicion: d.dpv,
+            metrica_nombre: 'dpv',
+          })),
+        ];
+
+        data = [...data, ...syntheticRecords];
 
         setRawData(data || []);
       } catch (err) {

@@ -31,7 +31,7 @@ export const WeatherDetalleMensual: React.FC = () => {
     setError(null);
     try {
       const { startDate, endDate } = getIsoWeekDateRange(selectedYear, selectedWeek);
-      const [data, gdd7, gdd10] = await Promise.all([
+      const [data, gdd7, gdd10, fluctData, dpvData] = await Promise.all([
         SupabaseRPCService.getResumenSemanalNodo({
           nodoid: selectedStation.nodoid,
           lunes: startDate,
@@ -49,13 +49,27 @@ export const WeatherDetalleMensual: React.FC = () => {
           fechaHasta: `${endDate} 23:59:59`,
           tempBase: 10,
         }),
+        SupabaseRPCService.getFluctuacion({
+          nodoid: selectedStation.nodoid,
+          fechaDesde: `${startDate} 00:00:00`,
+          fechaHasta: `${endDate} 23:59:59`,
+        }),
+        SupabaseRPCService.getDpv({
+          nodoid: selectedStation.nodoid,
+          fechaDesde: `${startDate} 00:00:00`,
+          fechaHasta: `${endDate} 23:59:59`,
+        }),
       ]);
 
       const gdd7Map = new Map((gdd7 || []).map((g: any) => [g.fecha, g.gdd_diario]));
       const gdd10Map = new Map((gdd10 || []).map((g: any) => [g.fecha, g.gdd_diario]));
+      const fluctMap = new Map((fluctData || []).map((f: any) => [f.fecha, f.fluctuacion]));
+      const dpvMap = new Map((dpvData || []).map((d: any) => [d.fecha, d.dpv]));
 
       const merged = (data || []).map((row: any) => ({
         ...row,
+        fluctuacion: fluctMap.get(row.dia) ?? null,
+        dpv: dpvMap.get(row.dia) ?? null,
         gdd_7: gdd7Map.get(row.dia) ?? null,
         gdd_10: gdd10Map.get(row.dia) ?? null,
       }));

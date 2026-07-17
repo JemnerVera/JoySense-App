@@ -79,6 +79,8 @@ export const WeatherDetalleAnual: React.FC = () => {
         const gddOptions: MetricOption[] = [
           { metricaid: -7, name: 'gdd_7', label: 'GDD 7°C', unit: '°C·día', color: '#e67e22' },
           { metricaid: -10, name: 'gdd_10', label: 'GDD 10°C', unit: '°C·día', color: '#d35400' },
+          { metricaid: -11, name: 'dpv', label: 'DPV', unit: 'hPa', color: '#8b5cf6' },
+          { metricaid: -12, name: 'fluctuacion', label: 'Fluctuación', unit: '°C', color: '#14b8a6' },
         ];
         const allOptions = [...mapped, ...gddOptions];
         setMetricOptions(allOptions);
@@ -120,7 +122,9 @@ export const WeatherDetalleAnual: React.FC = () => {
         const results = await Promise.all(
           activeMetricaIds.map(async (metricaid) => {
             const metricInfo = metricOptions.find((m) => m.metricaid === metricaid);
-            const isGdd = metricaid < 0;
+            const isGdd = metricaid === -7 || metricaid === -10;
+            const isDpv = metricaid === -11;
+            const isFluctuacion = metricaid === -12;
 
             const rawData = isGdd
               ? await SupabaseRPCService.getGddSemanalesPorAnual({
@@ -128,12 +132,22 @@ export const WeatherDetalleAnual: React.FC = () => {
                   tempBase: Math.abs(metricaid),
                   anuales: [selectedYear],
                 })
-              : await SupabaseRPCService.getResumenSemanalMetricaNodo({
-                  nodoid: selectedStation.nodoid,
-                  metricaid,
-                  fechaDesde,
-                  fechaHasta,
-                });
+              : isDpv
+                ? await SupabaseRPCService.getDpvSemanalesPorAnual({
+                    nodoid: selectedStation.nodoid,
+                    anuales: [selectedYear],
+                  })
+                : isFluctuacion
+                  ? await SupabaseRPCService.getFluctuacionSemanalesPorAnual({
+                      nodoid: selectedStation.nodoid,
+                      anuales: [selectedYear],
+                    })
+                  : await SupabaseRPCService.getResumenSemanalMetricaNodo({
+                      nodoid: selectedStation.nodoid,
+                      metricaid,
+                      fechaDesde,
+                      fechaHasta,
+                    });
 
             const data: SemanaMetricaRow[] = isGdd
               ? (rawData || []).map((d: any) => ({
@@ -144,7 +158,25 @@ export const WeatherDetalleAnual: React.FC = () => {
                   valor_max: null,
                   cantidad_mediciones: d.dias_con_datos,
                 }))
-              : (rawData || []);
+              : isDpv
+                ? (rawData || []).map((d: any) => ({
+                    iso_anual: d.iso_anual,
+                    semana_iso: d.semana_iso,
+                    valor_avg: d.dpv_avg,
+                    valor_min: null,
+                    valor_max: d.dpv_max,
+                    cantidad_mediciones: d.dias_con_datos,
+                  }))
+                : isFluctuacion
+                  ? (rawData || []).map((d: any) => ({
+                      iso_anual: d.iso_anual,
+                      semana_iso: d.semana_iso,
+                      valor_avg: d.fluctuacion_avg,
+                      valor_min: null,
+                      valor_max: d.fluctuacion_max,
+                      cantidad_mediciones: d.dias_con_datos,
+                    }))
+                  : (rawData || []);
 
             const config = getMetricConfig(metricInfo?.name || '');
             return {

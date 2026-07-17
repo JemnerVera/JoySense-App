@@ -14,6 +14,7 @@ export interface ResumenSemanalRow {
   lluvia: number | null;
   etc: number | null;
   fluctuacion: number | null;
+  dpv: number | null;
   gdd_7: number | null;
   gdd_10: number | null;
 }
@@ -35,7 +36,8 @@ const METRIC_COLUMNS: Array<{ key: keyof ResumenSemanalRow; label: string; confi
   { key: 'rad_avg', label: 'Rad Prom', configMetricName: 'solar_rad' },
   { key: 'lluvia', label: 'Lluvia', configMetricName: 'rain_day_mm' },
   { key: 'etc', label: 'ETC', configMetricName: 'et_day' },
-  { key: 'fluctuacion', label: 'Fluctuación', configMetricName: 'temp_out' },
+  { key: 'fluctuacion', label: 'Fluctuación', configMetricName: 'fluctuacion' },
+  { key: 'dpv', label: 'DPV', configMetricName: 'dpv' },
   { key: 'gdd_7', label: 'GDD 7°C', configMetricName: 'gdd' },
   { key: 'gdd_10', label: 'GDD 10°C', configMetricName: 'gdd' },
 ];
