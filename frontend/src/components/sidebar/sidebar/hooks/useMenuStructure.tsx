@@ -122,11 +122,6 @@ export function useMenuStructure() {
             label: 'DASHBOARD PLC',
             icon: <IconSensor />,
           },
-          {
-            id: 'mapeo-sensores',
-            label: 'MAPEO DE SENSORES',
-            icon: <IconMapeo />,
-          },
         ],
       },
       {

@@ -74,7 +74,6 @@ import {
 
 // Componentes directos (no lazy)
 import { PLCMedicionesChart } from './components/Dashboard/PLCMedicionesChart';
-import { PLCMapeoDashboard } from './components/Dashboard/PLCMapeoDashboard';
 import { ReservorioDashboard } from './components/Dashboard/ReservorioDashboard';
 import { TractorDashboard } from './components/Dashboard/TractorDashboard';
 import { EstadoReservorioDashboard } from './components/Dashboard/EstadoReservorioDashboard';
@@ -1779,17 +1778,6 @@ const AppContentInternal: React.FC<{
 
     // Manejar sub-rutas de Planta Proc
     if (activeTab.startsWith('planta-proc-')) {
-      const plantaTab = activeTab.replace('planta-proc-', '');
-
-      if (plantaTab === 'mapeo-sensores') {
-        return (
-          <div className="p-4 h-full">
-            <PLCMapeoDashboard />
-          </div>
-        );
-      }
-
-      // Default: dashboard
       return (
         <div className="p-4">
           <PLCMedicionesChart />

@@ -189,8 +189,6 @@ export const NodeSelector: React.FC<NodeSelectorProps> = ({
     setFilteredNodes(filtered)
   }, [nodes, selectedNode, selectedUbicacionId, searchTerm, paisSeleccionado, empresaSeleccionada, fundoSeleccionado])
 
-  // No hay detección de PLC aquí — esa funcionalidad se migró a MAPEO DE SENSORES (PLCMapeoDashboard)
-
   // Función para sincronizar todos los filtros cuando se selecciona un nodo
   const syncAllFilters = (node: NodeData) => {
     // GUARD: No sincronizar filtros cuando el análisis detallado está abierto
