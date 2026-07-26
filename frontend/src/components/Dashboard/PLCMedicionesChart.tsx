@@ -235,7 +235,7 @@ export function PLCMedicionesChart(_props: PLCMedicionesChartProps) {
       const minutes = fecha.getMinutes();
       const roundedMinutes = Math.floor(minutes / AGGREGATION_MINUTES) * AGGREGATION_MINUTES;
       fecha.setHours(fecha.getHours(), roundedMinutes, 0, 0);
-      const timeKey = fecha.toISOString().replace('T', ' ').slice(0, 16);
+      const timeKey = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')} ${String(fecha.getHours()).padStart(2, '0')}:${String(fecha.getMinutes()).padStart(2, '0')}`;
 
       // Usar campos planos de la RPC
       const localizacionNombre = m.localizacion_nombre || `Localización ${m.localizacionid}`;

@@ -74,7 +74,7 @@ export function PLCDataTable({ selectedNodo, dateRange, onClose }: PLCDataTableP
     mediciones.forEach((m: any) => {
       const fecha = new Date(m.fecha);
       fecha.setSeconds(0, 0);
-      const timeKey = fecha.toISOString().replace('T', ' ').slice(0, 16);
+      const timeKey = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')} ${String(fecha.getHours()).padStart(2, '0')}:${String(fecha.getMinutes()).padStart(2, '0')}`;
 
       const localizacionNombre = m.localizacion_nombre || `Localización ${m.localizacionid}`;
       const metricaNombre = m.metrica_nombre || 'Métrica';

@@ -45,7 +45,7 @@ function processChartData(mediciones: any[], metricName: string, nodoName?: stri
     const minutes = fecha.getMinutes();
     const roundedMinutes = Math.floor(minutes / AGGREGATION_MINUTES) * AGGREGATION_MINUTES;
     fecha.setHours(fecha.getHours(), roundedMinutes, 0, 0);
-    const timeKey = fecha.toISOString().replace('T', ' ').slice(0, 16);
+    const timeKey = `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, '0')}-${String(fecha.getDate()).padStart(2, '0')} ${String(fecha.getHours()).padStart(2, '0')}:${String(fecha.getMinutes()).padStart(2, '0')}`;
     const label = m._nodo || m.localizacion_nombre || `Localización ${m.localizacionid}`;
     const valor = Number(m.medicion);
     if (!groupedByTime.has(timeKey)) groupedByTime.set(timeKey, new Map());
